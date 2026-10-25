@@ -40,9 +40,13 @@ h2{font-size:22px;margin:34px 0 12px}
 ol{padding-left:22px;margin:0}
 li{margin:6px 0}
 .note{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:var(--mute);font-size:16px}
-.feed{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 16px}
-.feed p{margin:0 0 14px;color:var(--mute)}
-.feed .btn{background:#c0762b;color:#fff}
+.feed{text-align:center;color:#ece9e3;border-radius:20px;padding:26px 20px 24px;background:radial-gradient(120% 90% at 50% 0%,#2e3b61 0%,#1f2a44 55%,#161d31 100%);border:1px solid #3a4770;box-shadow:0 10px 26px rgba(20,28,50,.28)}
+.feed img{width:92px;height:auto;display:block;margin:0 auto 10px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.45))}
+.feed h3{margin:0 0 6px;font-size:26px;letter-spacing:.4px}
+.feed p{margin:0 auto 18px;max-width:30ch;color:#c9cfdf;font-size:17px}
+.feed .btn{background:linear-gradient(180deg,#f3d58a 0%,#d9a441 55%,#c48b2b 100%);color:#2a1d05;border-radius:999px;padding:17px 32px;box-shadow:0 4px 0 #8f6419,0 8px 18px rgba(0,0,0,.35);letter-spacing:.3px}
+.feed .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #8f6419,0 4px 10px rgba(0,0,0,.35)}
+.feed .small{font:13px/1.4 -apple-system,system-ui,sans-serif;color:#9aa3bd;margin-top:14px}
 footer{text-align:center;margin-top:40px;color:var(--mute);font-size:15px}
 footer img{width:48px;height:auto;margin-bottom:8px}
 footer i{display:block;margin-top:4px}
@@ -70,6 +74,7 @@ footer i{display:block;margin-top:4px}
 <div class="card"><b>Mark it, fix it later</b><span>Highlight a sentence, then jump from mark to mark when you revise.</span></div>
 <div class="card"><b>See the real book</b><span>Page-flip preview with book page numbers and a running word count.</span></div>
 <div class="card"><b>Measure your book</b><span>See how many words fit on a page for each phone, tablet and paperback size.</span></div>
+<div class="card"><b>Bring in your own writing</b><span>Import a Word, EPUB, PDF or text file and read it as real book pages, or keep writing on it.</span></div>
 <div class="card"><b>Export when it's ready</b><span>EPUB for Apple Books and Kindle, a print-ready PDF for KDP or IngramSpark, or a Word manuscript for an editor.</span></div>
 </div>
 
@@ -86,9 +91,11 @@ footer i{display:block;margin-top:4px}
 <h2>Testing Inkhorse?</h2>
 <div class="note">Found a bug? Tell the person who sent you this link what you tapped, what you expected, and what happened. A screenshot and your phone model help.</div>
 
-<h2>Feed the Horse</h2>
-<div class="feed"><p>Inkhorse is free to try. If it helped you finish a chapter, buy the horse some oats.</p>
-<a class="btn" href="https://ko-fi.com/styleknight" target="_blank" rel="noopener">&#128052; Feed the Horse</a></div>
+<div class="feed" style="margin-top:34px"><img src="horse.png" alt="The StyleKnight horse" width="92" height="99">
+<h3>Feed the Horse</h3>
+<p>Inkhorse is free to try. If it helped you finish a chapter, buy the horse some oats.</p>
+<a class="btn" href="https://ko-fi.com/styleknight" target="_blank" rel="noopener">&#10084;&#65039; Feed the Horse</a>
+<div class="small">Secure tips through Ko-fi. Every bit keeps the horse running.</div></div>
 
 <footer>
 Powered by StyleKnight &amp; Claude
