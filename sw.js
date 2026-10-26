@@ -1,3 +1,5 @@
+/* Inkhorse. Copyright (c) 2026 Steve Claude Patient (StyleKnight). All rights reserved.
+   No license is granted to copy, modify or redistribute this code. */
 /* Inkhorse offline helper (service worker).
    Keeps a copy of the app on the phone so it opens with no signal.
    Pages: tries the internet first (so you always get the newest version),
