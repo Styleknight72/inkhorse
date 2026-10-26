@@ -6,7 +6,7 @@ This repository is public only so the Inkhorse website at https://getinkhorse.co
 
 No license is granted. Without written permission from the copyright holder, you may not copy, modify, publish, distribute, sell, or make other apps from the Inkhorse code, design, text, manual, or images.
 
-The names Inkhorse and Hoofprint, the StyleKnight horse logo, and the motto "The power to get it done, and then some!" belong to Steve Claude Patient.
+The names Inkhorse™, Hoofprint™ and StyleKnight™, the StyleKnight horse logo, and the motto "The power to get it done, and then some!" belong to Steve Claude Patient.
 
 You are welcome to use the Inkhorse app itself at https://getinkhorse.com.
 
