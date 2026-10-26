@@ -3,7 +3,7 @@
    Pages: tries the internet first (so you always get the newest version),
    and falls back to the saved copy if there's no signal or it's too slow.
    Fonts, icons and pictures: uses the saved copy, refreshes it quietly. */
-const VERSION = 'inkhorse-preview-v1';
+const VERSION = 'inkhorse-v1';
 const CORE = [
   './app.html',
   './index.html',
@@ -11,7 +11,8 @@ const CORE = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
-  '../horse.png'
+  './about.html',
+  './horse.png'
 ];
 const SLOW_NETWORK_MS = 4000;
 
@@ -33,7 +34,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const names = await caches.keys();
     await Promise.all(names
-      .filter((n) => n.startsWith('inkhorse-preview-') && n !== VERSION)
+      .filter((n) => (n.startsWith('inkhorse-v') || n.startsWith('inkhorse-preview-')) && n !== VERSION)
       .map((n) => caches.delete(n)));
     await self.clients.claim();
   })());
