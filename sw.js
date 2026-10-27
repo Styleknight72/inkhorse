@@ -5,7 +5,7 @@
    Pages: tries the internet first (so you always get the newest version),
    and falls back to the saved copy if there's no signal or it's too slow.
    Fonts, icons and pictures: uses the saved copy, refreshes it quietly. */
-const VERSION = 'inkhorse-v1';
+const VERSION = 'inkhorse-v2';
 const CORE = [
   './app.html',
   './index.html',
@@ -48,12 +48,16 @@ function isPage(request) {
     /\.html?$/.test(new URL(request.url).pathname);
 }
 
-async function networkFirst(request) {
+async function networkFirst(request, event) {
   const cache = await caches.open(VERSION);
-  const network = fetch(request).then((res) => {
-    if (res && res.ok) cache.put(request, res.clone());
+  const network = fetch(request).then(async (res) => {
+    if (res && res.ok) await cache.put(request, res.clone());
     return res;
   });
+  // Keep the download going even after the saved copy is shown, so the newest
+  // version is ready next time (otherwise a slow connection could leave the phone
+  // stuck on an old copy).
+  if (event) event.waitUntil(network.catch(() => null));
   const slow = new Promise((resolve) => setTimeout(resolve, SLOW_NETWORK_MS, 'slow'));
   try {
     const first = await Promise.race([network, slow]);
@@ -88,7 +92,7 @@ self.addEventListener('fetch', (event) => {
     url.hostname === 'cdnjs.cloudflare.com';
   if (!sameSite && !trustedCdn) return;
   if (sameSite && isPage(request)) {
-    event.respondWith(networkFirst(request));
+    event.respondWith(networkFirst(request, event));
   } else {
     event.respondWith(savedFirst(request));
   }
