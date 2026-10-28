@@ -4,7 +4,7 @@ Two numbers. **rev** goes up with every change pushed to this site (`git rev-lis
 **Release** is the last revision Steve tested on his iPhone and called stable. Only releases go on the live app
 (app.html). The beta (preview/app.html and the Inkhorse Plus artifact) may run ahead at any rev.
 
-Rule: a new release number is set only when Steve says "that's stable". To roll back, check out the release branch (e.g. release-1.0)
+How a revision becomes a release: (1) `node tests/audit.js app.html` passes with 0 FAIL and 0 page errors, (2) Steve runs PHONE-CHECK.md on his iPhone, (3) Steve says "that's stable". Only then does it get a release number. To roll back, check out the release branch (e.g. release-1.0)
 and copy its app.html over the live one.
 
 | Release | rev | Date | Marker | Notes |
