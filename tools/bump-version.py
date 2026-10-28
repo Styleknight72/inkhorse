@@ -11,7 +11,7 @@ P = 'app.html'; t = open(P, encoding='utf-8').read()
 t, n = re.subn(r'window\.INK_VERSION=\{release:"[^"]*",rev:\d+,date:"[^"]*"\}', f'window.INK_VERSION={{release:"{release}",rev:{rev},date:"{date}"}}', t); assert n == 1
 # 2. manual ver (phones refetch the manual when it changes)
 t, n = re.subn(r'(const MANUAL=\{"id":"manual","ver":")[^"]*"', rf'\g<1>{date}-rev{rev}"', t); assert n == 1
-# 3. cover: drawn to a phone's shape so the navy trim is even all the way around (tools/manual-cover.html)
+# 3. cover: drawn to the standard 2:3 book shape (1600 x 2400), like every Library cover; navy trim even all the way around (tools/manual-cover.html)
 import subprocess
 subprocess.run(['node', 'tools/render-cover.js', release, str(rev), datetime.date.fromisoformat(date).strftime('%B %Y'), 'tools/_cover.png'], check=True)
 im = Image.open('tools/_cover.png').convert('RGB'); w, h = im.size
