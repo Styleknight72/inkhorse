@@ -1,0 +1,5 @@
+# Inkhorse - all pages may be listed by search engines, except the beta preview.
+User-agent: *
+Allow: /
+Disallow: /preview/
+Sitemap: https://getinkhorse.com/sitemap.xml
