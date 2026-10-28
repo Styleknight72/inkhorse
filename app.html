@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- Inkhorse. Copyright (c) 2026 Steve Claude Patient (StyleKnight). All rights reserved. No license is granted to copy, modify or redistribute this code. See https://getinkhorse.com/COPYRIGHT.html -->
-<html><head><meta charset=utf8><meta name="author" content="Steve Claude Patient"><meta name="copyright" content="© 2026 Steve Claude Patient. All rights reserved."><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><script>/* Inkhorse version: release = the last copy Steve tested on his phone and called stable; rev = every change pushed to the site */window.INK_VERSION={release:"1.1 candidate",rev:67,date:"2026-10-27"};</script><script>/* Inkhorse colors: day theme, optional night theme on a schedule, night warmth */(function(){var D=document.documentElement,C={light:'#eceff2',dark:'#13171b',sepia:'#efe6d6',sky:'#e2eef8'},R=/^(light|dark|sepia|sky|custom)$/,CV=['--bg','--panel','--line','--fg','--muted','--paper','--paper-back','--ink','--folio','--stage','--edge','--accent','--accent-ink','--accent-soft','--hl','--shadow','--spine','color-scheme'];
+<html><head><meta charset=utf8><meta name="author" content="Steve Claude Patient"><meta name="copyright" content="© 2026 Steve Claude Patient. All rights reserved."><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><script>/* Inkhorse version: release = the last copy Steve tested on his phone and called stable; rev = every change pushed to the site */window.INK_VERSION={release:"1.1 candidate",rev:68,date:"2026-10-27"};</script><script>/* Inkhorse colors: day theme, optional night theme on a schedule, night warmth */(function(){var D=document.documentElement,C={light:'#eceff2',dark:'#13171b',sepia:'#efe6d6',sky:'#e2eef8'},R=/^(light|dark|sepia|sky|custom)$/,CV=['--bg','--panel','--line','--fg','--muted','--paper','--paper-back','--ink','--folio','--stage','--edge','--accent','--accent-ink','--accent-soft','--hl','--shadow','--spine','color-scheme'];
 function hx(h){h=/^#[0-9a-f]{6}$/i.test(h||'')?h:'#000000';return [1,3,5].map(function(i){return parseInt(h.substr(i,2),16)})}
 function mix(a,b,t){var x=hx(a),y=hx(b);return '#'+x.map(function(v,i){return ('0'+Math.round(v+(y[i]-v)*t).toString(16)).slice(-2)}).join('')}
 window.inkLum=function(h){return hx(h).map(function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)}).reduce(function(s,v,i){return s+v*[.2126,.7152,.0722][i]},0)};
@@ -317,6 +317,7 @@ body.hl-on .stage{cursor:text;-webkit-touch-callout:none}
 .ptext p.toc .tt{flex:0 1 auto;hyphens:manual;-webkit-hyphens:manual}
 .ptext p.toc .ldr{flex:1 1 1.2em;min-width:1.2em;border-bottom:1.5px dotted var(--folio);margin:0 .3em;align-self:baseline;height:.1em}
 .ptext p.toc .tn{flex:none;font-variant-numeric:lining-nums tabular-nums;color:var(--accent);font-weight:600}.ptext p.toc{cursor:pointer}
+.revno{color:#c48b2b;font-weight:700;background:rgba(196,139,43,.14);padding:1px 6px;border-radius:6px;white-space:nowrap}
 .gotorow{display:flex;align-items:center;gap:8px;margin:8px 0 2px}.gotorow label{font-size:13px;color:var(--muted)}.gotorow input{width:6.5em;font-size:16px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
 .ptext p.toc.t1{font-variant:small-caps;letter-spacing:.03em;font-weight:600;margin-top:.6em}
 .ptext p.toc.t1:first-child{margin-top:0}
@@ -3843,7 +3844,7 @@ $('#copyBtn').addEventListener('click',async()=>{
 $('#status').addEventListener('click',()=>{ const t=$('#statusText').textContent; const d=$('#status').dataset.s;
   toast(d==='cloud'?'Green: '+t+'.':(d==='saving'||d==='pending'||d==='syncing')?'Blue: '+t:(d==='local'?'Grey: '+t+'.':'Orange: '+t)+(window.INK_VERSION?` · Inkhorse ${INK_VERSION.release} · rev ${INK_VERSION.rev}`:'')); });
 $('#status').style.cursor='pointer';
-(function(){ const v=window.INK_VERSION||{}; const s=`Inkhorse ${v.release} · rev ${v.rev}`; const a=$('#verTag'); if(a) a.textContent='· '+s; const b=$('#verNote'); if(b) b.textContent=s+` · ${v.date}. Release = the last copy tested and called stable; rev = every change since the site began.`; })();
+(function(){ const v=window.INK_VERSION||{}; const s=`Inkhorse ${v.release} · rev ${v.rev}`; const a=$('#verTag'); if(a) a.textContent='· '+s; const b=$('#verNote'); if(b) b.innerHTML=`Inkhorse ${esc(v.release)} · <b class="revno">rev ${esc(String(v.rev))}</b> · ${esc(v.date)}. Release = the last copy tested and called stable; rev = every change since the site began.`; })();
 const stObs=new MutationObserver(()=>{ const s=$('#status'); s.title=$('#statusText').textContent; });
 stObs.observe($('#statusText'),{childList:true,characterData:true,subtree:true});
 try{ renderPageBar(); }catch(_){ }
