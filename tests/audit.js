@@ -13,6 +13,8 @@ const path = require('path');
     Object.defineProperty(window,'speechSynthesis',{value:syn,configurable:true});
     window.SpeechSynthesisUtterance=function(t){ this.text=t; };
   });
+  let JSZIP_FILE=null; try{ JSZIP_FILE=require.resolve('jszip/dist/jszip.min.js'); }catch(_){ }
+  if(JSZIP_FILE) await ctx.route(/jszip(\.min)?\.js$/, r=>r.fulfill({body:require('fs').readFileSync(JSZIP_FILE),contentType:'application/javascript'}));
   const page = await ctx.newPage();
   const errs=[], res=[];
   page.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
@@ -62,6 +64,32 @@ const path = require('path');
     const sizes=new Set(r.map(x=>x.w+'x'+x.h));
     if(r.length<4) return 'only '+r.length+' covers found';
     return sizes.size===1 && r.every(x=>x.inside && Math.abs(x.w/x.h-2/3)<0.03) && man ? true : false;
+  });
+  await step('Speed: a big book (36 chapters, ~200k words, with a contents page) opens in under 4 seconds', async () => {
+    // Rev 88-89 took 23 s here (146 s at phone speed) and froze Steve's iPhone. A good build takes well under 1 s.
+    const W='the quick brown fox jumps over lazy dog while the writer reads mesh pages edges faces aloud'.split(' ');
+    let seed=7; const rnd=()=>{ seed=(seed*16807)%2147483647; return W[seed%W.length]; };
+    const titles=Array.from({length:36},(_,i)=>`Chapter ${i+1}: ${rnd()} ${rnd()} ${rnd()}`);
+    let JSZip=null; try{ JSZip=require('jszip'); }catch(_){ }
+    if(!JSZip||!JSZIP_FILE) return 'SKIP: zip library not on this test machine';
+    const z=new JSZip(); z.file('mimetype','application/epub+zip',{compression:'STORE'});
+    z.file('META-INF/container.xml','<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>');
+    const docs=[['toc','Table of Contents','<h1>Table of Contents</h1><p>'+titles.map((t,i)=>`${t} ${9+i*30} Part A ${10+i*30} Part B ${12+i*30}`).join(' ')+'</p>']]
+      .concat(titles.map((t,i)=>['c'+i,t,`<h1>${t}</h1>`+Array.from({length:550},()=>'<p>'+Array.from({length:10},rnd).join(' ')+'.</p>').join('')]));
+    z.file('OEBPS/content.opf',`<?xml version="1.0"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="u"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="u">speed</dc:identifier><dc:title>Speed test</dc:title><dc:language>en</dc:language></metadata><manifest>${docs.map(d=>`<item id="${d[0]}" href="${d[0]}.xhtml" media-type="application/xhtml+xml"/>`).join('')}<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/></manifest><spine>${docs.map(d=>`<itemref idref="${d[0]}"/>`).join('')}</spine></package>`);
+    z.file('OEBPS/nav.xhtml',`<?xml version="1.0"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><body><nav epub:type="toc"><ol>${docs.map(d=>`<li><a href="${d[0]}.xhtml">${d[1]}</a></li>`).join('')}</ol></nav></body></html>`);
+    docs.forEach(d=>z.file(`OEBPS/${d[0]}.xhtml`,`<?xml version="1.0"?><html xmlns="http://www.w3.org/1999/xhtml"><head><title>${d[1]}</title></head><body>${d[2]}</body></html>`));
+    const epub=await z.generateAsync({type:'nodebuffer'});
+    await page.evaluate(()=>{ setTab('read'); document.querySelector('#libBtn').click(); }); await page.waitForTimeout(400);
+    const before=await page.evaluate(()=>[...document.querySelectorAll('[data-read]')].map(x=>x.dataset.read));
+    await page.setInputFiles('#libIn',{name:'speed-test.epub',mimeType:'application/epub+zip',buffer:epub});
+    let id=null; for(let t=0;t<240&&!id;t++){ await page.waitForTimeout(250); id=await page.evaluate(b=>[...document.querySelectorAll('[data-read]')].map(x=>x.dataset.read).find(x=>!b.includes(x)),before); }
+    if(!id) return 'SKIP: speed-test book did not import';
+    const t0=Date.now(); await page.evaluate(async id=>{ await openLibBook(id); },id); const ms=Date.now()-t0;
+    const chs=await page.evaluate(()=>rOrder().length);
+    await page.evaluate(id=>{ try{ leaveLibrary(); }catch(_){ } },id);
+    if(ms>4000) throw new Error(`big book took ${ms} ms to open (${chs} chapters)`);
+    return `${ms} ms, ${chs} chapters`;
   });
   await step('Contents pages: one Inkhorse style for any book (rev 88)', async () => page.evaluate(() => {
     if(typeof tidyContentsRaw!=='function') return 'SKIP: contents style taken out in rev 90 (froze big books); coming back when fixed';
