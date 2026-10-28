@@ -64,6 +64,7 @@ const path = require('path');
     return sizes.size===1 && r.every(x=>x.inside && Math.abs(x.w/x.h-2/3)<0.03) && man ? true : false;
   });
   await step('Contents pages: one Inkhorse style for any book (rev 88)', async () => page.evaluate(() => {
+    if(typeof tidyContentsRaw!=='function') return 'SKIP: contents style taken out in rev 90 (froze big books); coming back when fixed';
     const ok=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
     if(!ok(tocSplitNum('Favorites 61'),['Favorites',true])) return false;
     if(!ok(tocSplitNum('INTRODUCTION1'),['INTRODUCTION',true])) return false;
