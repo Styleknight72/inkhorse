@@ -17,3 +17,4 @@ These are the things only a real phone can prove. About 10 minutes on the iPhone
 All 10 fine → tell Claude "rev N is stable", and it becomes the next release in RELEASES.md.
 
 - [ ] **Covers (rev 83–85):** Library → every book cover is the same size and book-shaped (2:3), the whole cover shows (nothing cut off at the top or bottom), and the manual's cover fills its box like the other books.
+- [ ] **Contents pages (rev 88):** open the contents page of the manual, an EPUB, a Word book and a text PDF: every one shows one entry per line with a dotted line to a page number; tapping a title opens that page.

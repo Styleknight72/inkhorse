@@ -58,6 +58,17 @@ const path = require('path');
     if(r.length<4) return 'only '+r.length+' covers found';
     return sizes.size===1 && r.every(x=>x.inside && Math.abs(x.w/x.h-2/3)<0.03) && man ? true : false;
   });
+  await step('Contents pages: one Inkhorse style for any book (rev 88)', async () => page.evaluate(() => {
+    const ok=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+    if(!ok(tocSplitNum('Favorites 61'),['Favorites',true])) return false;
+    if(!ok(tocSplitNum('INTRODUCTION1'),['INTRODUCTION',true])) return false;
+    if(!ok(tocSplitNum('Chapter 5'),['Chapter 5',false])) return false;
+    if(!ok(tocSplitNum('Title ........ xii'),['Title',true])) return false;
+    if(tocRunOn('Pushing Vertices 114 Getting familiar with Edit mode 116 Cutting edges 122').length!==3) return false;
+    const txt='Table of Contents vii\nAbout This Book 2 Foolish Assumptions 2 Icons Used 4\nCHAPTER 1: Discovering It 9\nwith Meshes113\nTest Book'; const out=tidyContentsRaw({id:'zz',title:'Table of Contents',text:txt},txt);
+    const ls=out.split('\n');
+    return ls.length>=4 && ls.every(l=>/^%%toc[12] (?:-|@\S+) \S/.test(l)) && !/\d{2,}$/.test(out.replace(/^%%toc\d \S+ /gm,'')) ? true : (()=>{ throw new Error("contents not tidied: "+out.slice(0,160)); })();
+  }));
   await step('Manual opens with a Contents page and page numbers', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1500); let all=''; for(let i=0;i<12;i++){ all+=await page.evaluate(()=>document.querySelector('#spread').innerText); await page.click('#next').catch(()=>{}); await page.waitForTimeout(450);} await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return /Chapter 1 · Welcome to Inkhorse\s+\d/.test(all) && /Chapter 4 · The big picture\s+\d/.test(all); });
   await step('Manual: tapping a Contents line goes to that page', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1500); let line=null; for(let i=0;i<8&&!line;i++){ line=await page.$('#spread p.toc.t2[data-goto]'); if(!line){ await page.click('#next'); await page.waitForTimeout(450);} } if(!line) return 'no contents line found'; await page.waitForTimeout(900); line=await page.$('#spread .page:not(.curl) p.toc.t2[data-goto], #spread p.toc.t2[data-goto]'); const want=await line.getAttribute('data-goto'); const bx=await line.boundingBox(); await page.mouse.click(bx.x+30, bx.y+bx.height/2); await page.waitForTimeout(1200); const got=(await page.textContent('#pgCur')).replace(/[^0-9–]/g,''); await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return got.split('–').includes(want) ? true : {want,got}; });
   await step('Jump to: typing a page number goes there', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200); await page.click('#whereBtn'); await page.fill('#gotoNum','20'); await page.click('#gotoGo'); await page.waitForTimeout(800); const got=(await page.textContent('#pgCur')).replace(/[^0-9–]/g,''); const closed=!(await page.isVisible('#gotoDone')); await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return got.split('–').includes('20')&&closed ? true : {got,closed}; });
