@@ -22,6 +22,11 @@ const path = require('path');
   const tools = async () => { if (await page.getAttribute('#toolsBtn','aria-expanded') !== 'true') await page.click('#toolsBtn',{timeout:3000}); await page.waitForTimeout(150); };
   await page.goto('file://' + file); await page.waitForTimeout(2500);
 
+  await step('works on older phone browsers: no look-behind in fixed code (rev 89)', async () => {
+    // Safari before iOS 16.4 can't read (?<= or (?<! written straight into the code, and then the whole app fails to open.
+    const src=require('fs').readFileSync(file,'utf8'); const bad=(src.match(/\/[^\n\/]*\(\?<[=!][^\n]*\//g)||[]).filter(l=>!/new RegExp/.test(l));
+    return bad.length ? (()=>{ throw new Error('look-behind found: '+bad[0].slice(0,80)); })() : true;
+  });
   await step('app loads on the Write tab', async () => (await page.getAttribute('#app','data-tab'))==='write');
   await step('version line is present', async () => { const v = await page.evaluate(()=>window.INK_VERSION); return !!(v && v.release && v.rev); });
   await step('typing saves and counts words', async () => { await page.fill('#manuscript','First paragraph here with some words.\nSecond paragraph. It has two sentences.'); await page.waitForTimeout(500); return /1[0-9]|\d/.test(await page.textContent('#wordCount')); });
