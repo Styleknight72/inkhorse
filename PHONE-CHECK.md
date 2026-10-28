@@ -15,3 +15,5 @@ These are the things only a real phone can prove. About 10 minutes on the iPhone
 10. Write a few sentences in your real book for a day or two. Nothing lost, nothing strange.
 
 All 10 fine → tell Claude "rev N is stable", and it becomes the next release in RELEASES.md.
+
+- [ ] **Covers (rev 83–85):** Library → every book cover is the same size and book-shaped (2:3), the whole cover shows (nothing cut off at the top or bottom), and the manual's cover fills its box like the other books.
