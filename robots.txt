@@ -2,4 +2,7 @@
 User-agent: *
 Allow: /
 Disallow: /preview/
+Disallow: /docs/
+Disallow: /tools/
+Disallow: /tests/
 Sitemap: https://getinkhorse.com/sitemap.xml
