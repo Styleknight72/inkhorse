@@ -91,6 +91,67 @@ const path = require('path');
     if(ms>4000) throw new Error(`big book took ${ms} ms to open (${chs} chapters)`);
     return `${ms} ms, ${chs} chapters`;
   });
+  /* ===== Formatting engine: one step per rule in docs/FORMATTING-STANDARD.md. A FAIL names the rule that broke. ===== */
+  let FMT=null;
+  const fmtBook = async () => {
+    if (FMT) return FMT;
+    let JSZip=null; try{ JSZip=require('jszip'); }catch(_){ }
+    if(!JSZip||!JSZIP_FILE) return (FMT={skip:'SKIP: zip library not on this test machine'});
+    const body='This is ordinary body text that runs long enough to fill a few lines on a phone page, so the paragraph indents show clearly. ';
+    const P=a=>a.map(x=>`<p>${x}</p>`).join('');
+    const docs=[['tp','Title page','<section epub:type="titlepage"><h1>The Engine Test</h1><p>A test book</p><p>An Author</p></section>'],
+      ['cp','Copyright','<section><p>Copyright © 2026 An Author. All rights reserved.</p><p>First edition.</p></section>'],
+      ['c1','Part 1','<section epub:type="chapter"><p>PART 1</p><h1>The Bridge</h1>'+P([body+body,body])+'<p>* * *</p>'+P([body])+'</section>'],
+      ['c2','The River','<section epub:type="chapter">'+P([body+body,body])+'</section>']];
+    const z=new JSZip(); z.file('mimetype','application/epub+zip',{compression:'STORE'});
+    z.file('META-INF/container.xml','<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>');
+    z.file('OEBPS/content.opf',`<?xml version="1.0"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="u"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="u">fmt</dc:identifier><dc:title>The Engine Test</dc:title><dc:language>en</dc:language></metadata><manifest>${docs.map(d=>`<item id="${d[0]}" href="${d[0]}.xhtml" media-type="application/xhtml+xml"/>`).join('')}<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/></manifest><spine>${docs.map(d=>`<itemref idref="${d[0]}"/>`).join('')}</spine></package>`);
+    z.file('OEBPS/nav.xhtml',`<?xml version="1.0"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><body><nav epub:type="toc"><ol>${docs.map(d=>`<li><a href="${d[0]}.xhtml">${d[1]}</a></li>`).join('')}</ol></nav></body></html>`);
+    docs.forEach(d=>z.file(`OEBPS/${d[0]}.xhtml`,`<?xml version="1.0"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>${d[1]}</title></head><body>${d[2]}</body></html>`));
+    await page.evaluate(()=>{ setTab('read'); document.querySelector('#libBtn').click(); }); await page.waitForTimeout(400);
+    const before=await page.evaluate(()=>[...document.querySelectorAll('[data-read]')].map(x=>x.dataset.read));
+    await page.setInputFiles('#libIn',{name:'engine-test.epub',mimeType:'application/epub+zip',buffer:await z.generateAsync({type:'nodebuffer'})});
+    let id=null; for(let t=0;t<120&&!id;t++){ await page.waitForTimeout(250); id=await page.evaluate(b=>[...document.querySelectorAll('[data-read]')].map(x=>x.dataset.read).find(x=>!b.includes(x)),before); }
+    if(!id) return (FMT={skip:'SKIP: engine test book did not import'});
+    const toast=await page.evaluate(()=>[...document.querySelectorAll('.toast,#toast')].filter(t=>t.offsetParent).map(t=>t.innerText).join('|'));
+    await page.evaluate(async id=>{ await openLibBook(id); },id); await page.waitForTimeout(1000);
+    const titles=await page.evaluate(()=>rOrder().map(i=>getCh(i).title));
+    const pages=[];
+    for(let i=0;i<12;i++){ pages.push(await page.evaluate(()=>{ const pg=document.querySelector('#spread .face:not(.left) .ptext')||document.querySelector('#spread .ptext'); if(!pg) return null; const rh=pg.parentElement.querySelector('.rh'); const h=pg.querySelector('h2.cht'), fp=h&&h.nextElementSibling, sb=pg.querySelector('p.sb');
+      return {front:pg.classList.contains('front'),label:rh?rh.innerText.trim():'',title:h?h.innerText:'',drop:h?(h.getBoundingClientRect().top-pg.getBoundingClientRect().top)/pg.clientHeight:null,firstIndent:fp?parseFloat(getComputedStyle(fp).textIndent):null,smallCaps:fp?getComputedStyle(fp,'::first-line').fontVariantCaps||getComputedStyle(fp,'::first-line').fontVariant:null,
+        sb:sb?{txt:sb.innerText.replace(/\s+/g,''),center:getComputedStyle(sb).textAlign,nextIndent:sb.nextElementSibling?parseFloat(getComputedStyle(sb.nextElementSibling).textIndent):null}:null}; }));
+      await page.click('#next').catch(()=>{}); await page.waitForTimeout(450); }
+    await page.evaluate(()=>{ try{ leaveLibrary(); }catch(_){ } });
+    return (FMT={titles,pages:pages.filter(Boolean),toast});
+  };
+  const F=async(name,test)=>step(name, async()=>{ const f=await fmtBook(); if(f.skip) return f.skip; const r=test(f); if(r!==true) throw new Error(String(r)); return true; });
+  await F('F10.6 a "PART 1" label above a title stays with the title', f=>f.titles.includes('PART 1 · The Bridge')||'chapter titles: '+JSON.stringify(f.titles));
+  await F('F2.7 a chapter with no heading takes its name from the contents list', f=>f.titles.includes('The River')||'chapter titles: '+JSON.stringify(f.titles));
+  await F('F1.3 title and copyright pages are front matter: no chapter label', f=>{ const fr=f.pages.filter(p=>p.front); return (fr.length>=2 && fr.every(p=>!p.label))||'front pages: '+JSON.stringify(fr); });
+  await F('F2.3 the book\'s own label replaces "Chapter N", and front matter is not counted', f=>{ const a=f.pages.find(p=>p.title==='The Bridge'), b=f.pages.find(p=>p.title==='The River'); return (a&&a.label==='PART 1'&&b&&/Chapter 2/i.test(b.label))||JSON.stringify([a&&a.label,b&&b.label]); });
+  await F('F2.2 a chapter title sits well down its first page', f=>{ const d=f.pages.filter(p=>p.drop!=null&&!p.front).map(p=>p.drop); return (d.length>0&&d.every(x=>x>=0.22&&x<=0.4))||'title drop: '+JSON.stringify(d); });
+  await F('F2.4 the first paragraph of a chapter is not indented', f=>{ const v=f.pages.filter(p=>p.firstIndent!=null).map(p=>p.firstIndent); return (v.length>0&&v.every(x=>x===0))||JSON.stringify(v); });
+  await F('F2.5 a chapter opens with its first line in small capitals', f=>{ const v=f.pages.filter(p=>p.title&&!p.front).map(p=>p.smallCaps); return (v.length>0&&v.every(x=>/small-caps/.test(x||'')))||JSON.stringify(v); });
+  await F('F5.2 a scene break is a centered ornament, and the next paragraph is not indented', f=>{ const s=f.pages.map(p=>p.sb).filter(Boolean); return (s.length>0&&s.every(x=>x.txt==='***'&&x.center==='center'&&(x.nextIndent===null||x.nextIndent===0)))||JSON.stringify(s); });
+  await step('F3.7 no widows or orphans: no paragraph leaves a single line alone at a page break (whole manual)', async () => {
+    const r = await page.evaluate(async () => {
+      await openLibBook('manual'); await new Promise(r=>setTimeout(r,800));
+      const bad=[]; let breaks=0;
+      const box=document.createElement('div'); box.className='ptext measure'; box.style.height='auto'; box.style.overflow='visible'; document.body.appendChild(box);
+      for(const id of rOrder()){ const p=pag(id), doc=p.doc; if(!doc.words.length) continue;
+        box.style.width=M.style.width; box.classList.toggle('front',!!doc.front);
+        const h=(a,b)=>{ box.innerHTML=render(doc,a,b); return box.scrollHeight; };
+        const lp=doc.paras.find(P=>!P.img&&!P.h&&!P.toc&&!P.sb&&P.end>P.start); if(!lp) continue; const L=h(lp.start,lp.start+1);
+        p.pages.forEach(([a,b],k)=>{ if(k===p.pages.length-1||b>=doc.words.length) return; const P=doc.paras[doc.words[b].p]; if(!P||P.img||P.h||P.toc||P.sb||!(b>P.start&&b<P.end)) return; breaks++;
+          const head=Math.round(h(Math.max(P.start,a),b)/L), nb=p.pages[k+1][1], tail=Math.round(h(b,Math.min(P.end,nb))/L);
+          if(head<2||tail<2) bad.push(`${getCh(id).title} p${k+1}: ${head} line(s) | ${tail} line(s)`); }); }
+      box.remove(); try{ leaveLibrary(); }catch(_){ }
+      return {breaks,bad};
+    });
+    if(r.bad.length) throw new Error(r.bad.length+' of '+r.breaks+' breaks: '+r.bad.slice(0,3).join('; '));
+    return r.breaks+' paragraph breaks checked';
+  });
+  await F('No pop-up after importing a book', f=>!/Import check/.test(f.toast)||'pop-up: '+f.toast);
   await step('Contents pages: one Inkhorse style for any book (rev 88)', async () => page.evaluate(() => {
     if(typeof tidyContentsRaw!=='function') return 'SKIP: contents style taken out in rev 90 (froze big books); coming back when fixed';
     const ok=(a,b)=>JSON.stringify(a)===JSON.stringify(b);

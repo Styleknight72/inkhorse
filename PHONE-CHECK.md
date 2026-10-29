@@ -18,3 +18,4 @@ All 10 fine → tell Claude "rev N is stable", and it becomes the next release i
 
 - [ ] **Covers (rev 83–85):** Library → every book cover is the same size and book-shaped (2:3), the whole cover shows (nothing cut off at the top or bottom), and the manual's cover fills its box like the other books.
 - [ ] **Contents pages (rev 88):** open the contents page of the manual, an EPUB, a Word book and a text PDF: every one shows one entry per line with a dotted line to a page number; tapping a title opens that page.
+- [ ] **Book formatting (formatting engine):** open MANtality, Blender and the manual. Each chapter's title sits about a third down its first page with the first line in small capitals; front pages (title, copyright) have no chapter number; * * * scene breaks are centered; no page starts or ends with one stray line of a paragraph.

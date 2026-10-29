@@ -2,7 +2,7 @@
 title: The Inkhorse Formatting Standard
 subtitle: How every book in Inkhorse should look, and how we check it
 author: StyleKnight & Claude
-edition: First edition · October 28, 2026 · written at rev 91
+edition: First edition · October 28, 2026 · scorecard updated for the formatting engine (preview)
 ---
 
 # Why this standard exists
@@ -232,22 +232,28 @@ Meets the standard:
 - F8.2 and F8.3 EPUB export with a working contents list and chapter headings.
 - F9.4 Print PDF without the cover.
 
-Done on the preview page, waiting for approval (rev 93):
+Done on the preview page, waiting for Steve's approval (the formatting engine):
 
+- F1.3 and F1.4 Title, copyright and dedication pages recognised as front matter: no chapter label, no paragraph indents, not counted as chapters.
+- F2.2 The chapter title about a third of the way down its first page.
+- F2.3 The book's own label (PART 1, CHAPTER THREE) shown above the title in place of "Chapter N."
+- F2.4 The first paragraph of every chapter not indented.
+- F2.5 Every chapter opens with its first line in small capitals.
+- F2.7 A chapter with no heading takes its name from the book's own contents list.
+- F3.7 No widows or orphans: the whole manual has none (the live app had 24).
+- F5.2 Scene breaks set as a centered ornament.
 - F6.2 to F6.8 One contents style for every book, whatever its file type.
 - F10.1 Spaces put back in PDF text that has none.
 - F10.5 Run-on contents pages split into one entry per line.
+- F10.6 A label above a chapter title kept with the title.
+- The "Import check" pop-up removed.
 
-Not yet, planned for Release 1.1:
+Not yet:
 
-- F2.2 The chapter-title sink, a third of the way down the page.
-- F2.4 Checked for every chapter opening, not just after section headings.
-- F2.5 A drop cap or small-capitals opening.
-- F3.7 No widows or orphans.
-- F5.2 A scene-break ornament.
 - F7.1 Roman numerals for front matter in the print PDF.
+- F1.3 front-matter detection for Word, PDF and text files (EPUB is done).
 
-Found by loading this very book into Inkhorse (rev 91), to fix for 1.1:
+Found by loading this very book into Inkhorse (rev 91), now fixed on the preview page:
 
 - F2.3 and F10.6 A small label above a chapter title, such as "PART 1" or "CHAPTER THREE," makes the EPUB importer lose the chapter title. Many professionally made e-books do this. Inkhorse must keep the label and the title together.
 - F1.3 and F1.4 The title page and copyright page come in as ordinary indented body text and get "CHAPTER 1" and "CHAPTER 2" labels. Front matter needs its own look and no chapter numbers.
