@@ -24,8 +24,11 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - PDFs that leave out the spaces between words come in with their spaces (preview).
 - Google can find getinkhorse.com: the site lists its pages for search engines.
 - The history of changes moved out of the manual into these Release Notes, so the manual is only about how to use Inkhorse (preview).
+- Bella, a natural, human-sounding voice, can read your book aloud. She runs right on your device; the first time, Inkhorse asks before downloading her (about 92 MB, once) (preview).
 
 ## Revisions
+
+Rev 97 (October 29, 2026, preview): Bella, the first natural voice, in Read aloud. She is Kokoro, an open-source voice that runs on the device itself, so the book never leaves it. She sits at the top of the Voice list under Natural voices. The first time she is picked, Inkhorse asks before downloading her (about 92 MB, once) and shows a progress bar; after that she is saved on the device. While she reads one sentence she prepares the next ones; the player says Getting ready if she needs a moment. Pause, Rewind, Again, Skip ahead, Speed, Try and Follow words work with her. If she can't load, Inkhorse says so and uses the device's own voice. The User manual has a new section, Bella, the natural voice.
 
 Rev 96 (October 28, 2026, preview): The "What's new in this edition" chapter left the User manual; the history now lives in these Release Notes, kept in the Inkhorse code folder as CHANGELOG.md.
 
