@@ -24,12 +24,14 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - PDFs that leave out the spaces between words come in with their spaces (preview).
 - Google can find getinkhorse.com: the site lists its pages for search engines.
 - The history of changes moved out of the manual into these Release Notes, so the manual is only about how to use Inkhorse (preview).
-- Bella, a natural, human-sounding voice, can read your book aloud. She runs right on your device; the first time, Inkhorse asks before downloading her (about 92 MB, once) (preview).
+- Meilin, a natural, human-sounding voice, can read your book aloud. She runs right on your device; the first time, Inkhorse asks before downloading her (about 92 MB, once) (preview).
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly (preview).
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture (preview).
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1 (preview).
 
 ## Revisions
+
+Rev 101 (October 29, 2026, preview): The natural voice is now called Meilin, Steve's name for her. It's the same voice (Kokoro's American female voice, first shown as Bella), so a phone that already downloaded her keeps her and nothing downloads again.
 
 Rev 100 (October 29, 2026, preview): A chapter title written as “Chapter One: Point of Origin” (with a colon or a dash) is set like a printed book: CHAPTER ONE as the small label, Point of Origin as the title, instead of Inkhorse adding its own “CHAPTER 2”. When a PDF is made into a real book, the pages before the first chapter (title page, Contents) are front pages and are not counted as a chapter. Bella's player line now counts the seconds steadily instead of flickering between two messages. If a sentence takes more than 30 seconds, or something goes wrong, a box shows what Bella is doing (download, sentences made, whether her helper is answering, whether the device has WebGPU, any error) with Keep waiting or Use my device's voice. Made after Bella stayed silent on Steve's iPhone and his PDF showed CHAPTER 2 above Chapter One.
 

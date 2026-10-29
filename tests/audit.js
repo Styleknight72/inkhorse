@@ -51,12 +51,12 @@ const path = require('path');
   await step('Colors: every theme applies', async () => { for (const th of ['light','dark','sepia','sky','custom']) { await page.evaluate(t=>{ localStorage.setItem('inkhorse-theme',t); inkApplyTheme(); },th); if((await page.evaluate(()=>document.documentElement.getAttribute('data-theme')))!==th) return th+' failed'; } await page.evaluate(()=>{ localStorage.removeItem('inkhorse-theme'); inkApplyTheme(); }); });
   await step('Night schedule + warmth apply', async () => { await page.evaluate(()=>{ localStorage.setItem('inkhorse-night','dark'); localStorage.setItem('inkhorse-night-from','00:00'); localStorage.setItem('inkhorse-night-to','23:59'); localStorage.setItem('inkhorse-warmth','40'); inkApplyTheme(); }); const r=await page.evaluate(()=>[document.documentElement.getAttribute('data-theme'),document.documentElement.hasAttribute('data-warm')]); await page.evaluate(()=>{ ['inkhorse-night','inkhorse-night-from','inkhorse-night-to','inkhorse-warmth'].forEach(k=>localStorage.removeItem(k)); inkApplyTheme(); }); return r[0]==='dark'&&r[1]; });
   await step('Read aloud: player opens, buttons work', async () => { await page.click('#listenBtn'); await page.waitForTimeout(600); const bar=await page.isVisible('#ttsBar'); for (const id of ['ttsFwd','ttsBack','ttsAgain','ttsPlay']) { const b=await page.$('#'+id); if(b&&await b.isVisible()) await b.click({timeout:2000}); await page.waitForTimeout(150); } await page.click('#ttsStop',{timeout:2000}).catch(()=>{}); return bar; });
-  await step('Read aloud: Bella, the natural voice, is offered and asks before downloading (rev 97)', async () => {
+  await step('Read aloud: Meilin, the natural voice, is offered and asks before downloading (rev 97)', async () => {
     // This test machine has no internet for the voice itself; Bella's real download and reading are tested separately over the internet.
     if(!(await page.$('#kokNote'))) return 'SKIP: this version has no natural voices';
     await page.click('#listenBtn'); await page.waitForTimeout(300); if(await page.evaluate(()=>TTS.playing)) await page.click('#ttsPlay');
     const opt=await page.$eval('#ttsVoice option',o=>[o.value,o.textContent]);
-    if(opt[0]!=='kokoro:af_bella'||!/Bella/.test(opt[1])) throw new Error('Bella is not first in the Voice list: '+opt);
+    if(opt[0]!=='kokoro:af_bella'||!/Meilin/.test(opt[1])) throw new Error('Meilin is not first in the Voice list: '+opt);
     await page.selectOption('#ttsVoice','kokoro:af_bella'); await page.waitForTimeout(200);
     const note=await page.textContent('#kokNote'), shown=await page.isVisible('#kokGo');
     if(!shown||!/MB/.test(note)) throw new Error('no download question: '+note.slice(0,80));
