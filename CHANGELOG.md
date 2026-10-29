@@ -31,6 +31,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## Revisions
 
+Rev 102 (October 29, 2026, preview): Meilin speaks on iPhone and iPad. Her pronunciation part unpacks its data in a way Safari doesn't support, so on Apple devices she downloaded but never made a sentence (Steve's report box showed the error). Inkhorse now gives Safari the missing piece before she starts. Tested by making the test browser act like Safari: stuck without the fix, speaking with it.
+
 Rev 101 (October 29, 2026, preview): The natural voice is now called Meilin, Steve's name for her. It's the same voice (Kokoro's American female voice, first shown as Bella), so a phone that already downloaded her keeps her and nothing downloads again.
 
 Rev 100 (October 29, 2026, preview): A chapter title written as “Chapter One: Point of Origin” (with a colon or a dash) is set like a printed book: CHAPTER ONE as the small label, Point of Origin as the title, instead of Inkhorse adding its own “CHAPTER 2”. When a PDF is made into a real book, the pages before the first chapter (title page, Contents) are front pages and are not counted as a chapter. Bella's player line now counts the seconds steadily instead of flickering between two messages. If a sentence takes more than 30 seconds, or something goes wrong, a box shows what Bella is doing (download, sentences made, whether her helper is answering, whether the device has WebGPU, any error) with Keep waiting or Use my device's voice. Made after Bella stayed silent on Steve's iPhone and his PDF showed CHAPTER 2 above Chapter One.
