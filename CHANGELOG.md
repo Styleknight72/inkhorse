@@ -25,11 +25,14 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Google can find getinkhorse.com: the site lists its pages for search engines.
 - The history of changes moved out of the manual into these Release Notes, so the manual is only about how to use Inkhorse (preview).
 - Meilin, a natural, human-sounding voice, can read your book aloud. She runs right on your device; the first time, Inkhorse asks before downloading her (about 92 MB, once) (preview).
+- Meilin uses two or more of your device's processor cores at once, so she makes her sentences faster and the pauses between them are shorter (preview).
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly (preview).
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture (preview).
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1 (preview).
 
 ## Revisions
+
+Rev 107 (October 29, 2026, preview): Meilin uses several processor cores at once. Rev 105's second helper needed a second copy of her voice and closed Safari on Steve's iPhone; now one helper shares the work across two cores (four on computers with eight or more), with one copy of her voice. Browsers only allow this on a specially protected page, so the preview has its own small helper (preview/sw.js) that turns it on; the first time it arrives, the page reloads itself once. If she can't start this way on a device, Inkhorse says so and offers Reload now; if the page closes while she's starting, the next open notices. Either way she goes back to one core on that device for good. On the test computer (two cores) she was about a quarter faster: 7.9 seconds of speech took 20 seconds instead of 26. Her report box shows how many cores she uses.
 
 Rev 106 (October 29, 2026, preview): Make her faster is switched off. On Steve's iPhone the faster chip made Meilin quick (3.5 seconds of speech in 2.9 seconds) but she came out as loud, broken static. A phone that was on the faster way goes back to her clear voice by itself, says so once, and the extra 163 MB download is deleted to give the space back. Her report box now shows how many processor cores the device has instead of the faster chip.
 
