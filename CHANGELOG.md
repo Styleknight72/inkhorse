@@ -26,11 +26,14 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - The history of changes moved out of the manual into these Release Notes, so the manual is only about how to use Inkhorse (preview).
 - Meilin, a natural, human-sounding voice, can read your book aloud. She runs right on your device; the first time, Inkhorse asks before downloading her (about 92 MB, once) (preview).
 - Meilin uses two or more of your device's processor cores at once, so she makes her sentences faster and the pauses between them are shorter (preview).
+- Meilin saves every sentence she makes, so anything heard before plays again at once, and while Inkhorse is open she works ahead on what comes next, so it plays without pauses. The player shows how much is ready. You can have her pause between paragraphs instead of between sentences (preview).
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly (preview).
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture (preview).
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1 (preview).
 
 ## Revisions
+
+Rev 109 (October 29, 2026, preview): Free ways to listen to Meilin without pauses. Steve's iPhone makes her about 1.9 times slower than she speaks (3.4 seconds of speech in 6.5 seconds), so making each sentence just before reading it always leaves a gap. Now every sentence she makes is saved on the device (oldest removed past about 300 MB), so listening again plays at once and only changed sentences wait. Work ahead: while Inkhorse is open on screen and she isn't busy, she makes what comes next from the reader's page, up to 30 minutes ahead; the player shows how much is ready (for example Reading · 6 min ready). Pauses: Paragraphs makes a whole paragraph before reading it, so she reads each paragraph straight through. Try still makes a fresh sample, so the speed check stays honest. On the test computer: after 2 minutes of working ahead, 44 seconds of speech were ready, play started in 0.2 seconds, and the saved sentences were still there after a reload.
 
 Rev 108 (October 29, 2026, preview): Meilin's report box says how far turning on several processor cores got (helper running or not, page reloaded or not). On Steve's iPhone rev 107 showed she was still using one core, and this line shows why. No other change.
 
