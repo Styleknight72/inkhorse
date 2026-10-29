@@ -25,11 +25,14 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Google can find getinkhorse.com: the site lists its pages for search engines.
 - The history of changes moved out of the manual into these Release Notes, so the manual is only about how to use Inkhorse (preview).
 - Meilin, a natural, human-sounding voice, can read your book aloud. She runs right on your device; the first time, Inkhorse asks before downloading her (about 92 MB, once) (preview).
+- Make her faster: on a device with a faster chip, Meilin can use it so there are no pauses between sentences (preview).
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly (preview).
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture (preview).
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1 (preview).
 
 ## Revisions
+
+Rev 103 (October 29, 2026, preview): Make her faster. On Steve's iPhone Meilin worked but paused 4 to 6 seconds between sentences, because the phone made each sentence slower than she speaks it. When a device has a faster chip (WebGPU) and she can't keep up, Inkhorse offers Make her faster, after a speed check or the first time she falls behind: a bigger version of her voice (about 326 MB, once) that runs on that chip. She must say a real word before Inkhorse switches; if the faster way fails, or isn't ready within 3 minutes, Inkhorse says so and keeps the regular way. The speed check also says whether her voice is saved on the device for next time.
 
 Rev 102 (October 29, 2026, preview): Meilin speaks on iPhone and iPad. Her pronunciation part unpacks its data in a way Safari doesn't support, so on Apple devices she downloaded but never made a sentence (Steve's report box showed the error). Inkhorse now gives Safari the missing piece before she starts. Tested by making the test browser act like Safari: stuck without the fix, speaking with it.
 
