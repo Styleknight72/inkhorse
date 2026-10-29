@@ -13,6 +13,9 @@ const path = require('path');
     Object.defineProperty(window,'speechSynthesis',{value:syn,configurable:true});
     window.SpeechSynthesisUtterance=function(t){ this.text=t; };
   });
+  const PDFJS_DIR=process.env.PDFJS_DIR||''; // a pdfjs-dist@3.11.174 build folder; without it the PDF import step is skipped
+  if(PDFJS_DIR){ await ctx.route(/pdf\.js\/3\.11\.174\/pdf\.min\.js/, r=>r.fulfill({path:require('path').join(PDFJS_DIR,'pdf.min.js'),contentType:'application/javascript'}));
+    await ctx.route(/pdf\.js\/3\.11\.174\/pdf\.worker\.min\.js/, r=>r.fulfill({path:require('path').join(PDFJS_DIR,'pdf.worker.min.js'),contentType:'application/javascript'})); }
   let JSZIP_FILE=null; try{ JSZIP_FILE=require.resolve('jszip/dist/jszip.min.js'); }catch(_){ }
   if(JSZIP_FILE) await ctx.route(/jszip(\.min)?\.js$/, r=>r.fulfill({body:require('fs').readFileSync(JSZIP_FILE),contentType:'application/javascript'}));
   const page = await ctx.newPage();
@@ -62,6 +65,42 @@ const path = require('path');
     const hidden=!(await page.isVisible('#kokNote')), sel=await page.inputValue('#ttsVoice');
     await page.click('#ttsStop',{timeout:2000}).catch(()=>{});
     return hidden && !sel.startsWith('kokoro:') ? true : {hidden,sel};
+  });
+  await step('Adding a PDF asks: real book or exact look; Cancel adds nothing (rev 98)', async () => {
+    if(!(await page.$('#libAsk'))) return 'SKIP: this version has no PDF question';
+    if(!(await page.isVisible('#library'))){ await page.click('#tab-read').catch(()=>{}); await page.click('#libBtn'); await page.waitForTimeout(400); }
+    const n0=await page.evaluate(()=>LIB.length);
+    await page.setInputFiles('#libIn',{name:'test.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\n%%EOF\n')}); await page.waitForTimeout(300);
+    const txt=await page.textContent('#libAsk'); if(!/Make it a real book/.test(txt)||!/Keep the exact look/.test(txt)) throw new Error('question missing: '+txt.slice(0,80));
+    await page.click('#libAsk [data-way="no"]'); await page.waitForTimeout(400);
+    const n1=await page.evaluate(()=>LIB.length), gone=!(await page.isVisible('#libAsk'));
+    await page.click('#libDone').catch(()=>{}); await page.waitForTimeout(300);
+    return n0===n1 && gone ? true : {n0,n1,gone};
+  });
+  await step('Aa on a book kept as page pictures says so and grays the text settings (rev 98)', async () => {
+    if(!(await page.$('#picNote'))) return 'SKIP: this version has no picture-book note';
+    const r=await page.evaluate(()=>{ const old=RB; RB={pics:true}; picSheetUI(); const on=[!document.querySelector('#picNote').hidden,document.querySelector('#fs').disabled,document.querySelector('#face').disabled,!document.querySelector('#themeSel').disabled];
+      RB=old; picSheetUI(); const off=[document.querySelector('#picNote').hidden,!document.querySelector('#fs').disabled]; return {on,off}; });
+    return r.on.every(Boolean)&&r.off.every(Boolean) ? true : r;
+  });
+  await step('F2.7 PDF "Make it a real book": contents page one entry per line, and "Chapter One" on the next page keeps its title (rev 98)', async () => {
+    if(!PDFJS_DIR) return 'SKIP: set PDFJS_DIR to test PDF import (the PDF reader is loaded from the internet on phones)';
+    const mk=await ctx.newPage(); const titles=['Chapter One: Point of Origin','Chapter Two: Florida, 1981','Chapter Three: Memory'];
+    const para=i=>`<p>At the time, Manchester was a city with a long industrial history and a deeply rooted French-Canadian community number ${i}. The Merrimack River divided the city, and on its western bank families had established their homes and churches.</p>`;
+    let html=`<style>body{font-family:serif;font-size:11pt;text-align:justify}p{margin:0;text-indent:2em}h1{font-weight:normal;text-align:center;page-break-before:always;margin-top:2in}</style><div style="text-align:center;margin-top:3in">A Test Book</div><h1>Contents</h1>${titles.map((t,i)=>`<p style="text-indent:0">${t} ........ ${3+i*4}</p>`).join('')}`;
+    titles.forEach((t,ci)=>{ html+=`<h1>${t}</h1>`; for(let i=0;i<12;i++) html+=para(ci*100+i); });
+    await mk.setContent(html); const buf=await mk.pdf({width:'5.5in',height:'8.5in',displayHeaderFooter:true,headerTemplate:'<span></span>',footerTemplate:'<div style="font-size:8pt;width:100%;text-align:center"><span class="pageNumber"></span></div>',margin:{top:'0.7in',bottom:'0.8in',left:'0.7in',right:'0.7in'}}); await mk.close();
+    if(!(await page.isVisible('#library'))){ await page.click('#tab-read').catch(()=>{}); await page.click('#libBtn'); await page.waitForTimeout(400); }
+    await page.setInputFiles('#libIn',{name:'pdf-test-book.pdf',mimeType:'application/pdf',buffer:buf}); await page.waitForTimeout(300);
+    await page.click('#libAsk [data-way="text"]');
+    await page.waitForFunction(()=>/^Added|couldn/.test(document.querySelector('#libNote').textContent),null,{timeout:60000});
+    const r=await page.evaluate(async()=>{ const m=LIB[0]; const out={pageMode:m.pageMode,titles:m.chapters.map(c=>c.title)}; await openLibBook(m.id,true);
+      out.front=RB.ch.get(RB.order[0]).text.split('\n'); out.paras=RB.order.slice(1).map(id=>RB.ch.get(id).text.split('\n').length); out.nums=RB.order.some(id=>/^\s*\d{1,3}\s*$/m.test(RB.ch.get(id).text));
+      leaveLibraryBook(); return out; });
+    await page.evaluate(async()=>{ const id=LIB[0].id; LIB=LIB.slice(1); saveLibIndex(); try{ await idb.del('lib:'+id); }catch(_){ } renderShelf(); });
+    await page.click('#libDone').catch(()=>{}); await page.waitForTimeout(300);
+    const ok=!r.pageMode && JSON.stringify(r.titles.slice(-3))===JSON.stringify(titles) && r.front.length===4 && r.front[0]==='Contents' && r.paras.every(n=>n===12) && !r.nums;
+    if(!ok) throw new Error(JSON.stringify(r).slice(0,400)); return true;
   });
   await step('Library lists the manual', async () => { await page.click('#libBtn'); await page.waitForTimeout(500); return /User manual/.test(await page.evaluate(()=>document.body.innerText)); });
   await step('Covers: every Library cover is the standard 2:3 size, whole picture inside (rev 83-85)', async () => {

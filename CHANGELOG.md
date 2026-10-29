@@ -25,8 +25,12 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Google can find getinkhorse.com: the site lists its pages for search engines.
 - The history of changes moved out of the manual into these Release Notes, so the manual is only about how to use Inkhorse (preview).
 - Bella, a natural, human-sounding voice, can read your book aloud. She runs right on your device; the first time, Inkhorse asks before downloading her (about 92 MB, once) (preview).
+- Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly (preview).
+- On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture (preview).
 
 ## Revisions
+
+Rev 98 (October 29, 2026, preview): Adding a PDF to read now asks: Make it a real book (text you can make bigger, change the typeface of, and hear read aloud) or Keep the exact look (pictures of its pages, as before). Cancel adds nothing. Before, every PDF of up to 300 pages came in as pictures with no choice, so Size, Typeface and Read aloud did nothing on it. On a book kept as pictures, the Aa panel now says so and grays out Size, Spacing, Typeface, Justify and New page for each section. Also fixed when a PDF comes in as text: a contents page with three entries is set one entry per line, and a chapter title at the top of the page after the contents (like Chapter One) no longer gets stuck onto the contents. The User manual explains the PDF choice and the Aa note.
 
 Rev 97 (October 29, 2026, preview): Bella, the first natural voice, in Read aloud. She is Kokoro, an open-source voice that runs on the device itself, so the book never leaves it. She sits at the top of the Voice list under Natural voices. The first time she is picked, Inkhorse asks before downloading her (about 92 MB, once) and shows a progress bar; after that she is saved on the device. While she reads one sentence she prepares the next ones; the player says Getting ready if she needs a moment. Pause, Rewind, Again, Skip ahead, Speed, Try and Follow words work with her. If she can't load, Inkhorse says so and uses the device's own voice. The User manual has a new section, Bella, the natural voice.
 
