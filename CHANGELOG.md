@@ -25,12 +25,13 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Google can find getinkhorse.com: the site lists its pages for search engines.
 - The history of changes moved out of the manual into these Release Notes, so the manual is only about how to use Inkhorse (preview).
 - Meilin, a natural, human-sounding voice, can read your book aloud. She runs right on your device; the first time, Inkhorse asks before downloading her (about 92 MB, once) (preview).
-- Make her faster: on a device with a faster chip, Meilin can use it so there are no pauses between sentences (preview).
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly (preview).
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture (preview).
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1 (preview).
 
 ## Revisions
+
+Rev 106 (October 29, 2026, preview): Make her faster is switched off. On Steve's iPhone the faster chip made Meilin quick (3.5 seconds of speech in 2.9 seconds) but she came out as loud, broken static. A phone that was on the faster way goes back to her clear voice by itself, says so once, and the extra 163 MB download is deleted to give the space back. Her report box now shows how many processor cores the device has instead of the faster chip.
 
 Rev 105 (October 29, 2026, preview): Meilin gets ready in the background as soon as Inkhorse opens (when she's the chosen voice and already downloaded), so the first tap on Read aloud starts her; before, tapping while she was still waking up stopped her, and it took several taps. On devices with several processor cores she now uses two helpers, making two sentences at the same time, to shorten the 2 to 4 second pauses Steve heard between sentences. The second helper has the same crash guard as the faster chip. She also works in shorter pieces (long sentences are split at commas), so she starts sooner.
 
