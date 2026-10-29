@@ -27,8 +27,11 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Bella, a natural, human-sounding voice, can read your book aloud. She runs right on your device; the first time, Inkhorse asks before downloading her (about 92 MB, once) (preview).
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly (preview).
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture (preview).
+- A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1 (preview).
 
 ## Revisions
+
+Rev 100 (October 29, 2026, preview): A chapter title written as “Chapter One: Point of Origin” (with a colon or a dash) is set like a printed book: CHAPTER ONE as the small label, Point of Origin as the title, instead of Inkhorse adding its own “CHAPTER 2”. When a PDF is made into a real book, the pages before the first chapter (title page, Contents) are front pages and are not counted as a chapter. Bella's player line now counts the seconds steadily instead of flickering between two messages. If a sentence takes more than 30 seconds, or something goes wrong, a box shows what Bella is doing (download, sentences made, whether her helper is answering, whether the device has WebGPU, any error) with Keep waiting or Use my device's voice. Made after Bella stayed silent on Steve's iPhone and his PDF showed CHAPTER 2 above Chapter One.
 
 Rev 99 (October 29, 2026, preview): Tapping a menu in the player (like Voice) no longer zooms the whole page in on iPhone; pinch to zoom still works. Bella reports what she's doing: the player counts the seconds while she prepares a sentence; after 45 seconds Inkhorse says she may be too slow on this device and offers Keep waiting or Use my device's voice, with any error message. Try, with Bella chosen, is now a speed check: it shows how many seconds of speech she made and how long that took. Made after Bella downloaded on Steve's iPhone but stayed on Getting ready.
 

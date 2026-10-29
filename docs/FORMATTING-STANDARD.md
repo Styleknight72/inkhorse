@@ -251,7 +251,7 @@ Done on the preview page, waiting for Steve's approval (the formatting engine):
 Not yet:
 
 - F7.1 Roman numerals for front matter in the print PDF.
-- F1.3 front-matter detection for Word, PDF and text files (EPUB is done).
+- F1.3 front-matter detection for Word and text files (EPUB and PDF are done; PDF in rev 100, preview).
 
 Found by loading this very book into Inkhorse (rev 91), now fixed on the preview page:
 
