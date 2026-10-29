@@ -32,6 +32,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## Revisions
 
+Rev 104 (October 29, 2026, preview): On Steve's iPhone, Make her faster closed the page: the full-size voice (326 MB) needed more memory than Safari allows one page. Now the faster way uses the half-size voice (163 MB). A crash guard leaves a note before setting up the faster chip; if the page closes first, the next open puts Meilin back on the regular way, says what happened, and never tries that again on the device. A phone that had the faster way turned on by rev 103 is put back on the regular way automatically, and the 326 MB file is deleted to give the space back.
+
 Rev 103 (October 29, 2026, preview): Make her faster. On Steve's iPhone Meilin worked but paused 4 to 6 seconds between sentences, because the phone made each sentence slower than she speaks it. When a device has a faster chip (WebGPU) and she can't keep up, Inkhorse offers Make her faster, after a speed check or the first time she falls behind: a bigger version of her voice (about 326 MB, once) that runs on that chip. She must say a real word before Inkhorse switches; if the faster way fails, or isn't ready within 3 minutes, Inkhorse says so and keeps the regular way. The speed check also says whether her voice is saved on the device for next time.
 
 Rev 102 (October 29, 2026, preview): Meilin speaks on iPhone and iPad. Her pronunciation part unpacks its data in a way Safari doesn't support, so on Apple devices she downloaded but never made a sentence (Steve's report box showed the error). Inkhorse now gives Safari the missing piece before she starts. Tested by making the test browser act like Safari: stuck without the fix, speaking with it.
