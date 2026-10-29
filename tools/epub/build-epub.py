@@ -1,4 +1,5 @@
-# Builds an EPUB 3 from docs/FORMATTING-STANDARD.md, set to the standard it describes.
+# Builds an EPUB 3 from a Markdown document with front matter (title, subtitle, author, edition), set to the Inkhorse Formatting Standard.
+# Used for docs/FORMATTING-STANDARD.md and CHANGELOG.md.  Usage: python3 -I tools/epub/build-epub.py doc.md cover.jpg out.epub
 import re, sys, zipfile, html, uuid, datetime
 src, cover, out = sys.argv[1], sys.argv[2], sys.argv[3]
 text = open(src, encoding='utf-8').read()
@@ -74,16 +75,16 @@ nav h1{margin-top:15%}
 """
 def page(title, body, extra=''):
     return f'<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><meta charset="utf-8"/><title>{E(title)}</title><link rel="stylesheet" type="text/css" href="style.css"/></head><body{extra}>{body}</body></html>'
-bid = 'urn:uuid:' + str(uuid.uuid5(uuid.NAMESPACE_URL, 'getinkhorse.com/formatting-standard/1'))
+bid = 'urn:uuid:' + str(uuid.uuid5(uuid.NAMESPACE_URL, 'getinkhorse.com/' + meta['title']))
 z = zipfile.ZipFile(out, 'w')
 z.writestr(zipfile.ZipInfo('mimetype'), 'application/epub+zip', compress_type=zipfile.ZIP_STORED)
 z.writestr('META-INF/container.xml', '<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>', compress_type=zipfile.ZIP_DEFLATED)
 D = lambda n, s: z.writestr('OEBPS/'+n, s, compress_type=zipfile.ZIP_DEFLATED)
 D('style.css', CSS)
 z.write(cover, 'OEBPS/cover.jpg', compress_type=zipfile.ZIP_DEFLATED)
-D('cover.xhtml', page('Cover', '<div style="text-align:center"><img src="cover.jpg" alt="The Inkhorse Formatting Standard" style="max-width:100%;max-height:100%"/></div>'))
-D('title.xhtml', page('Title page', f'<section epub:type="titlepage" class="titlepage"><h1 class="t2">The Inkhorse Formatting Standard</h1><p class="t3">{E(meta["subtitle"])}</p><p class="t4">{E(meta["author"])}</p></section>'))
-D('copyright.xhtml', page('Copyright', f'<section epub:type="copyright-page" class="copyright"><h1 class="cph">Copyright</h1><p>The Inkhorse Formatting Standard</p><p>{E(meta["edition"])}</p><p>© 2026 Steve Claude Patient (StyleKnight). All rights reserved.</p><p>Inkhorse™ and StyleKnight™ are trademarks of Steve Claude Patient.</p><p>getinkhorse.com</p><p>Powered by StyleKnight &amp; Claude</p></section>'))
+D('cover.xhtml', page('Cover', f'<div style="text-align:center"><img src="cover.jpg" alt="{E(meta["title"])}" style="max-width:100%;max-height:100%"/></div>'))
+D('title.xhtml', page('Title page', f'<section epub:type="titlepage" class="titlepage"><h1 class="t2">{E(meta["title"])}</h1><p class="t3">{E(meta["subtitle"])}</p><p class="t4">{E(meta["author"])}</p></section>'))
+D('copyright.xhtml', page('Copyright', f'<section epub:type="copyright-page" class="copyright"><h1 class="cph">Copyright</h1><p>{E(meta["title"])}</p><p>{E(meta["edition"])}</p><p>© 2026 Steve Claude Patient (StyleKnight). All rights reserved.</p><p>Inkhorse™ and StyleKnight™ are trademarks of Steve Claude Patient.</p><p>getinkhorse.com</p><p>Powered by StyleKnight &amp; Claude</p></section>'))
 items, spine, navl = [], [], []
 for i, (t, md) in enumerate(chapters, 1):
     head, secs, xhtml = render(t, md, i)
@@ -96,7 +97,7 @@ now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'
 man = ''.join(f'<item id="i{k}" href="{f}" media-type="application/xhtml+xml"/>' for k, f in enumerate(items))
 z.writestr('OEBPS/content.opf', f'''<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid" xml:lang="en"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-<dc:identifier id="uid">{bid}</dc:identifier><dc:title>The Inkhorse Formatting Standard</dc:title><dc:creator>StyleKnight &amp; Claude</dc:creator><dc:language>en</dc:language><dc:publisher>StyleKnight</dc:publisher><dc:rights>© 2026 Steve Claude Patient. All rights reserved.</dc:rights><meta property="dcterms:modified">{now}</meta><meta name="cover" content="cover-image"/></metadata>
+<dc:identifier id="uid">{bid}</dc:identifier><dc:title>{E(meta['title'])}</dc:title><dc:creator>StyleKnight &amp; Claude</dc:creator><dc:language>en</dc:language><dc:publisher>StyleKnight</dc:publisher><dc:rights>© 2026 Steve Claude Patient. All rights reserved.</dc:rights><meta property="dcterms:modified">{now}</meta><meta name="cover" content="cover-image"/></metadata>
 <manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="css" href="style.css" media-type="text/css"/><item id="cover-image" href="cover.jpg" media-type="image/jpeg" properties="cover-image"/><item id="coverpage" href="cover.xhtml" media-type="application/xhtml+xml"/><item id="title" href="title.xhtml" media-type="application/xhtml+xml"/><item id="copy" href="copyright.xhtml" media-type="application/xhtml+xml"/>{man}</manifest>
 <spine><itemref idref="coverpage" linear="yes"/><itemref idref="title"/><itemref idref="copy"/><itemref idref="nav"/>{''.join(f'<itemref idref="i{k}"/>' for k in range(len(items)))}</spine></package>''', compress_type=zipfile.ZIP_DEFLATED)
 z.close(); print('chapters', len(chapters))

@@ -269,7 +269,7 @@ Still to check against real books:
 2. Each rule that can be checked by machine gets an automatic test, like the cover-size and big-book speed tests.
 3. Every change goes to the preview page first and goes live only when Steve approves it on his iPhone.
 4. The scorecard in Part 11 is updated with every release.
-5. This book is updated whenever the standard changes, and its edition line says when.
+5. This book is updated whenever the standard changes, and its edition line says when. The history of changes to Inkhorse itself is kept in the Inkhorse Release Notes, not in this book or in the User manual.
 
 ## Sources
 
