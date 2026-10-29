@@ -32,6 +32,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## Revisions
 
+Rev 108 (October 29, 2026, preview): Meilin's report box says how far turning on several processor cores got (helper running or not, page reloaded or not). On Steve's iPhone rev 107 showed she was still using one core, and this line shows why. No other change.
+
 Rev 107 (October 29, 2026, preview): Meilin uses several processor cores at once. Rev 105's second helper needed a second copy of her voice and closed Safari on Steve's iPhone; now one helper shares the work across two cores (four on computers with eight or more), with one copy of her voice. Browsers only allow this on a specially protected page, so the preview has its own small helper (preview/sw.js) that turns it on; the first time it arrives, the page reloads itself once. If she can't start this way on a device, Inkhorse says so and offers Reload now; if the page closes while she's starting, the next open notices. Either way she goes back to one core on that device for good. On the test computer (two cores) she was about a quarter faster: 7.9 seconds of speech took 20 seconds instead of 26. Her report box shows how many cores she uses.
 
 Rev 106 (October 29, 2026, preview): Make her faster is switched off. On Steve's iPhone the faster chip made Meilin quick (3.5 seconds of speech in 2.9 seconds) but she came out as loud, broken static. A phone that was on the faster way goes back to her clear voice by itself, says so once, and the extra 163 MB download is deleted to give the space back. Her report box now shows how many processor cores the device has instead of the faster chip.
