@@ -29,11 +29,14 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Meilin saves every sentence she makes, so anything heard before plays again at once, and while Inkhorse is open she works ahead on what comes next, so it plays without pauses. The player shows how much is ready. You can have her pause between paragraphs instead of between sentences.
 - A cleaner read-aloud player: one row of buttons while you listen, and Voice, Speed, Try, Follow words, Smooth listening and pauses in ⚙ Settings, with a card introducing Meilin (美琳, beautiful jade).
 - A cleaner Write tab: the writing tools open from one Tools button in a panel over the page, and the page row fits on one line on a phone, so your writing gets more of the screen.
+- Calvin and Soren, two male natural voices with American accents, join Meilin, each with his own card in Settings (preview).
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly.
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture.
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 121 (October 29, 2026, preview): Calvin and Soren, two male natural voices, join Meilin. Steve named Male voice 1 (Kokoro's American "Michael") Calvin and Male voice 2 (Kokoro's American "Fenrir") Soren. In Settings, each has his own card in Steve's words. The Smooth listening note now names whichever natural voice is chosen, and the pause choice reads "If a pause is needed" instead of "If she needs a moment".
 
 Rev 120 (October 29, 2026, preview): Two male natural voices to try, under Meilin in the Voice list: Male voice 1 (Kokoro's American "Michael") and Male voice 2 (Kokoro's American "Fenrir"). They use the same download as Meilin, so each adds almost nothing. Steve listens to both and gives the one he keeps his own name; the other goes. Meilin's card shows only when she's the voice.
 
