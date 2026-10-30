@@ -35,6 +35,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## Revisions
 
+Rev 118 (October 29, 2026, live): The landing page shows the app as it is now. Steve saw that its Write and Read pictures showed the old layout. New pictures show the Write tab with the Tools button and the Read tab with Meilin reading and the new player. "Hear it" now mentions Meilin, and natural voices are no longer listed as coming soon (writing cleanup still is). Also fixed: on phones narrower than Steve's, the Write tab's page row cut off the word count; it's tighter there now, so everything fits on one line.
+
 Rev 117 (October 29, 2026, live): Everything on the preview went live on getinkhorse.com, on Steve's say-so ("Push the app to live status"): the formatting engine, contents pages, PDF choices, Meilin with saved sentences, Smooth listening and several cores, the cleaner player and Write tab, and the rest of revs 92 to 116. The live site's offline helper now also turns on several processor cores for the app page, as the preview's did. Books and settings are kept in the same place on the device as before, so nothing anyone wrote moves or changes. Not yet a release: Steve runs the phone check and calls it stable first.
 
 Rev 116 (October 29, 2026, preview): One settings icon everywhere. Steve liked the gear on the player's Settings button; the Write tab's Tools button now uses the same gear (the device's own ⚙ symbol, which an iPhone draws as a silver gear) instead of a line drawing. The manual's pictures of the top row and the Tools button are updated.
