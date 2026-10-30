@@ -36,6 +36,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## Revisions
 
+Rev 123 (October 29, 2026, preview): Meilin's card now says "one of the voices of Inkhorse", like Calvin's and Soren's, since she's no longer the only one. The manual's Settings picture shows the new wording.
+
 Rev 122 (October 29, 2026, preview): The manual's pictures match the new voices and player. New pictures: the whole Settings panel with Meilin chosen, Calvin's card, Soren's card, the Smooth listening button and the pause choice; the Voice picture now shows Meilin instead of the old Default voice list. Checked page by page on a phone-size screen.
 
 Rev 121 (October 29, 2026, preview): Calvin and Soren, two male natural voices, join Meilin. Steve named Male voice 1 (Kokoro's American "Michael") Calvin and Male voice 2 (Kokoro's American "Fenrir") Soren. In Settings, each has his own card in Steve's words. The Smooth listening note now names whichever natural voice is chosen, and the pause choice reads "If a pause is needed" instead of "If she needs a moment".
