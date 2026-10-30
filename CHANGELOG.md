@@ -33,6 +33,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## Revisions
 
+Rev 113 (October 29, 2026, preview): The page no longer jumps while Meilin reads. Steve's screenshots showed the page count changing (p 1 of 331, p 2 of 338, p 3 of 402) and the page flickering: the player's status line grew as it counted (Getting ready 2 s · 0 s ready …), the player's buttons wrapped onto another row, the player got taller, the book got less room, and Inkhorse re-cut every page. The ready time updating every 2 seconds (rev 109) made it much worse. Now the status line has its own line and never wraps, and Meilin's notes float above the player instead of pushing the book up, so the player stays one height. Tap a note to close it. Tested on the phone-size test browser: before, the player changed between 144, 163 and 238 points tall and the sample book between 4 and 10 pages; now it stays 163 and 4.
+
 Rev 112 (October 29, 2026, preview): Full screen while listening shows only the book. Steve asked that the read-aloud player disappear in Full screen so it's just the page and the voice. The reading carries on and the pages turn by themselves; tapping the middle of the page or the corner button brings the controls and the player back.
 
 Rev 111 (October 29, 2026, preview): Try no longer hides Meilin's speed check behind an error. On Steve's iPhone the sample was made and measured, but playing it was interrupted ("The operation was aborted") and that message replaced the result. Now the speed check stays, Inkhorse tries playing the sample once more, and if it still can't, it says to tap Try to hear her. An error message about making the sample now shows the actual problem rather than an older one.
