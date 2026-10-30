@@ -36,6 +36,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## Revisions
 
+Rev 126 (October 30, 2026, live): Honest about the natural voices, so nobody is misled. The landing page names all three voices and explains, in plain words, that they're made on the device and need a short head start (about a minute for each minute of pause-free listening) on most phones. The About page no longer lists natural voices as coming soon; it describes them, with the same honest note. The speed check after Try no longer just says "there will be pauses"; it says how the head start covers it. The manual's speed-check line matches.
+
 Rev 125 (October 30, 2026, live): Calvin, Soren and everything since rev 119 went live on getinkhorse.com, on Steve's "Approved". Also fixed: the Aa panel and the voice Settings panel could be open at the same time, stacked on top of each other; opening one now closes the other.
 
 Rev 124 (October 29, 2026, preview): The several-cores speed-up no longer switches itself off by mistake. On Steve's iPhone it said "switched off on this device" and Calvin ran on one core: the crash guard took a single closed page as a crash, but iOS closes pages that are put away while the voice is starting (for example, switching apps to send a screenshot). Now it takes two in a row, and a sentence made on several cores clears the count. Phones that rev 107 to 123 switched off after one closed page get the speed-up back once. Also, the voice's status box says "is still making the next sentence" instead of "her", since Calvin and Soren use it too. Tested on the test computer: one closed page keeps the cores, two switch them off, and a phone switched off before gets them back.
