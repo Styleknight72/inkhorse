@@ -5,7 +5,17 @@
    Pages: tries the internet first (so you always get the newest version),
    and falls back to the saved copy if there's no signal or it's too slow.
    Fonts, icons and pictures: uses the saved copy, refreshes it quietly. */
-const VERSION = 'inkhorse-v2';
+const VERSION = 'inkhorse-v3';
+/* Several cores for Meilin (rev 117): the app page is made "cross-origin isolated" by adding two headers here,
+   because GitHub Pages can't send them. If Meilin can't work that way on a device, the page leaves a note
+   in this cache and the headers stop. */
+const OFF_CACHE = 'inkhorse-preview-coi';
+async function coiOff() { try { const c = await caches.open(OFF_CACHE); return !!(await c.match('off')); } catch (e) { return false; } }
+function withHeaders(res, extra) { const h = new Headers(res.headers); for (const k in extra) h.set(k, extra[k]);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h }); }
+async function isolate(resPromise) { const res = await resPromise;
+  if (!res || res.type === 'opaqueredirect' || res.status === 0 || await coiOff()) return res;
+  return withHeaders(res, { 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'require-corp' }); }
 const CORE = [
   './app.html',
   './index.html',
@@ -36,7 +46,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const names = await caches.keys();
     await Promise.all(names
-      .filter((n) => (n.startsWith('inkhorse-v') || n.startsWith('inkhorse-preview-')) && n !== VERSION)
+      .filter((n) => (n.startsWith('inkhorse-v') || (n.startsWith('inkhorse-preview-') && n !== OFF_CACHE)) && n !== VERSION)
       .map((n) => caches.delete(n)));
     await self.clients.claim();
   })());
@@ -76,7 +86,11 @@ async function networkFirst(request, event) {
 async function savedFirst(request) {
   const cache = await caches.open(VERSION);
   const saved = await cache.match(request);
-  const refresh = fetch(request).then((res) => {
+  const cross = new URL(request.url).origin !== self.location.origin;
+  // from other sites, ask with permission and mark the file as fine for an isolated page (fonts, PDF reader)
+  const get = cross ? fetch(new Request(request.url, { mode: 'cors', credentials: 'omit' })).then((r) => withHeaders(r, { 'Cross-Origin-Resource-Policy': 'cross-origin' })).catch(() => fetch(request))
+                    : fetch(request);
+  const refresh = get.then((res) => {
     if (res && (res.ok || res.type === 'opaque')) cache.put(request, res.clone());
     return res;
   }).catch(() => null);
@@ -92,7 +106,8 @@ self.addEventListener('fetch', (event) => {
     url.hostname === 'cdnjs.cloudflare.com';
   if (!sameSite && !trustedCdn) return;
   if (sameSite && isPage(request)) {
-    event.respondWith(networkFirst(request, event));
+    const app = request.mode === 'navigate' && /^\/(app\.html|preview\/next\.html)$/.test(url.pathname);
+    event.respondWith(app ? isolate(networkFirst(request, event)) : networkFirst(request, event));
   } else {
     event.respondWith(savedFirst(request));
   }

@@ -19,21 +19,23 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 - Book covers all show at one standard 2:3 book shape, whole, on phone, tablet and computer.
 - The manual's own cover is a proper 2:3 book cover.
-- Every book is set like a published book, whatever file it came from: chapter titles a third of the way down the page, the first line in small capitals, no indent on a chapter's first paragraph, the book's own chapter labels, plain front pages, centered scene breaks, and no stray single lines at the top or bottom of a page (preview).
-- Contents pages look the same in every book, one entry per line with a dotted line to the page number; tap to go there (preview).
-- PDFs that leave out the spaces between words come in with their spaces (preview).
+- Every book is set like a published book, whatever file it came from: chapter titles a third of the way down the page, the first line in small capitals, no indent on a chapter's first paragraph, the book's own chapter labels, plain front pages, centered scene breaks, and no stray single lines at the top or bottom of a page.
+- Contents pages look the same in every book, one entry per line with a dotted line to the page number; tap to go there.
+- PDFs that leave out the spaces between words come in with their spaces.
 - Google can find getinkhorse.com: the site lists its pages for search engines.
-- The history of changes moved out of the manual into these Release Notes, so the manual is only about how to use Inkhorse (preview).
-- Meilin, a natural, human-sounding voice, can read your book aloud. She runs right on your device; the first time, Inkhorse asks before downloading her (about 92 MB, once) (preview).
-- Meilin uses two or more of your device's processor cores at once, so she makes her sentences faster and the pauses between them are shorter (preview).
-- Meilin saves every sentence she makes, so anything heard before plays again at once, and while Inkhorse is open she works ahead on what comes next, so it plays without pauses. The player shows how much is ready. You can have her pause between paragraphs instead of between sentences (preview).
-- A cleaner read-aloud player: one row of buttons while you listen, and Voice, Speed, Try, Follow words, Smooth listening and pauses in ⚙ Settings, with a card introducing Meilin (美琳, beautiful jade) (preview).
-- A cleaner Write tab: the writing tools open from one Tools button in a panel over the page, and the page row fits on one line on a phone, so your writing gets more of the screen (preview).
-- Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly (preview).
-- On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture (preview).
-- A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1 (preview).
+- The history of changes moved out of the manual into these Release Notes, so the manual is only about how to use Inkhorse.
+- Meilin, a natural, human-sounding voice, can read your book aloud. She runs right on your device; the first time, Inkhorse asks before downloading her (about 92 MB, once).
+- Meilin uses two or more of your device's processor cores at once, so she makes her sentences faster and the pauses between them are shorter.
+- Meilin saves every sentence she makes, so anything heard before plays again at once, and while Inkhorse is open she works ahead on what comes next, so it plays without pauses. The player shows how much is ready. You can have her pause between paragraphs instead of between sentences.
+- A cleaner read-aloud player: one row of buttons while you listen, and Voice, Speed, Try, Follow words, Smooth listening and pauses in ⚙ Settings, with a card introducing Meilin (美琳, beautiful jade).
+- A cleaner Write tab: the writing tools open from one Tools button in a panel over the page, and the page row fits on one line on a phone, so your writing gets more of the screen.
+- Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly.
+- On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture.
+- A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 117 (October 29, 2026, live): Everything on the preview went live on getinkhorse.com, on Steve's say-so ("Push the app to live status"): the formatting engine, contents pages, PDF choices, Meilin with saved sentences, Smooth listening and several cores, the cleaner player and Write tab, and the rest of revs 92 to 116. The live site's offline helper now also turns on several processor cores for the app page, as the preview's did. Books and settings are kept in the same place on the device as before, so nothing anyone wrote moves or changes. Not yet a release: Steve runs the phone check and calls it stable first.
 
 Rev 116 (October 29, 2026, preview): One settings icon everywhere. Steve liked the gear on the player's Settings button; the Write tab's Tools button now uses the same gear (the device's own ⚙ symbol, which an iPhone draws as a silver gear) instead of a line drawing. The manual's pictures of the top row and the Tools button are updated.
 
