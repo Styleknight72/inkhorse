@@ -33,6 +33,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## Revisions
 
+Rev 112 (October 29, 2026, preview): Full screen while listening shows only the book. Steve asked that the read-aloud player disappear in Full screen so it's just the page and the voice. The reading carries on and the pages turn by themselves; tapping the middle of the page or the corner button brings the controls and the player back.
+
 Rev 111 (October 29, 2026, preview): Try no longer hides Meilin's speed check behind an error. On Steve's iPhone the sample was made and measured, but playing it was interrupted ("The operation was aborted") and that message replaced the result. Now the speed check stays, Inkhorse tries playing the sample once more, and if it still can't, it says to tap Try to hear her. An error message about making the sample now shows the actual problem rather than an older one.
 
 Rev 110 (October 29, 2026, preview): Speed and Meilin's saved sentences work together. Steve's player showed 0 s ready at 0.9×: each speed was a separate recording, so nothing made at 1× could be reused, and slower speech was more for her to make. Now she always makes her voice at normal speed and the device plays it faster or slower, keeping her pitch; one saved sentence fits every speed, and changing Speed takes effect at once without remaking anything. The ready time counts listening time at the chosen speed.
