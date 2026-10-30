@@ -28,11 +28,14 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Meilin uses two or more of your device's processor cores at once, so she makes her sentences faster and the pauses between them are shorter (preview).
 - Meilin saves every sentence she makes, so anything heard before plays again at once, and while Inkhorse is open she works ahead on what comes next, so it plays without pauses. The player shows how much is ready. You can have her pause between paragraphs instead of between sentences (preview).
 - A cleaner read-aloud player: one row of buttons while you listen, and Voice, Speed, Try, Follow words, Smooth listening and pauses in ⚙ Settings, with a card introducing Meilin (美琳, beautiful jade) (preview).
+- A cleaner Write tab: the writing tools open from one Tools button in a panel over the page, and the page row fits on one line on a phone, so your writing gets more of the screen (preview).
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly (preview).
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture (preview).
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1 (preview).
 
 ## Revisions
+
+Rev 115 (October 29, 2026, preview): A cleaner Write tab, like the player's Settings. Steve wanted the Write screen condensed and found the arrow buttons unclear. The tools-hiding arrow is now a Tools button; it opens Dictate, Hoofprint, Word count, Focus, Picture, Import, Paste, Copy and Top of chapter in a panel floating over the page, which closes when a tool is used or with Done (Word count leaves it open). The chapter title always shows. Top moved from the page row into Tools, so on a phone the page row (pages, Resume, Undo, Redo, Find, word count) fits on one line. The manual's pictures of the top row, the Tools button, the page row and Top are new, with a picture of the Tools panel.
 
 Rev 114 (October 29, 2026, preview): A cleaner player. Steve found the player crowded. It now shows only the row of listening buttons and the status line; Voice, Speed, Try, Follow words and, for Meilin, Smooth listening (the new name for Work ahead) and where she pauses are in ⚙ Settings, which floats over the page so the page doesn't move. The minutes ready show in Settings rather than in the status line. With Meilin chosen, Settings shows her card, in Steve's words: 美琳, Měilín, 美 (Měi) = beautiful, 琳 (Lín) = fine jade, American accent, and her introduction. The book gets more room on screen. The manual's picture of the player and its text are updated.
 
