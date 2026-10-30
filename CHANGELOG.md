@@ -29,12 +29,14 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Meilin saves every sentence she makes, so anything heard before plays again at once, and while Inkhorse is open she works ahead on what comes next, so it plays without pauses. The player shows how much is ready. You can have her pause between paragraphs instead of between sentences.
 - A cleaner read-aloud player: one row of buttons while you listen, and Voice, Speed, Try, Follow words, Smooth listening and pauses in ⚙ Settings, with a card introducing Meilin (美琳, beautiful jade).
 - A cleaner Write tab: the writing tools open from one Tools button in a panel over the page, and the page row fits on one line on a phone, so your writing gets more of the screen.
-- Calvin and Soren, two male natural voices with American accents, join Meilin, each with his own card in Settings (preview).
+- Calvin and Soren, two male natural voices with American accents, join Meilin, each with his own card in Settings.
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly.
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture.
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 125 (October 30, 2026, live): Calvin, Soren and everything since rev 119 went live on getinkhorse.com, on Steve's "Approved". Also fixed: the Aa panel and the voice Settings panel could be open at the same time, stacked on top of each other; opening one now closes the other.
 
 Rev 124 (October 29, 2026, preview): The several-cores speed-up no longer switches itself off by mistake. On Steve's iPhone it said "switched off on this device" and Calvin ran on one core: the crash guard took a single closed page as a crash, but iOS closes pages that are put away while the voice is starting (for example, switching apps to send a screenshot). Now it takes two in a row, and a sentence made on several cores clears the count. Phones that rev 107 to 123 switched off after one closed page get the speed-up back once. Also, the voice's status box says "is still making the next sentence" instead of "her", since Calvin and Soren use it too. Tested on the test computer: one closed page keeps the cores, two switch them off, and a phone switched off before gets them back.
 
