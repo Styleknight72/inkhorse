@@ -13,7 +13,9 @@ motto "The power to get it done, and then some!" belong to Steve Claude Patient.
 
 Parts made by others keep their own licenses and are not covered by this notice:
 JSZip (MIT or GPLv3), jsPDF (MIT), PDF.js (Apache 2.0), Google Fonts typefaces
-(SIL Open Font License).
+(SIL Open Font License), the Kokoro voice model by hexgrad (Kokoro-82M, Apache 2.0;
+the natural voices Meilin, Calvin and Soren are built on it) and kokoro-js (Apache 2.0).
+Apache 2.0: https://www.apache.org/licenses/LICENSE-2.0
 
 Full notice: https://getinkhorse.com/COPYRIGHT.html
 Permission or questions: https://ko-fi.com/styleknight

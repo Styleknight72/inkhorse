@@ -36,6 +36,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## Revisions
 
+Rev 128 (October 30, 2026, live): Credit for the natural voices. Meilin, Calvin and Soren are built on Kokoro, an open-source voice model by hexgrad, run by kokoro-js; both are Apache 2.0, which allows renaming and commercial use with credit. The credit is now on the copyright page (with a link to the license), in the LICENSE file, on the About page under Natural voices, and in the manual's Meilin section. The names and introductions are Inkhorse's; the voice technology is Kokoro's.
+
 Rev 127 (October 30, 2026, live): In the player's Settings, a short What to expect note sits under the voice card whenever a natural voice is chosen: made on the device, free and private; on most phones about a minute of head start for each minute without pauses, built while Inkhorse is open; replays instant; the device's own voices start right away. The manual's Settings picture shows it.
 
 Rev 126 (October 30, 2026, live): Honest about the natural voices, so nobody is misled. The landing page names all three voices and explains, in plain words, that they're made on the device and need a short head start (about a minute for each minute of pause-free listening) on most phones. The About page no longer lists natural voices as coming soon; it describes them, with the same honest note. The speed check after Try no longer just says "there will be pauses"; it says how the head start covers it. The manual's speed-check line matches.
