@@ -35,6 +35,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## Revisions
 
+Rev 120 (October 29, 2026, preview): Two male natural voices to try, under Meilin in the Voice list: Male voice 1 (Kokoro's American "Michael") and Male voice 2 (Kokoro's American "Fenrir"). They use the same download as Meilin, so each adds almost nothing. Steve listens to both and gives the one he keeps his own name; the other goes. Meilin's card shows only when she's the voice.
+
 Rev 119 (October 29, 2026, live): Pictures set beside text line up with their own text. Steve's screenshot of the manual's player page showed the small button pictures drifting: a picture sat next to the wrong line and the text broke oddly around it. Now each side picture, and the text that goes with it, starts below the picture before it, in the app, in every book with side pictures, and in EPUB exports. The manual's Settings line got its own picture of the Settings button.
 
 Rev 118 (October 29, 2026, live): The landing page shows the app as it is now. Steve saw that its Write and Read pictures showed the old layout. New pictures show the Write tab with the Tools button and the Read tab with Meilin reading and the new player. "Hear it" now mentions Meilin, and natural voices are no longer listed as coming soon (writing cleanup still is). Also fixed: on phones narrower than Steve's, the Write tab's page row cut off the word count; it's tighter there now, so everything fits on one line.
