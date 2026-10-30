@@ -36,6 +36,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## Revisions
 
+Rev 133 (October 30, 2026, preview): Two fixes from Steve's screenshots. (1) Boost's saved key ended in "html": a web link had been pasted into the key box instead of the key, so DeepInfra turned it down. Save now refuses a web link and says to copy the key itself. (2) Messages about Calvin and Soren said "she" ("slower than she speaks"); messages and pop-ups now say he, him and his for the male voices, and she and her for Meilin.
+
 Rev 132 (October 30, 2026, preview): Clearer Boost key trouble. In Safari on Steve's iPhone, Boost said it couldn't sign in with the key, while the same key worked in the Claude app's browser. The note now says which problem it is (key not recognized, payment or limit, or refused), shows the last four characters of the saved key so it can be compared, and says how to fix it. Saving a key now removes spaces and line breaks that can come along when copying from Notes, and a key that passes Test key switches Boost straight back on.
 
 Rev 131 (October 30, 2026, preview): Full screen: Steve found that tapping to leave full screen while listening sometimes turned the page instead. The exit button in the corner sits over the page's right edge, where a tap turns forward, and at 32 pixels it was easy to just miss. It is now 44 pixels (Apple's minimum touch size), drawn above the page's 3D layer, and any tap within about a finger's width of it leaves full screen instead of turning the page; the stray tap that follows is ignored so it can't land on a button below. Tested on a phone-size screen: a near miss now leaves full screen on the same page.
