@@ -55,6 +55,7 @@ const path = require('path');
     // This test machine has no internet for the voice itself; Bella's real download and reading are tested separately over the internet.
     if(!(await page.$('#kokNote'))) return 'SKIP: this version has no natural voices';
     await page.click('#listenBtn'); await page.waitForTimeout(300); if(await page.evaluate(()=>TTS.playing)) await page.click('#ttsPlay');
+    if(await page.$('#ttsSetBtn')){ await page.click('#ttsSetBtn'); await page.waitForTimeout(200); }   // rev 114: Voice is in Settings
     const opt=await page.$eval('#ttsVoice option',o=>[o.value,o.textContent]);
     if(opt[0]!=='kokoro:af_bella'||!/Meilin/.test(opt[1])) throw new Error('Meilin is not first in the Voice list: '+opt);
     await page.selectOption('#ttsVoice','kokoro:af_bella'); await page.waitForTimeout(200);
