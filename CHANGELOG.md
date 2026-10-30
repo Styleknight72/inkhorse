@@ -36,6 +36,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## Revisions
 
+Rev 124 (October 29, 2026, preview): The several-cores speed-up no longer switches itself off by mistake. On Steve's iPhone it said "switched off on this device" and Calvin ran on one core: the crash guard took a single closed page as a crash, but iOS closes pages that are put away while the voice is starting (for example, switching apps to send a screenshot). Now it takes two in a row, and a sentence made on several cores clears the count. Phones that rev 107 to 123 switched off after one closed page get the speed-up back once. Also, the voice's status box says "is still making the next sentence" instead of "her", since Calvin and Soren use it too. Tested on the test computer: one closed page keeps the cores, two switch them off, and a phone switched off before gets them back.
+
 Rev 123 (October 29, 2026, preview): Meilin's card now says "one of the voices of Inkhorse", like Calvin's and Soren's, since she's no longer the only one. The manual's Settings picture shows the new wording.
 
 Rev 122 (October 29, 2026, preview): The manual's pictures match the new voices and player. New pictures: the whole Settings panel with Meilin chosen, Calvin's card, Soren's card, the Smooth listening button and the pause choice; the Voice picture now shows Meilin instead of the old Default voice list. Checked page by page on a phone-size screen.
