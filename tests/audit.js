@@ -50,7 +50,7 @@ const path = require('path');
   await step('Jump-to sheet opens', async () => { await page.click('#whereBtn'); await page.waitForTimeout(300); const v=await page.isVisible('#gotoDone'); await page.click('#gotoDone').catch(()=>{}); return v; });
   await step('Colors: every theme applies', async () => { for (const th of ['light','dark','sepia','sky','custom']) { await page.evaluate(t=>{ localStorage.setItem('inkhorse-theme',t); inkApplyTheme(); },th); if((await page.evaluate(()=>document.documentElement.getAttribute('data-theme')))!==th) return th+' failed'; } await page.evaluate(()=>{ localStorage.removeItem('inkhorse-theme'); inkApplyTheme(); }); });
   await step('Night schedule + warmth apply', async () => { await page.evaluate(()=>{ localStorage.setItem('inkhorse-night','dark'); localStorage.setItem('inkhorse-night-from','00:00'); localStorage.setItem('inkhorse-night-to','23:59'); localStorage.setItem('inkhorse-warmth','40'); inkApplyTheme(); }); const r=await page.evaluate(()=>[document.documentElement.getAttribute('data-theme'),document.documentElement.hasAttribute('data-warm')]); await page.evaluate(()=>{ ['inkhorse-night','inkhorse-night-from','inkhorse-night-to','inkhorse-warmth'].forEach(k=>localStorage.removeItem(k)); inkApplyTheme(); }); return r[0]==='dark'&&r[1]; });
-  await step('Read aloud: player opens, buttons work', async () => { await page.click('#listenBtn'); await page.waitForTimeout(600); const bar=await page.isVisible('#ttsBar'); for (const id of ['ttsFwd','ttsBack','ttsAgain','ttsPlay']) { const b=await page.$('#'+id); if(b&&await b.isVisible()) await b.click({timeout:2000}); await page.waitForTimeout(150); } await page.click('#ttsStop',{timeout:2000}).catch(()=>{}); return bar; });
+  await step('Read aloud: player opens, buttons work', async () => { await page.click('#listenBtn'); await page.waitForTimeout(600); const bar=await page.isVisible('#ttsBar'); for (const id of ['ttsFwd','ttsBack','ttsAgain','ttsPlay']) { const b=await page.$('#'+id); if(b&&await b.isVisible()) await b.click({timeout:2000}); await page.waitForTimeout(150); } await page.evaluate(()=>ttsStop()); return bar; });
   await step('Read aloud: Meilin, the natural voice, is offered and asks before downloading (rev 97)', async () => {
     // This test machine has no internet for the voice itself; Bella's real download and reading are tested separately over the internet.
     if(!(await page.$('#kokNote'))) return 'SKIP: this version has no natural voices';
@@ -64,7 +64,7 @@ const path = require('path');
     if(await page.evaluate(()=>(S.ttsVoice||'').startsWith('kokoro:'))) throw new Error('voice switched before the download was agreed');
     await page.click('#kokNo'); await page.waitForTimeout(200);
     const hidden=!(await page.isVisible('#kokNote')), sel=await page.inputValue('#ttsVoice');
-    await page.click('#ttsStop',{timeout:2000}).catch(()=>{});
+    await page.evaluate(()=>ttsStop());
     return hidden && !sel.startsWith('kokoro:') ? true : {hidden,sel};
   });
   await step('Adding a PDF asks: real book or exact look; Cancel adds nothing (rev 98)', async () => {
@@ -298,6 +298,21 @@ const path = require('path');
       t.setRangeText('THREEFIXED',ED.sel[0],ED.sel[1],'end'); fixDone(); await new Promise(z=>setTimeout(z,600));
       return {i:curIndex(), shown:$('#spread').innerText.includes('THREEFIXED'), saved:CH.get(S.rch).text.includes('THREEFIXED')}; });
     return (r&&r.i===1&&r.shown&&r.saved) || (()=>{ throw new Error(JSON.stringify(r)); })();
+  });
+  await step('Hear it, fix it: Fix in the player opens the sentence being read; Done saves it and reads it again (rev 153)', async () => {
+    const r=await page.evaluate(async()=>{
+      readMine(); const id=addChapter('Fix player test',Array.from({length:30},(_,i)=>'Sentence '+i+' has some words in it. Another sentence follows here.').join('\n')); S.rch=id; S.anchor=0; PCACHE.clear(); refreshReader();
+      $('#tab-read').click(); await new Promise(z=>setTimeout(z,400));
+      if(!TTS.on) $('#listenBtn').click(); await new Promise(z=>setTimeout(z,900));
+      if($('#ttsFix').hidden) return 'Fix hidden in own book';
+      const said=TTS.cur&&TTS.cur.text; $('#ttsFix').click(); await new Promise(z=>setTimeout(z,300));
+      if($('#fixBox').hidden) return 'fix box did not open';
+      const t=$('#fixText'), sel=t.value.slice(ED.sel[0],ED.sel[1]); if(sel!==said) return 'selected '+JSON.stringify(sel)+' but reading '+JSON.stringify(said);
+      if(TTS.playing) return 'still playing while fixing';
+      t.setRangeText('This sentence was fixed by ear.',ED.sel[0],ED.sel[1],'end'); $('#fixDone').click();
+      const ok={saved:CH.get(id).text.includes('This sentence was fixed by ear.'), playing:TTS.playing, now:TTS.q[0]&&TTS.q[0].text};   // the first thing read after Done
+      ttsStop(); return ok; });
+    return (r&&r.saved&&r.playing&&/fixed by ear/.test(r.now||'')) || (()=>{ throw new Error(JSON.stringify(r)); })();
   });
   await step('Compare tab measures pages', async () => { await page.click('#tab-compare'); await page.waitForTimeout(1500); return /words/.test(await page.textContent('#headline')); });
   await step('Chapters panel lists export and backup', async () => { await page.click('#tab-write'); await page.click('#chBtn'); await page.waitForTimeout(300); const t=await page.evaluate(()=>document.body.innerText); return ['EPUB','Print PDF','Word manuscript','Save backup file','Restore from file'].every(w=>t.includes(w)); });
