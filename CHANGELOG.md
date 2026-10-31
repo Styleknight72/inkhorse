@@ -33,10 +33,13 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly.
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture.
 - One way to highlight: the Highlighter at the top. The extra Mark button in the listening player is gone.
+- With the Highlighter on, swiping doesn't turn the page, so you can drag right to the edge of a line.
 - Highlights are easy to remove: the Highlighter has an Erase choice (drag across words, or tap a highlight) and a Clear page button.
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 138 (October 30, 2026, preview): While the Highlighter is on, swiping no longer turns the page. Steve found that dragging to highlight or erase near the right edge of his phone grabbed the page and started turning it. Now a drag with the Highlighter on only ever highlights or erases; turn pages with the arrows below the book, or turn the Highlighter off. Dragging past the end of a line, into the margin or off the edge of the screen now reaches the last word on that line instead of stopping short. Tested on a phone-size screen: dragging off the right edge, a page-turn swipe, the arrows, and swiping again with the Highlighter off. Manual updated.
 
 Rev 137 (October 30, 2026, preview): The red you see while erasing highlights is now one smooth, even color. Before, it was see-through, so it looked darker and streaky where words overlapped. The lime highlight is unchanged. Checked on a phone-size screen in the Light, StyleKnight and Sepia colors.
 

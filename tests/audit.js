@@ -245,6 +245,18 @@ const path = require('path');
       return true;
     });
   });
+  await step('Highlighter on: a swipe never turns the page; drag past the line end reaches the last word (rev 138)', async () => {
+    await page.click('#tab-read').catch(()=>{}); await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200);
+    for(let i=0;i<4;i++){ await page.keyboard.press('ArrowRight'); await page.waitForTimeout(900); }
+    const first=()=>page.evaluate(()=>{ const e=document.querySelector('#spread .ptext [data-w]'); return e?e.closest('.ptext').dataset.ch+':'+e.dataset.w:''; });
+    await page.evaluate(()=>setHl(true)); await page.waitForTimeout(1800);
+    const p0=await first(); if(!p0) return 'SKIP: no text page';
+    const vp=page.viewportSize(); await page.mouse.move(vp.width-12,vp.height*0.5); await page.mouse.down();
+    for(let i=1;i<=12;i++){ await page.mouse.move(vp.width-12-i*28,vp.height*0.5); await page.waitForTimeout(15); } await page.mouse.up(); await page.waitForTimeout(1200);
+    if((await first())!==p0) throw new Error('page turned while the Highlighter was on');
+    const ok=await page.evaluate(()=>{ const sp=[...document.querySelectorAll('#spread .ptext [data-w]')], a=sp[0].getBoundingClientRect(); const line=sp.filter(e=>Math.abs(e.getBoundingClientRect().top-a.top)<3), last=line[line.length-1]; const r=last.getBoundingClientRect(); const hit=wordAt(window.innerWidth-2, r.top+r.height/2); return hit&&hit.w===+last.dataset.w; });
+    await page.evaluate(()=>setHl(false)); return ok || (()=>{ throw new Error('off the edge did not reach the last word of the line'); })();
+  });
   await step('Compare tab measures pages', async () => { await page.click('#tab-compare'); await page.waitForTimeout(1500); return /words/.test(await page.textContent('#headline')); });
   await step('Chapters panel lists export and backup', async () => { await page.click('#tab-write'); await page.click('#chBtn'); await page.waitForTimeout(300); const t=await page.evaluate(()=>document.body.innerText); return ['EPUB','Print PDF','Word manuscript','Save backup file','Restore from file'].every(w=>t.includes(w)); });
   await step('Save backup file downloads a file', async () => { const [d]=await Promise.all([page.waitForEvent('download',{timeout:6000}), page.click('#fbkSave')]); return /backup.*\.json$/.test(await d.suggestedFilename()); });
