@@ -225,6 +225,26 @@ const path = require('path');
   await step('Manual opens with a Contents page and page numbers', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1500); let all=''; for(let i=0;i<12;i++){ all+=await page.evaluate(()=>document.querySelector('#spread').innerText); await page.click('#next').catch(()=>{}); await page.waitForTimeout(450);} await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return /Chapter 1 · Welcome to Inkhorse\s+\d/.test(all) && /Chapter 4 · The big picture\s+\d/.test(all); });
   await step('Manual: tapping a Contents line goes to that page', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1500); let line=null; for(let i=0;i<8&&!line;i++){ line=await page.$('#spread p.toc.t2[data-goto]'); if(!line){ await page.click('#next'); await page.waitForTimeout(450);} } if(!line) return 'no contents line found'; await page.waitForTimeout(900); line=await page.$('#spread .page:not(.curl) p.toc.t2[data-goto], #spread p.toc.t2[data-goto]'); const want=await line.getAttribute('data-goto'); const bx=await line.boundingBox(); await page.mouse.click(bx.x+30, bx.y+bx.height/2); await page.waitForTimeout(1200); const got=(await page.textContent('#pgCur')).replace(/[^0-9–]/g,''); await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return got.split('–').includes(want) ? true : {want,got}; });
   await step('Jump to: typing a page number goes there', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200); await page.click('#whereBtn'); await page.fill('#gotoNum','20'); await page.click('#gotoGo'); await page.waitForTimeout(800); const got=(await page.textContent('#pgCur')).replace(/[^0-9–]/g,''); const closed=!(await page.isVisible('#gotoDone')); await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return got.split('–').includes('20')&&closed ? true : {got,closed}; });
+  await step('Highlighter: Erase splits a highlight, tap and Clear page remove them (rev 135)', async () => {
+    await page.click('#tab-read').catch(()=>{}); await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200);
+    await page.evaluate(()=>{ for(let i=0;i<6;i++){ const b=document.querySelector('#spread .ptext[data-ch] [data-w]'); if(b) break; flip(1); } });
+    await page.waitForTimeout(900);
+    return page.evaluate(async()=>{
+      const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+      const box=[...document.querySelectorAll('#spread .ptext[data-ch]')].find(p=>p.querySelectorAll('[data-w]').length>12 || (pag(p.dataset.ch).doc.words.length>40));
+      if(!box) return 'SKIP: no text page to try the highlighter on';
+      const ch=box.dataset.ch, n=()=>marksOf(ch).length, ranges=()=>resolveMarks(ch).map(r=>[r.start,r.end-1]);
+      const base=n();
+      addMark(ch,10,19); if(n()!==base+1) throw new Error('highlight not added');
+      eraseMarks(ch,13,14); const r=ranges().filter(x=>x[0]>=10&&x[1]<=19);
+      if(r.length!==2||r[0][0]!==10||r[0][1]!==12||r[1][0]!==15||r[1][1]!==19) throw new Error('erase did not split right: '+JSON.stringify(r));
+      eraseMarks(ch,10,19); if(ranges().some(x=>x[0]>=10&&x[1]<=19)) throw new Error('erase did not remove the rest');
+      const vis=[...box.querySelectorAll('[data-w]')].map(e=>+e.dataset.w); const w0=vis.length?vis[0]:0;
+      addMark(ch,w0,w0+2); await sleep(400); const before=n(); clearPageMarks(); await sleep(300);
+      if(n()>=before) throw new Error('Clear page left the highlight');
+      return true;
+    });
+  });
   await step('Compare tab measures pages', async () => { await page.click('#tab-compare'); await page.waitForTimeout(1500); return /words/.test(await page.textContent('#headline')); });
   await step('Chapters panel lists export and backup', async () => { await page.click('#tab-write'); await page.click('#chBtn'); await page.waitForTimeout(300); const t=await page.evaluate(()=>document.body.innerText); return ['EPUB','Print PDF','Word manuscript','Save backup file','Restore from file'].every(w=>t.includes(w)); });
   await step('Save backup file downloads a file', async () => { const [d]=await Promise.all([page.waitForEvent('download',{timeout:6000}), page.click('#fbkSave')]); return /backup.*\.json$/.test(await d.suggestedFilename()); });

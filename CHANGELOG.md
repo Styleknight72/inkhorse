@@ -32,9 +32,12 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Calvin and Soren, two male natural voices with American accents, join Meilin, each with his own card in Settings.
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly.
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture.
+- Highlights are easy to remove: the Highlighter has an Erase choice (drag across words, or tap a highlight) and a Clear page button.
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 135 (October 30, 2026, preview): You can always remove a highlight. Steve found that Mark in the listening player only ever added highlights: it works on the sentence being read right now, so once the voice moved on there was no way to go back to an older highlight. Turning on the Highlighter (the pencil at the top) now shows a small bar above the page with Highlight, Erase and Clear page. Erase: drag across highlighted words to erase just those words (they glow red while you drag; a highlight erased in the middle becomes two), or tap a highlight to remove all of it. Clear page removes every highlight on the page you are looking at. Tested on a phone-size screen with the manual: highlight, erase part, tap to clear, Clear page, and the bar showing and hiding. Not yet checked on a real iPhone. Manual updated.
 
 Rev 134 (October 30, 2026, preview): Highlights in every book. Steve writes chapters, then adds them as reading copies to proofread and mark what to add or fix. The highlighter (the pencil in Read) now works in books you've added to read and in the manual, not only in your own books; those highlights are kept beside the book on the device, so the book's text never changes, and they stay after closing Inkhorse. Jump to (tap the page number) now lists all highlights first, with page numbers: tap one to go to it, add a short note, Copy (with the book title and page), Share, or Clear. The Mark button while listening works in reading copies too. Tested on a phone-size screen with the manual: highlight, note, jump and a reload all worked. Manual updated.
 
