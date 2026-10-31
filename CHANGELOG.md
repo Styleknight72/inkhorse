@@ -32,7 +32,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Calvin and Soren, two male natural voices with American accents, join Meilin, each with his own card in Settings.
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly.
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture.
-- Fix it right on the page: in your own book, press and hold a word while reading and fix it there. Books you add to read stay read-only; This is my book moves your own book into Your books.
+- Fix it right on the page: in your own book, press and hold a word while reading and fix it there. Books you add to read always stay read-only.
 - Natural voices never skip words: a recording that stopped early is made again, one sentence at a time.
 - Boost: an optional switch in ⚙ Settings that makes the natural voices on a fast server with your own DeepInfra key, so they start right away.
 - One way to highlight: the Highlighter at the top. The extra Mark button in the listening player is gone.
@@ -41,6 +41,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 149 (October 31, 2026, preview): Your books and books to read are kept strictly apart. Steve: only his own books (Your books, at the top of the Library) can be changed; books added to read, even his own book once it's finished and published, stay read-only. The This is my book button showed on bought books like MANtality and Blender, so it is gone; his book was already moved up with it. Press and hold in a book to read now just says it stays exactly as it is. Manual updated.
 
 Rev 148 (October 31, 2026, preview): Fix it right on the page. Steve set out how a writer works in their own book: reading, you see a mistake and fix it right there, on the same page, like a pen on paper; writing, you read it right there. Rev 147's separate Edit tab still made you leave the page, and it let you change any book, so it is gone and the tabs are Write, Read and Compare again. Now, in your own book, press and hold a word on the page: the page turns into text you can type in, in the book's own type, with that word selected; Done turns it back into a book page, on the same page, with the fix saved (it shows in Write too). A quick tap still turns the page. Books added to read (bought or downloaded) stay read-only; for a book of your own that came in that way, the Library has This is my book, which moves it into Your books with its chapters, covers, pictures and highlights and keeps your place in Read. (Write → Read already opens the page where your cursor is.) Tested on a phone-size screen: the read-only guard, This is my book, press and hold, the selected word, Done, the same page, and a reload. Not yet checked on his iPhone. Manual updated.
 

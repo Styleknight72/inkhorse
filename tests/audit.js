@@ -282,7 +282,7 @@ const path = require('path');
     const want=[true,true,false,false];
     return JSON.stringify(r)===JSON.stringify(want) || (()=>{ throw new Error('got '+JSON.stringify(r)); })();
   });
-  await step('Fix in place: This is my book, then press and hold a word to fix it on the same page; read-only books stay read-only (rev 148)', async () => {
+  await step('Fix in place: press and hold a word in your own book to fix it on the same page; books added to read stay read-only (rev 148-149)', async () => {
     const fs=require('fs'), os=require('os'), path=require('path'); const f=path.join(os.tmpdir(),'ink-edit-test.txt');
     fs.writeFileSync(f,'Chapter 1: Start\n\n'+Array.from({length:30},(_,i)=>'Line '+i+' one two three four five six seven eight nine ten.').join('\n\n'));
     await page.click('#tab-read').catch(()=>{}); await page.click('#libBtn'); await page.waitForTimeout(300);
@@ -291,8 +291,8 @@ const path = require('path');
     await page.evaluate(async(bid)=>{ await openLibBook(bid); jumpTo({ch:RB.order[0],i:1}); },bid); await page.waitForTimeout(700);
     const ro=await page.evaluate(()=>{ const sp=document.querySelector('#spread .ptext [data-w]'); fixOpen({ch:sp.closest('.ptext').dataset.ch,w:+sp.dataset.w}); return $('#fixBox').hidden; });
     if(!ro) throw new Error('a book added to read opened for fixing');
-    await page.click('#libBtn'); await page.waitForTimeout(300); await page.click(`[data-ledit="${bid}"]`); await page.waitForTimeout(2000);
-    const at=await page.evaluate(()=>({rb:!!RB, tab:$('#app').dataset.tab, i:curIndex()})); if(at.rb||at.tab!=='read'||at.i!==1) throw new Error('This is my book: '+JSON.stringify(at));
+    if(await page.evaluate(()=>!!document.querySelector('[data-ledit]'))) throw new Error('a read-only book offers to become editable');
+    await page.evaluate(async()=>{ readMine(); const id=addChapter('Fix test',Array.from({length:30},(_,i)=>'Line '+i+' one two three four five six seven eight nine ten.').join('\n')); S.rch=id; S.anchor=0; PCACHE.clear(); refreshReader(); jumpTo({ch:id,i:1}); }); await page.waitForTimeout(800);
     const r=await page.evaluate(async()=>{ const sp=[...document.querySelectorAll('#spread .ptext [data-w]')].find(e=>e.textContent==='three'); fixOpen({ch:sp.closest('.ptext').dataset.ch,w:+sp.dataset.w});
       const t=$('#fixText'); if($('#fixBox').hidden) return 'fixer did not open'; if(t.value.slice(ED.sel[0],ED.sel[1])!=='three') return 'wrong word selected';
       t.setRangeText('THREEFIXED',ED.sel[0],ED.sel[1],'end'); fixDone(); await new Promise(z=>setTimeout(z,600));
