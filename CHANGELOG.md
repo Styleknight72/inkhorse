@@ -32,7 +32,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Calvin and Soren, two male natural voices with American accents, join Meilin, each with his own card in Settings.
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly.
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture.
-- Edit this book: one tap turns a book you added to read into an editable copy in Your books, highlights included.
+- Edit this book: Write always shows the book you're reading; a book you added to read is unlocked with one tap and moves into Your books, highlights included.
 - Natural voices never skip words: a recording that stopped early is made again, one sentence at a time.
 - Boost: an optional switch in ⚙ Settings that makes the natural voices on a fast server with your own DeepInfra key, so they start right away.
 - One way to highlight: the Highlighter at the top. The extra Mark button in the listening player is gone.
@@ -41,6 +41,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 145 (October 30, 2026, preview): Write always shows the book you're reading. Steve found it confusing that his book could be read but not edited, while Write showed a different, empty book. Now, when the book open in Read is one added to read (locked), Write shows that book's name, says it's locked and why, and offers Edit this book; one tap unlocks it by moving it into Your books (chapters, covers, pictures, highlights) and opens it for editing. Edit now moves the book rather than copying it, so there is one book, not two; the locked copy is removed only after the editable one is safely made. Write in … instead goes back to your own book. The manual and page-picture books say they can't be edited. Tested on a phone-size screen, including a reload. Manual updated.
 
 Rev 144 (October 30, 2026, preview): Edit this book. Steve's book “What If It's Already Here?” was only on his shelf as a book added to read, which is read-only, and the book in Write was an empty Untitled book; editing meant finding the original file again, which wasn't on his phone. Now every added book (except page-picture books and the manual) has an Edit button in the Library. One tap makes an editable copy in Your books with every chapter, the title, author, covers, pictures and the highlights made while listening, then opens it in Write, where Next mark visits each highlight. The read-only copy stays as it was. Tested on a phone-size screen: add a book, highlight it, Edit, then reload; the copy, its chapters and its highlight were all there. Manual updated.
 
