@@ -314,6 +314,21 @@ const path = require('path');
       ttsStop(); return ok; });
     return (r&&r.saved&&r.playing&&/fixed by ear/.test(r.now||'')) || (()=>{ throw new Error(JSON.stringify(r)); })();
   });
+  await step('Fix in place saves into the right paragraph when lines repeat, and an emptied page keeps its spot (rev 154)', async () => {
+    const r=await page.evaluate(async()=>{
+      readMine(); const same='She nodded and looked out of the window for a long while, saying nothing at all.';
+      const id=addChapter('Repeat test',Array.from({length:40},()=>same).join('\n\n')); S.rch=id; S.anchor=0; PCACHE.clear(); refreshReader(); $('#tab-read').click(); await new Promise(z=>setTimeout(z,300));
+      jumpTo({ch:id,i:3}); await new Promise(z=>setTimeout(z,300));
+      const {doc,pages}=pag(id), first=doc.paras.findIndex(p=>p.start<pages[3][1]&&p.end>pages[3][0]&&!p.h);
+      const sp=document.querySelector('#spread .ptext [data-w]'); fixOpen({ch:id,w:+sp.dataset.w});
+      const t=$('#fixText'); t.value=t.value.replace(same,'CHANGED HERE.'); fixDone();
+      const lines=CH.get(id).text.split('\n').filter(Boolean), at=lines.indexOf('CHANGED HERE.'), want=first-(doc.paras[0].h?1:0);
+      if(at!==want) return 'fix landed in paragraph '+at+', page starts at paragraph '+want;
+      fixOpen({ch:id,w:+document.querySelector('#spread .ptext [data-w]').dataset.w}); $('#fixText').value=''; edApply(); $('#fixText').value='NEW TEXT HERE.'; fixDone();
+      const L2=CH.get(id).text.split('\n').filter(Boolean); if(L2.indexOf('NEW TEXT HERE.')<5) return 'emptied page text jumped to line '+L2.indexOf('NEW TEXT HERE.');
+      return true; });
+    return r===true || (()=>{ throw new Error(r); })();
+  });
   await step('Compare tab measures pages', async () => { await page.click('#tab-compare'); await page.waitForTimeout(1500); return /words/.test(await page.textContent('#headline')); });
   await step('Chapters panel lists export and backup', async () => { await page.click('#tab-write'); await page.click('#chBtn'); await page.waitForTimeout(300); const t=await page.evaluate(()=>document.body.innerText); return ['EPUB','Print PDF','Word manuscript','Save backup file','Restore from file'].every(w=>t.includes(w)); });
   await step('Save backup file downloads a file', async () => { const [d]=await Promise.all([page.waitForEvent('download',{timeout:6000}), page.click('#fbkSave')]); return /backup.*\.json$/.test(await d.suggestedFilename()); });
