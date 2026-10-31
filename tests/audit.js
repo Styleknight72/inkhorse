@@ -275,11 +275,11 @@ const path = require('path');
   });
   await step('F1.3 F7.1 a typed title page and copyright page are front pages: no number; Chapter One is chapter 1 (rev 143)', async () => {
     const r=await page.evaluate(()=>{
-      const fake=[{id:'t1',title:'My Book',text:'My Book\nA. Writer'},{id:'t2',title:'',text:'Copyright © 2026 A. Writer\nAll rights reserved.'},{id:'t3',title:'Chapter One: Start',text:Array(200).fill('word').join(' ')},{id:'t4',title:'A copyright story',text:Array(300).fill('copyright').join(' ')}];
+      const fake=[{id:'t1',title:'My Book',text:'My Book\nA. Writer'},{id:'t2',title:'',text:'Copyright © 2026 A. Writer\nAll rights reserved.'},{id:'t3',title:'Chapter One: Start',text:Array(200).fill('word').join(' ')},{id:'t4',title:'A copyright story',text:Array(300).fill('copyright').join(' ')},{id:'t5',title:'Copyright Page',text:Array(260).fill('reproduced').join(' ')}];
       const bk=rBook(), oldT=bk.title; bk.title='My Book';
       const res=fake.map(looksFront);
       bk.title=oldT; return res; });
-    const want=[true,true,false,false];
+    const want=[true,true,false,false,true];   /* t5: rev 155, a long copyright page named Copyright Page */
     return JSON.stringify(r)===JSON.stringify(want) || (()=>{ throw new Error('got '+JSON.stringify(r)); })();
   });
   await step('Fix in place: press and hold a word in your own book to fix it on the same page; books added to read stay read-only (rev 148-149)', async () => {
