@@ -38,6 +38,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## Revisions
 
+Rev 137 (October 30, 2026, preview): The red you see while erasing highlights is now one smooth, even color. Before, it was see-through, so it looked darker and streaky where words overlapped. The lime highlight is unchanged. Checked on a phone-size screen in the Light, StyleKnight and Sepia colors.
+
 Rev 136 (October 30, 2026, preview): The Mark button is gone from the listening player. Steve tried it and it did not work for him, and the Highlighter at the top (with Highlight, Erase and Clear page) does everything he needs, so there is now one way to highlight, not two. The listening player is one button shorter. Manual updated: the Mark entry is removed and the “editing by ear” tip now uses the Highlighter. The manual's picture of the player may still show the old pencil button until the pictures are redrawn.
 
 Rev 135 (October 30, 2026, preview): You can always remove a highlight. Steve found that Mark in the listening player only ever added highlights: it works on the sentence being read right now, so once the voice moved on there was no way to go back to an older highlight. Turning on the Highlighter (the pencil at the top) now shows a small bar above the page with Highlight, Erase and Clear page. Erase: drag across highlighted words to erase just those words (they glow red while you drag; a highlight erased in the middle becomes two), or tap a highlight to remove all of it. Clear page removes every highlight on the page you are looking at. Tested on a phone-size screen with the manual: highlight, erase part, tap to clear, Clear page, and the bar showing and hiding. Not yet checked on a real iPhone. Manual updated.
