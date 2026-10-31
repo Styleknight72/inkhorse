@@ -32,12 +32,15 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Calvin and Soren, two male natural voices with American accents, join Meilin, each with his own card in Settings.
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly.
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture.
+- Boost: an optional switch in ⚙ Settings that makes the natural voices on a fast server with your own DeepInfra key, so they start right away.
 - One way to highlight: the Highlighter at the top. The extra Mark button in the listening player is gone.
 - With the Highlighter on, swiping doesn't turn the page, so you can drag right to the edge of a line.
 - Highlights are easy to remove: the Highlighter has an Erase choice (drag across words, or tap a highlight) and a Clear page button.
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 140 (October 30, 2026, live): Boost (online voice) now shows in ⚙ Settings on the live app for everyone, on Steve's say-so. The manual now explains that the DeepInfra key is pasted once and stays saved on the device, but that Safari, the Home Screen icon and an app's built-in browser each keep their own copy, and that the Home Screen icon is the safest place to keep it. The key is never put in Inkhorse's code: the code is public, and anyone could spend the account's credit. Live and preview are the same file again.
 
 Rev 139 (October 30, 2026, live): Revs 129 to 138 went live on getinkhorse.com, on Steve's "Approved". That brings the Highlighter to every book (including books added to read and the manual) with the Highlights list in Jump to, Highlight / Erase / Clear page, a smooth red while erasing, no page turns while highlighting, the Mark button removed from the listening player, a calmer voice Settings panel, and leaving full screen no longer turning the page. The Boost (online voice) switch stays hidden on the live app unless a key was already saved on that device. The pinned Inkhorse app in Claude was updated to the same file.
 
