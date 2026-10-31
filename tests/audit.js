@@ -282,6 +282,17 @@ const path = require('path');
     const want=[true,true,false,false];
     return JSON.stringify(r)===JSON.stringify(want) || (()=>{ throw new Error('got '+JSON.stringify(r)); })();
   });
+  await step('Edit this book: a book added to read becomes an editable writing book with its highlights (rev 144)', async () => {
+    const fs=require('fs'), os=require('os'), path=require('path'); const f=path.join(os.tmpdir(),'ink-edit-test.txt');
+    fs.writeFileSync(f,'Chapter 1: Start\n\n'+Array(30).fill('One two three four five six seven eight nine ten.').join('\n\n')+'\n\nChapter 2: Next\n\n'+Array(30).fill('Eleven twelve thirteen fourteen fifteen.').join('\n\n'));
+    await page.click('#tab-read').catch(()=>{}); await page.click('#libBtn'); await page.waitForTimeout(300);
+    await page.setInputFiles('#libIn', f); await page.waitForTimeout(2500);
+    const bid=await page.evaluate(()=>{ const b=LIB.find(x=>x.title==='ink-edit-test'); return b&&b.id; }); if(!bid) throw new Error('test book not added');
+    await page.evaluate(async(bid)=>{ await openLibBook(bid); const ch=RB.order[0]; addMark(ch,3,6); },bid); await page.waitForTimeout(500);
+    await page.click('#libBtn'); await page.waitForTimeout(300); await page.click(`[data-ledit="${bid}"]`); await page.waitForTimeout(2000);
+    const r=await page.evaluate(()=>({tab:$('#app').dataset.tab, n:BOOK.order.length, marks:(BOOK.marks||[]).length, rb:!!RB, still:LIB.some(x=>x.title==='ink-edit-test')}));
+    return (r.tab==='write'&&r.n===2&&r.marks===1&&!r.rb&&r.still) || (()=>{ throw new Error(JSON.stringify(r)); })();
+  });
   await step('Compare tab measures pages', async () => { await page.click('#tab-compare'); await page.waitForTimeout(1500); return /words/.test(await page.textContent('#headline')); });
   await step('Chapters panel lists export and backup', async () => { await page.click('#tab-write'); await page.click('#chBtn'); await page.waitForTimeout(300); const t=await page.evaluate(()=>document.body.innerText); return ['EPUB','Print PDF','Word manuscript','Save backup file','Restore from file'].every(w=>t.includes(w)); });
   await step('Save backup file downloads a file', async () => { const [d]=await Promise.all([page.waitForEvent('download',{timeout:6000}), page.click('#fbkSave')]); return /backup.*\.json$/.test(await d.suggestedFilename()); });

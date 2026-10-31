@@ -32,6 +32,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Calvin and Soren, two male natural voices with American accents, join Meilin, each with his own card in Settings.
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly.
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture.
+- Edit this book: one tap turns a book you added to read into an editable copy in Your books, highlights included.
 - Natural voices never skip words: a recording that stopped early is made again, one sentence at a time.
 - Boost: an optional switch in ⚙ Settings that makes the natural voices on a fast server with your own DeepInfra key, so they start right away.
 - One way to highlight: the Highlighter at the top. The extra Mark button in the listening player is gone.
@@ -40,6 +41,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 144 (October 30, 2026, preview): Edit this book. Steve's book “What If It's Already Here?” was only on his shelf as a book added to read, which is read-only, and the book in Write was an empty Untitled book; editing meant finding the original file again, which wasn't on his phone. Now every added book (except page-picture books and the manual) has an Edit button in the Library. One tap makes an editable copy in Your books with every chapter, the title, author, covers, pictures and the highlights made while listening, then opens it in Write, where Next mark visits each highlight. The read-only copy stays as it was. Tested on a phone-size screen: add a book, highlight it, Edit, then reload; the copy, its chapters and its highlight were all there. Manual updated.
 
 Rev 143 (October 30, 2026, preview): Title and copyright pages are front pages in every book (Formatting Standard F1.3 and F7.1). In “What If It's Already Here?” the title page and the copyright page came in as ordinary chapters, so Jump to listed the copyright page as chapter 2, “Untitled chapter”, and Chapter One as number 3. Inkhorse only knew a front page when the importer had marked it. Now, before the first real chapter, a short page with © or the word copyright, one titled with the book's own title, or one named Title page, Copyright or Dedication is treated as a front page: no chapter label, no number in Jump to or the Chapters panel (a dot instead), an untitled one is listed as Copyright page, and the first real chapter is chapter 1. The book's words are not changed. Checked on a phone-size screen with a book laid out like Steve's, and a 200,000-word book turns pages as fast as before. Manual updated.
 
