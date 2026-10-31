@@ -32,7 +32,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Calvin and Soren, two male natural voices with American accents, join Meilin, each with his own card in Settings.
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly.
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture.
-- Pinch the page to change the text size; earbuds play, pause and skip; in full screen, double-tap to play or pause.
+- Earbuds play, pause and skip; in full screen, double-tap to play or pause.
 - Fix it right on the page: in your own book, press and hold a word while reading and fix it there. Books you add to read always stay read-only.
 - Natural voices never skip words: a recording that stopped early is made again, one sentence at a time.
 - Boost: an optional switch in ⚙ Settings that makes the natural voices on a fast server with your own DeepInfra key, so they start right away.
@@ -42,6 +42,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 152 (October 31, 2026, preview): Pinch to change the text size is taken out; Steve tried it and didn't like it. Pinching on the page does nothing again, as before; Aa Size changes the text size. Earbud controls and the full-screen double-tap stay. Manual updated.
 
 Rev 151 (October 31, 2026, preview): Three ways to work with no extra buttons. Pinch the page to change the text size: Steve found the phone's own zoom only worked below the page and zoomed the whole web page; now two fingers on the page work like the Aa Size slider (12 to 28), the book re-flows into proper pages and you keep your place. Earbuds and AirPods: press once to play or pause, twice to skip a sentence, three times to go back; the lock screen and Control Center show the chapter and the same controls (with the natural voices; with the device's own voice it depends on the browser). In full screen, double-tap the middle of the page to play or pause; a single tap still brings the controls back and taps on the sides still turn pages. Voice commands were considered and left out: the microphone hears the reading voice, and phones don't let a web page listen in the background. Tested on a phone-size screen. Manual updated.
 
