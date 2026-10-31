@@ -273,6 +273,15 @@ const path = require('path');
       return true; });
     return ok===true || (()=>{ throw new Error(ok); })();
   });
+  await step('F1.3 F7.1 a typed title page and copyright page are front pages: no number; Chapter One is chapter 1 (rev 143)', async () => {
+    const r=await page.evaluate(()=>{
+      const fake=[{id:'t1',title:'My Book',text:'My Book\nA. Writer'},{id:'t2',title:'',text:'Copyright © 2026 A. Writer\nAll rights reserved.'},{id:'t3',title:'Chapter One: Start',text:Array(200).fill('word').join(' ')},{id:'t4',title:'A copyright story',text:Array(300).fill('copyright').join(' ')}];
+      const bk=rBook(), oldT=bk.title; bk.title='My Book';
+      const res=fake.map(looksFront);
+      bk.title=oldT; return res; });
+    const want=[true,true,false,false];
+    return JSON.stringify(r)===JSON.stringify(want) || (()=>{ throw new Error('got '+JSON.stringify(r)); })();
+  });
   await step('Compare tab measures pages', async () => { await page.click('#tab-compare'); await page.waitForTimeout(1500); return /words/.test(await page.textContent('#headline')); });
   await step('Chapters panel lists export and backup', async () => { await page.click('#tab-write'); await page.click('#chBtn'); await page.waitForTimeout(300); const t=await page.evaluate(()=>document.body.innerText); return ['EPUB','Print PDF','Word manuscript','Save backup file','Restore from file'].every(w=>t.includes(w)); });
   await step('Save backup file downloads a file', async () => { const [d]=await Promise.all([page.waitForEvent('download',{timeout:6000}), page.click('#fbkSave')]); return /backup.*\.json$/.test(await d.suggestedFilename()); });
