@@ -257,6 +257,23 @@ const path = require('path');
     const ok=await page.evaluate(()=>{ const sp=[...document.querySelectorAll('#spread .ptext [data-w]')], a=sp[0].getBoundingClientRect(); const line=sp.filter(e=>Math.abs(e.getBoundingClientRect().top-a.top)<3), last=line[line.length-1]; const r=last.getBoundingClientRect(); const hit=wordAt(window.innerWidth-2, r.top+r.height/2); return hit&&hit.w===+last.dataset.w; });
     await page.evaluate(()=>setHl(false)); return ok || (()=>{ throw new Error('off the edge did not reach the last word of the line'); })();
   });
+  await step('Highlighter on/off never changes the page you are on (rev 141)', async () => {
+    await page.click('#tab-read').catch(()=>{}); await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200);
+    await page.evaluate(()=>gotoBookPage(17)); await page.waitForTimeout(1200);
+    const at=()=>page.evaluate(()=>{ const e=document.querySelector('#spread .ptext [data-w]'); return (e?e.closest('.ptext').dataset.ch+':'+e.dataset.w:'')+'|'+Math.round($('#stage').getBoundingClientRect().height); });
+    const a=await at(); await page.evaluate(()=>setHl(true)); await page.waitForTimeout(1000); const b=await at(); await page.evaluate(()=>setHl(false)); await page.waitForTimeout(800);
+    return a===b || (()=>{ throw new Error('page moved: '+a+' -> '+b); })();
+  });
+  await step('Natural voice: a recording that stops early is remade by sentence, no words skipped (rev 141)', async () => {
+    await page.click('#tab-write'); await page.evaluate(()=>newChapter&&0).catch(()=>{});
+    const ok=await page.evaluate(async()=>{
+      const c={start:100,end:115,p:3,text:'It is not. The family album holds their actual wedding photograph: my mother in a bonnet veil,'}; c.words=c.text.split(' ');
+      if(!kokShort(c.text,1.7) || kokShort(c.text,6.9)) return 'short check wrong';
+      const parts=kokSplit(c); if(!parts||parts.length!==3) return 'split wrong: '+JSON.stringify(parts&&parts.map(x=>x.text));
+      if(parts.map(x=>x.words.length).reduce((a,b)=>a+b,0)!==c.words.length || parts[2].end!==c.start+c.words.length) return 'split lost words';
+      return true; });
+    return ok===true || (()=>{ throw new Error(ok); })();
+  });
   await step('Compare tab measures pages', async () => { await page.click('#tab-compare'); await page.waitForTimeout(1500); return /words/.test(await page.textContent('#headline')); });
   await step('Chapters panel lists export and backup', async () => { await page.click('#tab-write'); await page.click('#chBtn'); await page.waitForTimeout(300); const t=await page.evaluate(()=>document.body.innerText); return ['EPUB','Print PDF','Word manuscript','Save backup file','Restore from file'].every(w=>t.includes(w)); });
   await step('Save backup file downloads a file', async () => { const [d]=await Promise.all([page.waitForEvent('download',{timeout:6000}), page.click('#fbkSave')]); return /backup.*\.json$/.test(await d.suggestedFilename()); });

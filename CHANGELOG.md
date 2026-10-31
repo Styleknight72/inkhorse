@@ -32,6 +32,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Calvin and Soren, two male natural voices with American accents, join Meilin, each with his own card in Settings.
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly.
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture.
+- Natural voices never skip words: a recording that stopped early is made again, one sentence at a time.
 - Boost: an optional switch in ⚙ Settings that makes the natural voices on a fast server with your own DeepInfra key, so they start right away.
 - One way to highlight: the Highlighter at the top. The extra Mark button in the listening player is gone.
 - With the Highlighter on, swiping doesn't turn the page, so you can drag right to the edge of a line.
@@ -39,6 +40,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 141 (October 30, 2026, preview): Two fixes from Steve's iPhone. (1) Turning on the Highlighter moved him from page 17 to page 19: the new Highlight / Erase / Clear page bar took room above the book, the book got shorter and the pages re-flowed. The bar now floats over the top margin of the page, so the page size and your place never change. (2) Calvin skipped “The family album holds their actual wedding photograph: my mother in a bonnet veil,” every time. Calvin says that piece fine when tested here, so the likely cause is a saved recording of it that had stopped early (after “It is not.”); the player played the short recording and went on to the next piece. Now every natural-voice recording is checked against how long its words should take: one that stopped early is thrown away (also from the saved sentences) and made again one sentence at a time, and a piece that fails to be made is also retried sentence by sentence instead of skipped. Shown in a test on his exact paragraph: the old version skipped exactly those words; the new one reads them. Not yet checked on his iPhone. Manual updated.
 
 Rev 140 (October 30, 2026, live): Boost (online voice) now shows in ⚙ Settings on the live app for everyone, on Steve's say-so. The manual now explains that the DeepInfra key is pasted once and stays saved on the device, but that Safari, the Home Screen icon and an app's built-in browser each keep their own copy, and that the Home Screen icon is the safest place to keep it. The key is never put in Inkhorse's code: the code is public, and anyone could spend the account's credit. Live and preview are the same file again.
 
