@@ -32,6 +32,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Calvin and Soren, two male natural voices with American accents, join Meilin, each with his own card in Settings.
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly.
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture.
+- One layout everywhere: the same Write · Read · Compare tabs on phone, tablet and computer.
 - Hear it, fix it: Fix in the listening player opens the sentence being read; Done reads it again with your fix.
 - Earbuds play, pause and skip; in full screen, double-tap to play or pause.
 - Fix it right on the page: in your own book, press and hold a word while reading and fix it there. Books you add to read always stay read-only.
@@ -43,6 +44,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 156 (October 31, 2026, preview): One layout on every device. Steve: “We need consistent UI on all the devices.” On a computer, Write, Read and Compare used to sit side by side with no tabs, while phones and tablets had tabs. Now every screen has the same three tabs, one room at a time; on a computer the app is centered at a comfortable width, and Read shows a two-page spread when there's room. The Side by side tool (writing beside the live page) is available on tablets and computers, off unless you turn it on. Checked at phone, iPad and laptop sizes. Manual updated.
 
 Rev 155 (October 31, 2026, preview): A long copyright page is a front page too (F1.3). In Blender For Dummies on Steve's iPhone, the copyright page, full of legal text, carried the running header “1 · COPYRIGHT PAGE”, as if it were chapter 1: Inkhorse only treated short copyright pages as front matter. Now a page named Copyright, Copyright Page, Title Page, Dedication and the like counts as a front page even with up to about 600 words, for books already added and new ones. A new automatic check covers it.
 
