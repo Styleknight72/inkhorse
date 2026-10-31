@@ -282,16 +282,14 @@ const path = require('path');
     const want=[true,true,false,false];
     return JSON.stringify(r)===JSON.stringify(want) || (()=>{ throw new Error('got '+JSON.stringify(r)); })();
   });
-  await step('Edit this book: reading a locked book, Write offers to unlock it; it moves to Your books with its highlights (rev 144-145)', async () => {
+  await step('Write opens the book you are reading, ready to edit, with its highlights; no second copy (rev 144-146)', async () => {
     const fs=require('fs'), os=require('os'), path=require('path'); const f=path.join(os.tmpdir(),'ink-edit-test.txt');
     fs.writeFileSync(f,'Chapter 1: Start\n\n'+Array(30).fill('One two three four five six seven eight nine ten.').join('\n\n')+'\n\nChapter 2: Next\n\n'+Array(30).fill('Eleven twelve thirteen fourteen fifteen.').join('\n\n'));
     await page.click('#tab-read').catch(()=>{}); await page.click('#libBtn'); await page.waitForTimeout(300);
     await page.setInputFiles('#libIn', f); await page.waitForTimeout(2500);
     const bid=await page.evaluate(()=>{ const b=LIB.find(x=>x.title==='ink-edit-test'); return b&&b.id; }); if(!bid) throw new Error('test book not added');
     await page.evaluate(async(bid)=>{ await openLibBook(bid); const ch=RB.order[0]; addMark(ch,3,6); },bid); await page.waitForTimeout(500);
-    await page.click('#tab-write'); await page.waitForTimeout(500);
-    if(await page.isHidden('#roCard')||await page.isVisible('#manuscript')) throw new Error('Write did not show the locked book card');
-    await page.click(`[data-roedit="${bid}"]`); await page.waitForTimeout(2000);
+    await page.click('#tab-write'); await page.waitForTimeout(2500);
     const r=await page.evaluate(()=>({tab:$('#app').dataset.tab, n:BOOK.order.length, marks:(BOOK.marks||[]).length, rb:!!RB, still:LIB.some(x=>x.title==='ink-edit-test'), editor:!!$('#manuscript').offsetParent}));
     return (r.tab==='write'&&r.n===2&&r.marks===1&&!r.rb&&!r.still&&r.editor) || (()=>{ throw new Error(JSON.stringify(r)); })();
   });
