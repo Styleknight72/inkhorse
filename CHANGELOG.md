@@ -32,7 +32,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - Calvin and Soren, two male natural voices with American accents, join Meilin, each with his own card in Settings.
 - Adding a PDF to read asks how it should come in: as a real book (text you can make bigger, change the typeface of, and hear read aloud) or with the exact look kept as pictures of its pages. A PDF's contents page and its first chapter title come in properly.
 - On a book kept as page pictures, the Aa panel says so and grays out the settings that can't change a picture.
-- Edit this book: Write always shows the book you're reading; a book you added to read is unlocked with one tap and moves into Your books, highlights included.
+- Three tabs: Write, Read and Edit. Edit changes the words on the page you're reading, in any book. Compare is in Read's This screen menu.
 - Natural voices never skip words: a recording that stopped early is made again, one sentence at a time.
 - Boost: an optional switch in ⚙ Settings that makes the natural voices on a fast server with your own DeepInfra key, so they start right away.
 - One way to highlight: the Highlighter at the top. The extra Mark button in the listening player is gone.
@@ -41,6 +41,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 147 (October 30, 2026, preview): The Edit tab. Steve asked for three tabs, Write, Read and Edit, where Edit, whatever you're viewing, edits the page of the book you're reading. Edit shows that page's paragraphs, one per line with a blank line between, in any book: your own or one you added to read. Changes save as you type and go straight into that book; Done returns to Read on the same page, and ‹ › move a page at a time. Pictures, scene breaks, headings and Contents lines are left as they are. The manual and page-picture books can't be edited. On a wide screen Write, Read and Edit sit side by side, and Edit follows the page you turn to. Compare moved off the tab row into Read's This screen menu (Compare screens…), with a ‹ Read button back. Rev 145-146's “Write takes over the book you're reading” is retired: Write is your own writing book again. Tested on a phone-size screen and a wide screen: edit a page of an added book, Done, same page shows the change, and it survives a reload; an edit to your own book shows in Write too. Manual updated.
 
 Rev 146 (October 30, 2026, preview): Write simply opens the book you're reading. Steve said the lock card was still too much: if a book is loaded for reading, especially his own unfinished book, Write should just be that book. Now tapping Write while reading a book opens it for editing at once, with no card and no question (it moves into Your books with its chapters, covers, pictures and highlights). The empty or sample-only “Untitled book” it replaces is removed so it doesn't get in the way; a book with any of your own writing, title or author is never removed. The manual and page-picture books still say they can't be edited. On a wide screen, where Write sits beside Read, Write shows the book's name with an Edit this book button. Tested on a phone-size screen: tap Write, edit, reload; a real writing book was kept. Manual updated.
 
