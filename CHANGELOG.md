@@ -17,6 +17,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- Dictate listens on your phone: tap it and talk, through your pauses, with spoken punctuation. (preview)
+- The natural voices work with no signal once you've heard them once. (preview)
 - Book covers all show at one standard 2:3 book shape, whole, on phone, tablet and computer.
 - The manual's own cover is a proper 2:3 book cover.
 - Every book is set like a published book, whatever file it came from: chapter titles a third of the way down the page, the first line in small capitals, no indent on a chapter's first paragraph, the book's own chapter labels, plain front pages, centered scene breaks, and no stray single lines at the top or bottom of a page.
@@ -44,6 +46,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 161 (November 1, 2026, preview): Making the app live up to what the website promised, instead of shrinking the promises. Dictate now listens on phones and tablets too (it used to only point you to the keyboard's microphone). The first time, the phone asks to let Inkhorse use the microphone. On a phone it keeps listening through your pauses and stops when you tap Dictate again or after a long quiet. You can say “period”, “comma”, “question mark” and “exclamation point”, and a new sentence starts with a capital. If Inkhorse can't use the microphone where it's open, Dictate points you to the keyboard's microphone as before. The natural voices now work with no signal for sure: Inkhorse keeps its own copy of the voice engine on the device (before, it relied on the browser keeping one, which a phone can clear at any time). Tested: with the internet cut off, the preview spoke and the live app could not. The preview page also opens with no signal now, so this can be tried in airplane mode. Manual updated: Dictate, Hoofprint, and No signal. Two new automatic checks: Dictate on a phone listens and takes spoken punctuation, and still points to the keyboard if the microphone is blocked. Automatic checks: 62 of 62, none skipped.
 
 Rev 160 (November 1, 2026, live): The website checked against the app, on Steve's request, so every claim on getinkhorse.com is true. The home page and About page now say: the natural voices need a one-time download (about 92 MB, and Inkhorse asks first); Boost exists, is optional and off unless you turn it on, and sends the text being read to DeepInfra while it's on (the pages had said your book never leaves your device, with no exception); on a phone, Inkhorse's Dictate button shows you the microphone on your keyboard rather than listening itself; the natural voices and PDFs need a signal the first time you use them; and every device gets the same three voices (it had said they sound the same on every device, but faster devices use a slightly different version). Website pages only; the app did not change.
 

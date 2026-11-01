@@ -8,6 +8,7 @@
    Off switch: if Meilin can't work this way on a device, the page leaves a note in the cache below and this
    helper stops adding the headers there, so she goes back to one core. */
 const OFF_CACHE = 'inkhorse-preview-coi';
+const PAGE_CACHE = 'inkhorse-preview-page';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
@@ -31,7 +32,10 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     if (url.origin !== self.location.origin || !/\/preview\/next\.html$/.test(url.pathname)) return;
     event.respondWith((async () => {
-      const res = await fetch(request);
+      /* rev 161: keep a copy of the preview page, so it opens with no signal too (to test the voices offline) */
+      let res;
+      try { res = await fetch(request); if (res.ok) { try { const c = await caches.open(PAGE_CACHE); await c.put(request.url, res.clone()); } catch (e) { } } }
+      catch (e) { const c = await caches.open(PAGE_CACHE); res = await c.match(request.url, { ignoreSearch: true }); if (!res) throw e; }
       if (res.type === 'opaqueredirect' || res.status === 0 || await isOff()) return res;
       return withHeaders(res, {
         'Cross-Origin-Opener-Policy': 'same-origin',

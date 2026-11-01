@@ -13,6 +13,18 @@ const path = require('path');
     Object.defineProperty(window,'speechSynthesis',{value:syn,configurable:true});
     window.SpeechSynthesisUtterance=function(t){ this.text=t; };
   });
+  await ctx.addInitScript(() => { // rev 161: a stand-in microphone. __sr.mode 'blocked' acts like a phone that won't allow it; 'talk' says each line in __sr.said, then stays quiet
+    window.__sr={mode:'blocked',said:[],starts:0};
+    function FakeSR(){ }
+    FakeSR.prototype.start=function(){ const me=this; window.__sr.starts++; setTimeout(()=>{
+      if(window.__sr.mode==='blocked'){ me.onerror&&me.onerror({error:'not-allowed'}); me.onend&&me.onend(); return; }
+      me.onstart&&me.onstart({}); const t=window.__sr.said.shift();
+      if(t){ const r=[{transcript:t}]; r.isFinal=true; me.onresult&&me.onresult({resultIndex:0,results:[r]}); } else { me.onerror&&me.onerror({error:'no-speech'}); }
+      setTimeout(()=>{ me.onend&&me.onend({}); },20); },20); };
+    FakeSR.prototype.stop=function(){ const me=this; setTimeout(()=>{ me.onend&&me.onend({}); },10); };
+    FakeSR.prototype.abort=FakeSR.prototype.stop;
+    window.SpeechRecognition=FakeSR; window.webkitSpeechRecognition=FakeSR;
+  });
   const PDFJS_DIR=process.env.PDFJS_DIR||''; // a pdfjs-dist@3.11.174 build folder; without it the PDF import step is skipped
   if(PDFJS_DIR){ await ctx.route(/pdf\.js\/3\.11\.174\/pdf\.min\.js/, r=>r.fulfill({path:require('path').join(PDFJS_DIR,'pdf.min.js'),contentType:'application/javascript'}));
     await ctx.route(/pdf\.js\/3\.11\.174\/pdf\.worker\.min\.js/, r=>r.fulfill({path:require('path').join(PDFJS_DIR,'pdf.worker.min.js'),contentType:'application/javascript'})); }
@@ -39,7 +51,21 @@ const path = require('path');
   await step('find in chapter', async () => { await page.click('#findBtn'); await page.fill('#findIn','paragraph'); await page.waitForTimeout(300); await page.press('#findIn','Enter'); const n=await page.textContent('#findN'); await page.click('#findClose'); return /1 of 2/.test(n); });
   await step('Resume and Top buttons', async () => { await page.click('#pgResume'); await tools(); await page.click('#pgTop');   /* rev 115: Top is in the Tools panel */ });
   await step('tools row shows its buttons', async () => { await tools(); for (const i of ['micBtn','hpBtn','wcBtn','focusBtn','pasteBtn','copyBtn']) if(!(await page.isVisible('#'+i))) return i+' missing'; });
-  await step('Dictate on a phone shows the keyboard hint', async () => { await tools(); await page.click('#micBtn'); await page.waitForTimeout(300); const h=await page.textContent('#dictHint'); await page.click('#dictHint .x').catch(()=>{}); return /keyboard/i.test(h); });
+  await step('Dictate on a phone: if the microphone is blocked, it points to the keyboard mic', async () => { await tools(); await page.click('#micBtn'); await page.waitForTimeout(400); const h=await page.textContent('#dictHint'); await page.click('#dictHint .x').catch(()=>{}); return /keyboard/i.test(h); });
+  await step('Dictate on a phone listens, keeps going through pauses, and takes spoken punctuation (rev 161)', async () => {
+    if(!(await page.evaluate(()=>typeof micStart==='function'))) return 'SKIP: this version sends phones to the keyboard mic';
+    await page.evaluate(()=>{ window.__sr.mode='talk'; window.__sr.starts=0; window.__sr.said=['hello comma world period','new paragraph second line']; const t=document.querySelector('#manuscript'); t.focus(); t.setSelectionRange(t.value.length,t.value.length); });
+    await tools(); await page.click('#micBtn'); await page.waitForTimeout(150);
+    const pressed=await page.getAttribute('#micBtn','aria-pressed');
+    await page.waitForTimeout(1200);
+    const v=await T(), st=await page.evaluate(()=>({starts:window.__sr.starts,on:document.querySelector('#micBtn').getAttribute('aria-pressed')}));
+    await page.evaluate(()=>{ window.__sr.mode='blocked'; });
+    if(pressed!=='true') return 'Dictate did not start listening';
+    if(!v.endsWith('Hello, world.\nSecond line')) return 'text was: '+JSON.stringify(v.slice(-40));
+    if(st.starts<3) return 'did not keep listening after a pause (started '+st.starts+' times)';
+    if(st.on!=='false') return 'did not stop after a long quiet';
+    await page.click('#undoBtn'); await page.click('#undoBtn'); await page.waitForTimeout(200);
+  });
   await step('Focus mode in and out', async () => { await tools(); await page.click('#focusBtn'); await page.waitForTimeout(300); const on=await page.evaluate(()=>document.body.className.includes('focus')); await page.keyboard.press('Escape'); await page.waitForTimeout(300); return on; });
   await step('Hoofprint opens and closes', async () => { await tools(); await page.click('#hpBtn'); await page.waitForTimeout(300); const v=await page.isVisible('#hpPanel'); await page.click('#hpDone'); return v; });
   await step('Hoofprint offers Bolduc for "bold duck"', async () => { await page.evaluate(()=>{ S.hp.words.push('Bolduc'); saveSettings(); }); await page.fill('#manuscript','My grandmother was a bold duck from Quebec. She was kind.'); await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setSelectionRange(t.value.length,t.value.length); }); await page.waitForTimeout(1500); return /Bolduc/.test(await page.textContent('#hpBar')); });
