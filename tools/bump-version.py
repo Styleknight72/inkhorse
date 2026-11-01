@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Bump Inkhorse's version in one go: app.html's INK_VERSION, the manual's ver string, and the manual's cover.
-Usage:  python3 tools/bump-version.py "1.1 candidate" 75 2026-10-27
+Usage:  python3 tools/bump-version.py "1.1 candidate" 75 2026-10-27 [preview/next.html]
 The cover is repainted from tools/manual-cover-base.png with the tagline and the release line, so the cover always names the revision it ships with."""
 import sys, re, io, base64, hashlib, datetime
 from PIL import Image
 release, rev, date = sys.argv[1], int(sys.argv[2]), sys.argv[3]
 month = datetime.date.fromisoformat(date).strftime('%B %Y').upper()
-P = 'app.html'; t = open(P, encoding='utf-8').read()
+P = sys.argv[4] if len(sys.argv) > 4 else 'app.html'; t = open(P, encoding='utf-8').read()   # optional 4th argument: preview/next.html
 # 1. version constant
 t, n = re.subn(r'window\.INK_VERSION=\{release:"[^"]*",rev:\d+,date:"[^"]*"\}', f'window.INK_VERSION={{release:"{release}",rev:{rev},date:"{date}"}}', t); assert n == 1
 # 2. manual ver (phones refetch the manual when it changes)

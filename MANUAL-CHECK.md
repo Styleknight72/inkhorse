@@ -5,8 +5,9 @@ Run before a revision can become a release. The manual is the app's test book: e
 ## A. Automatic (Claude, every revision)
 - Every button id, label and setting the manual names exists in app.html with that label.
 - Every `@@find` line points at a real section; the Contents page resolves every entry to a page.
-- The What's new section's top entry is this revision.
-- The manual's `ver` string changed, so phones fetch the new copy, and the cover names this release and rev (tools/bump-version.py does all three).
+- Every `@@find` line points at a real chapter and section, and no removed button is still described (both checked by tests/audit.js since rev 157).
+- No history in the manual: no "What's new" or revision entries. History goes in CHANGELOG.md (the Release Notes).
+- The manual's `ver` string changed, so phones fetch the new copy, and the cover names this release and rev (tools/bump-version.py does all three; add `preview/next.html` as a 4th argument for the preview).
 
 ## B. Pictures (Claude, whenever a screen changes; Steve supplies phone shots for panels)
 - Each picture shows the control as it looks in this revision (same label, same position in the row).
