@@ -17,6 +17,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- If your phone won't let Dictate listen, the writing page stays usable and Dictate takes you straight to the keyboard's microphone next time.
 - Dictate listens on your phone: tap it and talk, through your pauses, with spoken punctuation.
 - The natural voices work with no signal once you've heard them once.
 - Book covers all show at one standard 2:3 book shape, whole, on phone, tablet and computer.
@@ -47,7 +48,9 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## Revisions
 
-Rev 163 (November 2, 2026, preview): Fixes the bug Steve found on his iPhone. In the Home Screen app, Dictate couldn't start the microphone, showed its message, and then the writing page ignored every tap, so nothing could be typed. Cause: after the wait, Inkhorse put the cursor in the page on its own; an iPhone then treats the page as already chosen but shows no keyboard, and ignores taps on it. Now it lets go of the page instead, so your next tap brings up the keyboard. Dictate also remembers on that device when the phone won't let it listen, and from then on goes straight to the keyboard's microphone with no wait. Manual updated (Dictate). The automatic checks had a hole: about a dozen checks reported a problem as a message, and a message counted as a pass, so they could never fail. Now a message is a failure unless it starts with SKIP or OK. With that fixed, the new check catches this bug in the live app and passes on the preview. Automatic checks: 62 of 62 on the preview, none skipped.
+Rev 164 (November 2, 2026, live): Rev 163 went live on getinkhorse.com on Steve's "Yes, make it live": the writing page no longer gets stuck after Dictate can't start the microphone on an iPhone, and Dictate remembers to go straight to the keyboard's microphone on a phone that won't let it listen. The pinned Inkhorse app in Claude was updated to the same file. Live and preview are the same file again. Automatic checks: 62 of 62, none skipped.
+
+Rev 163 (November 2, 2026, preview, live in rev 164): Fixes the bug Steve found on his iPhone. In the Home Screen app, Dictate couldn't start the microphone, showed its message, and then the writing page ignored every tap, so nothing could be typed. Cause: after the wait, Inkhorse put the cursor in the page on its own; an iPhone then treats the page as already chosen but shows no keyboard, and ignores taps on it. Now it lets go of the page instead, so your next tap brings up the keyboard. Dictate also remembers on that device when the phone won't let it listen, and from then on goes straight to the keyboard's microphone with no wait. Manual updated (Dictate). The automatic checks had a hole: about a dozen checks reported a problem as a message, and a message counted as a pass, so they could never fail. Now a message is a failure unless it starts with SKIP or OK. With that fixed, the new check catches this bug in the live app and passes on the preview. Automatic checks: 62 of 62 on the preview, none skipped.
 
 Rev 162 (November 1, 2026, live): Rev 161 went live on getinkhorse.com on Steve's "Approved": Dictate listens on phones and tablets (with spoken punctuation, and the keyboard microphone as the fallback), and the natural voices work with no signal once heard once. The website's home page says Dictate listens again. The pinned Inkhorse app in Claude was updated to the same file. Live and preview are the same file again. Automatic checks: 62 of 62, none skipped.
 
