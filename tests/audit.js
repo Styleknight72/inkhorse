@@ -18,6 +18,7 @@ const path = require('path');
     function FakeSR(){ }
     FakeSR.prototype.start=function(){ const me=this; window.__sr.starts++; setTimeout(()=>{
       if(window.__sr.mode==='blocked'){ me.onerror&&me.onerror({error:'not-allowed'}); me.onend&&me.onend(); return; }
+      if(window.__sr.mode==='silentend'){ me.onend&&me.onend({}); return; }   // rev 165: a hiccup: ends without starting
       me.onstart&&me.onstart({}); const t=window.__sr.said.shift();
       if(t){ const r=[{transcript:t}]; r.isFinal=true; me.onresult&&me.onresult({resultIndex:0,results:[r]}); } else { me.onerror&&me.onerror({error:'no-speech'}); }
       setTimeout(()=>{ me.onend&&me.onend({}); },20); },20); };
@@ -62,7 +63,7 @@ const path = require('path');
     return /keyboard/i.test(h); });
   await step('Dictate on a phone listens, keeps going through pauses, and takes spoken punctuation (rev 161, 163)', async () => {
     if(!(await page.evaluate(()=>typeof micStart==='function'))) return 'SKIP: this version sends phones to the keyboard mic';
-    await page.evaluate(()=>{ try{ localStorage.removeItem('inkhorse-dictate-keyboard'); }catch(_){ } window.__sr.mode='talk'; window.__sr.starts=0; window.__sr.said=['hello comma world period','new paragraph second line']; const t=document.querySelector('#manuscript'); t.focus(); t.setSelectionRange(t.value.length,t.value.length); });
+    await page.evaluate(()=>{ try{ localStorage.removeItem('inkhorse-dictate-keyboard'); localStorage.removeItem('inkhorse-dictate-keyboard-2'); }catch(_){ } window.__sr.mode='talk'; window.__sr.starts=0; window.__sr.said=['hello comma world period','new paragraph second line']; const t=document.querySelector('#manuscript'); t.focus(); t.setSelectionRange(t.value.length,t.value.length); });
     await tools(); await page.click('#micBtn'); await page.waitForTimeout(150);
     const pressed=await page.getAttribute('#micBtn','aria-pressed');
     await page.waitForTimeout(1200);
@@ -73,6 +74,28 @@ const path = require('path');
     if(st.starts<3) throw new Error('did not keep listening after a pause (started '+st.starts+' times)');
     if(st.on!=='false') throw new Error('did not stop after a long quiet');
     await page.click('#undoBtn'); await page.click('#undoBtn'); await page.waitForTimeout(200);
+  });
+  await step('Dictate: a hiccup after listening worked stops quietly and is not remembered as "can\'t listen" (rev 165)', async () => {
+    if(!(await page.evaluate(()=>typeof micLost==='function'))) return 'SKIP: this version has no hiccup handling';
+    await page.evaluate(()=>{ localStorage.removeItem('inkhorse-dictate-keyboard-2'); window.__sr.mode='talk'; window.__sr.starts=0; window.__sr.said=['one more line']; const t=document.querySelector('#manuscript'); t.focus(); t.setSelectionRange(t.value.length,t.value.length); });
+    await tools(); await page.click('#micBtn'); await page.waitForTimeout(80);
+    await page.evaluate(()=>{ window.__sr.mode='silentend'; });   // the restart after the first phrase hiccups
+    await page.waitForTimeout(700);
+    const st=await page.evaluate(()=>({mem:localStorage.getItem('inkhorse-dictate-keyboard-2'),hint:!document.querySelector('#dictHint').hidden,on:document.querySelector('#micBtn').getAttribute('aria-pressed')}));
+    await page.evaluate(()=>{ window.__sr.mode='blocked'; });
+    await page.click('#undoBtn'); await page.waitForTimeout(150);
+    if(st.mem) throw new Error('remembered the phone as unable to listen after one hiccup');
+    if(st.hint) throw new Error('showed the keyboard message although listening had worked');
+    if(st.on!=='false') throw new Error('Dictate still shows as listening');
+  });
+  await step('Dictate: a phrase mid-sentence keeps ordinary words small, and Hoofprint never offers a longer name for one of its own words (rev 165)', async () => {
+    if(!(await page.evaluate(()=>typeof micLost==='function'))) return 'SKIP: this version capitalises every phrase';
+    const r=await page.evaluate(()=>{ const ta=document.querySelector('#manuscript'), keep=ta.value;
+      ta.value='We are going'; ta.setSelectionRange(ta.value.length,ta.value.length); insertSpoken('Testing the microphone'); const a=ta.value;
+      ta.value='So we were Testing To see it. Testing again.'; commitText(); const sug=hpScan(ta.value,0,ta.value.length).filter(x=>x.kind==='sug').map(x=>x.t+'>'+x.to);
+      ta.value=keep; commitText(); return {a,sug}; });
+    if(r.a!=='We are going testing the microphone') throw new Error('dictated phrase came in as: '+r.a);
+    if(r.sug.some(x=>/^Testing>Testing To$/.test(x))) throw new Error('Hoofprint offered: '+r.sug.join(', '));
   });
   await step('Focus mode in and out', async () => { await tools(); await page.click('#focusBtn'); await page.waitForTimeout(300); const on=await page.evaluate(()=>document.body.className.includes('focus')); await page.keyboard.press('Escape'); await page.waitForTimeout(300); return on; });
   await step('Hoofprint opens and closes', async () => { await tools(); await page.click('#hpBtn'); await page.waitForTimeout(300); const v=await page.isVisible('#hpPanel'); await page.click('#hpDone'); return v; });
