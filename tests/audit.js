@@ -34,7 +34,7 @@ const path = require('path');
   const errs=[], res=[];
   page.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
   page.on('console', m => { if (m.type()==='error' && !/ERR_TUNNEL|ERR_|favicon|net::|Failed to load resource/.test(m.text())) errs.push('CONSOLE ' + m.text()); });
-  const step = async (name, fn) => { try { const v = await fn(); const bad = v === false; res.push([bad?'FAIL':(typeof v==='string'&&v.startsWith('SKIP')?'SKIP':'PASS'), name, bad?'returned false':(v===undefined||v===true?'':JSON.stringify(v).slice(0,90))]); } catch (e) { res.push(['FAIL', name, e.message.slice(0,600)]); } };
+  const step = async (name, fn) => { try { const v = await fn(); /* rev 163: a returned message that isn't SKIP is a failure (before, it counted as a pass, so a dozen checks could never fail) */ const bad = v === false || (typeof v === 'string' && !/^(SKIP|OK)/.test(v)); res.push([bad?'FAIL':(typeof v==='string'&&v.startsWith('SKIP')?'SKIP':'PASS'), name, bad?(v===false?'returned false':v.slice(0,300)):(v===undefined||v===true?'':JSON.stringify(v).slice(0,90))]); } catch (e) { res.push(['FAIL', name, e.message.slice(0,600)]); } };
   const T = () => page.inputValue('#manuscript');
   const tools = async () => { if (await page.getAttribute('#toolsBtn','aria-expanded') !== 'true') await page.click('#toolsBtn',{timeout:3000}); await page.waitForTimeout(150); };
   await page.goto('file://' + file); await page.waitForTimeout(2500);
@@ -50,20 +50,28 @@ const path = require('path');
   await step('undo and redo', async () => { const typed=await T(); await page.click('#undoBtn'); await page.waitForTimeout(200); const a=await T(); await page.click('#redoBtn'); await page.waitForTimeout(200); return a!==typed && (await T())===typed; });
   await step('find in chapter', async () => { await page.click('#findBtn'); await page.fill('#findIn','paragraph'); await page.waitForTimeout(300); await page.press('#findIn','Enter'); const n=await page.textContent('#findN'); await page.click('#findClose'); return /1 of 2/.test(n); });
   await step('Resume and Top buttons', async () => { await page.click('#pgResume'); await tools(); await page.click('#pgTop');   /* rev 115: Top is in the Tools panel */ });
-  await step('tools row shows its buttons', async () => { await tools(); for (const i of ['micBtn','hpBtn','wcBtn','focusBtn','pasteBtn','copyBtn']) if(!(await page.isVisible('#'+i))) return i+' missing'; });
-  await step('Dictate on a phone: if the microphone is blocked, it points to the keyboard mic', async () => { await tools(); await page.click('#micBtn'); await page.waitForTimeout(400); const h=await page.textContent('#dictHint'); await page.click('#dictHint .x').catch(()=>{}); return /keyboard/i.test(h); });
-  await step('Dictate on a phone listens, keeps going through pauses, and takes spoken punctuation (rev 161)', async () => {
+  await step('tools row shows its buttons', async () => { await page.waitForTimeout(400); /* the Top tool just closed the panel */ await tools(); for (const i of ['micBtn','hpBtn','wcBtn','focusBtn','pasteBtn','copyBtn']) if(!(await page.isVisible('#'+i))) return i+' missing'; });
+  await step('Dictate on a phone: if the microphone is blocked, it points to the keyboard mic', async () => { await tools(); await page.click('#micBtn'); await page.waitForTimeout(400); const h=await page.textContent('#dictHint');
+    /* rev 163: the page must not be left focused after the wait (an iPhone then ignores taps on it), and next time Dictate goes straight to the keyboard */
+    const stuck=await page.evaluate(()=>typeof micStart==='function' && document.activeElement===document.querySelector('#manuscript'));
+    await page.click('#dictHint .x').catch(()=>{});
+    if(stuck) throw new Error('the writing box was left focused after the message (iPhone: taps stop working)');
+    if(await page.evaluate(()=>typeof micStart==='function')){ const n0=await page.evaluate(()=>window.__sr.starts); await tools(); await page.click('#micBtn'); await page.waitForTimeout(150);
+      const n1=await page.evaluate(()=>window.__sr.starts), h2=await page.textContent('#dictHint'); await page.click('#dictHint .x').catch(()=>{});
+      if(n1!==n0) throw new Error('tried the microphone again instead of going straight to the keyboard'); if(!/keyboard/i.test(h2)) throw new Error('second tap gave no keyboard hint'); }
+    return /keyboard/i.test(h); });
+  await step('Dictate on a phone listens, keeps going through pauses, and takes spoken punctuation (rev 161, 163)', async () => {
     if(!(await page.evaluate(()=>typeof micStart==='function'))) return 'SKIP: this version sends phones to the keyboard mic';
-    await page.evaluate(()=>{ window.__sr.mode='talk'; window.__sr.starts=0; window.__sr.said=['hello comma world period','new paragraph second line']; const t=document.querySelector('#manuscript'); t.focus(); t.setSelectionRange(t.value.length,t.value.length); });
+    await page.evaluate(()=>{ try{ localStorage.removeItem('inkhorse-dictate-keyboard'); }catch(_){ } window.__sr.mode='talk'; window.__sr.starts=0; window.__sr.said=['hello comma world period','new paragraph second line']; const t=document.querySelector('#manuscript'); t.focus(); t.setSelectionRange(t.value.length,t.value.length); });
     await tools(); await page.click('#micBtn'); await page.waitForTimeout(150);
     const pressed=await page.getAttribute('#micBtn','aria-pressed');
     await page.waitForTimeout(1200);
     const v=await T(), st=await page.evaluate(()=>({starts:window.__sr.starts,on:document.querySelector('#micBtn').getAttribute('aria-pressed')}));
     await page.evaluate(()=>{ window.__sr.mode='blocked'; });
-    if(pressed!=='true') return 'Dictate did not start listening';
-    if(!v.endsWith('Hello, world.\nSecond line')) return 'text was: '+JSON.stringify(v.slice(-40));
-    if(st.starts<3) return 'did not keep listening after a pause (started '+st.starts+' times)';
-    if(st.on!=='false') return 'did not stop after a long quiet';
+    if(pressed!=='true') throw new Error('Dictate did not start listening');
+    if(!v.endsWith('Hello, world.\nSecond line')) throw new Error('text was: '+JSON.stringify(v.slice(-40)));
+    if(st.starts<3) throw new Error('did not keep listening after a pause (started '+st.starts+' times)');
+    if(st.on!=='false') throw new Error('did not stop after a long quiet');
     await page.click('#undoBtn'); await page.click('#undoBtn'); await page.waitForTimeout(200);
   });
   await step('Focus mode in and out', async () => { await tools(); await page.click('#focusBtn'); await page.waitForTimeout(300); const on=await page.evaluate(()=>document.body.className.includes('focus')); await page.keyboard.press('Escape'); await page.waitForTimeout(300); return on; });
@@ -173,7 +181,7 @@ const path = require('path');
     const chs=await page.evaluate(()=>rOrder().length);
     await page.evaluate(id=>{ try{ leaveLibrary(); }catch(_){ } },id);
     if(ms>4000) throw new Error(`big book took ${ms} ms to open (${chs} chapters)`);
-    return `${ms} ms, ${chs} chapters`;
+    return `OK: ${ms} ms, ${chs} chapters`;
   });
   /* ===== Formatting engine: one step per rule in docs/FORMATTING-STANDARD.md. A FAIL names the rule that broke. ===== */
   let FMT=null;
@@ -233,7 +241,7 @@ const path = require('path');
       return {breaks,bad};
     });
     if(r.bad.length) throw new Error(r.bad.length+' of '+r.breaks+' breaks: '+r.bad.slice(0,3).join('; '));
-    return r.breaks+' paragraph breaks checked';
+    return 'OK: '+r.breaks+' paragraph breaks checked';
   });
   await F('No pop-up after importing a book', f=>!/Import check/.test(f.toast)||'pop-up: '+f.toast);
   await step('Contents pages: one Inkhorse style for any book (rev 88)', async () => page.evaluate(() => {
