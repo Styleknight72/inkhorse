@@ -115,10 +115,25 @@ const path = require('path');
     if(r.bt < r.tt + (r.tb-r.tt)/2) throw new Error('live words box is in the top half (top '+Math.round(r.bt)+', writing area '+Math.round(r.tt)+'–'+Math.round(r.tb)+')');
     if(r.bb > r.tb + 2) throw new Error('live words box hangs below the writing area');
   });
+  await step('Full screen: a hint the first times (double-tap to play or pause), a play/pause sign on double-tap, and no hint after 3 times (rev 169)', async () => {
+    if(!(await page.evaluate(()=>typeof fsHint==='function'))) return 'SKIP: this version has no full-screen hint';
+    const r=await page.evaluate(async()=>{ const w=ms=>new Promise(r=>setTimeout(r,ms)), fromTab=S.tab;
+      localStorage.removeItem('inkhorse-fs-hint-shown'); toldImmersive=false; setImmersive(true); await w(100);
+      const h=document.querySelector('#fsHint'), hint=!h.hidden && /Double-tap/.test(h.textContent);
+      listenToggle(); await w(60); const flash1=!document.querySelector('#ppFlash').hidden; listenToggle();   // pause straight away, so the reading doesn't move on to another chapter
+      await w(900); const flashGone=document.querySelector('#ppFlash').hidden;
+      setImmersive(false); try{ ttsStop(); }catch(_){ }
+      localStorage.setItem('inkhorse-fs-hint-shown','3'); toldImmersive=false; h.hidden=true; setImmersive(true); await w(100); const quiet=h.hidden; setImmersive(false); setTab(fromTab); await w(300);   // put the app back where it was for the next checks
+      return {hint,flash1,flashGone,quiet}; });
+    if(!r.hint) throw new Error('no hint on entering full screen');
+    if(!r.flash1) throw new Error('no play/pause sign after the double-tap action');
+    if(!r.flashGone) throw new Error('the play/pause sign did not go away');
+    if(!r.quiet) throw new Error('hint still shows after 3 times');
+  });
   await step('Focus mode in and out', async () => { await tools(); await page.click('#focusBtn'); await page.waitForTimeout(300); const on=await page.evaluate(()=>document.body.className.includes('focus')); await page.keyboard.press('Escape'); await page.waitForTimeout(300); return on; });
   await step('Hoofprint opens and closes', async () => { await tools(); await page.click('#hpBtn'); await page.waitForTimeout(300); const v=await page.isVisible('#hpPanel'); await page.click('#hpDone'); return v; });
   await step('Hoofprint offers Bolduc for "bold duck"', async () => { await page.evaluate(()=>{ S.hp.words.push('Bolduc'); saveSettings(); }); await page.fill('#manuscript','My grandmother was a bold duck from Quebec. She was kind.'); await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setSelectionRange(t.value.length,t.value.length); }); await page.waitForTimeout(1500); return /Bolduc/.test(await page.textContent('#hpBar')); });
-  await step('Chapters panel: add a chapter, close', async () => { await page.click('#chBtn',{timeout:4000}).catch(e=>{throw new Error('chBtn: '+e.message.split('\n').slice(0,6).join(' / '))}); await page.waitForTimeout(300); await page.click('#addCh',{timeout:4000}).catch(e=>{throw new Error('addCh: '+e.message.split('\n').slice(0,8).join(' / '))}); await page.waitForTimeout(300); const l=await page.textContent('#chBtnLabel'); if(await page.isVisible('#drawerDone')) await page.click('#drawerDone'); await page.waitForTimeout(300); return /2 of/.test(l); });
+  await step('Chapters panel: add a chapter, close', async () => { await page.click('#chBtn',{timeout:4000}).catch(e=>{throw new Error('chBtn: '+e.message.split('\n').slice(0,6).join(' / '))}); await page.waitForTimeout(300); await page.click('#addCh',{timeout:4000}).catch(e=>{throw new Error('addCh: '+e.message.split('\n').slice(0,8).join(' / '))}); await page.waitForTimeout(300); const l=await page.textContent('#chBtnLabel'); if(await page.isVisible('#drawerDone')) await page.click('#drawerDone'); await page.waitForTimeout(300); return /2 of/.test(l) || ('label was: '+l); });
   await step('Read tab shows pages and page numbers', async () => { await page.click('#tab-read'); await page.waitForTimeout(800); return /of \d/.test(await page.textContent('#pgOf')); });
   await step('Jump to: numbers agree with the counter', async () => { const of=(await page.textContent('#pgOf')).match(/\d+/)[0]; await page.click('#whereBtn'); await page.waitForTimeout(300); const now=await page.textContent('#gotoNow'); const list=await page.textContent('#gotoList'); await page.click('#gotoDone'); return now.includes('of '+of) && !/of 7[0-9]|starts on/.test(list) ? true : {of,now:now.slice(0,40)}; });
   await step('page turn by arrow key', async () => { await page.keyboard.press('ArrowRight'); await page.waitForTimeout(600); await page.keyboard.press('ArrowLeft'); await page.waitForTimeout(600); });
