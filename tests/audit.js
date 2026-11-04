@@ -109,6 +109,12 @@ const path = require('path');
     if(r.inApp) throw new Error('note shows inside the Home Screen app too');
     if(!r.gone||!r.stays) throw new Error('Got it did not hide the note for good');
   });
+  await step('Dictate: the live words sit at the bottom of the writing area, not over the first lines (rev 168)', async () => {
+    if(!(await page.evaluate(()=>typeof liveWords==='function' && (window.INK_VERSION||{}).rev>=168))) return 'SKIP: before rev 168 the live words sat at the top';
+    const r=await page.evaluate(()=>{ liveWords('hearing these words'); const b=dictLive.getBoundingClientRect(), t=document.querySelector('#manuscript').getBoundingClientRect(); liveWords(''); return {bt:b.top,bb:b.bottom,tt:t.top,tb:t.bottom}; });
+    if(r.bt < r.tt + (r.tb-r.tt)/2) throw new Error('live words box is in the top half (top '+Math.round(r.bt)+', writing area '+Math.round(r.tt)+'–'+Math.round(r.tb)+')');
+    if(r.bb > r.tb + 2) throw new Error('live words box hangs below the writing area');
+  });
   await step('Focus mode in and out', async () => { await tools(); await page.click('#focusBtn'); await page.waitForTimeout(300); const on=await page.evaluate(()=>document.body.className.includes('focus')); await page.keyboard.press('Escape'); await page.waitForTimeout(300); return on; });
   await step('Hoofprint opens and closes', async () => { await tools(); await page.click('#hpBtn'); await page.waitForTimeout(300); const v=await page.isVisible('#hpPanel'); await page.click('#hpDone'); return v; });
   await step('Hoofprint offers Bolduc for "bold duck"', async () => { await page.evaluate(()=>{ S.hp.words.push('Bolduc'); saveSettings(); }); await page.fill('#manuscript','My grandmother was a bold duck from Quebec. She was kind.'); await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setSelectionRange(t.value.length,t.value.length); }); await page.waitForTimeout(1500); return /Bolduc/.test(await page.textContent('#hpBar')); });
