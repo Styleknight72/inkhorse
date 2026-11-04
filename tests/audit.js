@@ -158,6 +158,40 @@ const path = require('path');
       await page.fill('#manuscript',keep); await page.waitForTimeout(600);
     }
   });
+  await step('Fix on a phone with the keyboard up: the words fill the space, Done stays on screen, the thumb scrolls and places the cursor, and the player keeps one page number (rev 173)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=173))) return 'SKIP: before rev 173';
+    const fromTab=await page.evaluate(()=>S.tab), keep=await T();
+    await page.fill('#manuscript', Array.from({length:60},(_,i)=>'Paragraph '+i+' has a number of words in it so that the chapter runs to several pages for this check.').join('\n'));
+    await page.waitForTimeout(1200);
+    try{
+      await page.evaluate(()=>{ setTab('read'); S.rch=S.cur; S.anchor=0; try{ refreshReader(); }catch(_){ } }); await page.waitForTimeout(400);
+      await page.evaluate(()=>{ const P=pag(S.rch).pages; S.anchor=P[Math.min(2,P.length-1)][0]; refreshReader(); }); await page.waitForTimeout(600);   // a full page, not the chapter opening
+      const r=await page.evaluate(async()=>{ const w=ms=>new Promise(r=>setTimeout(r,ms));
+        ttsPlay(); ttsPause(); await w(100); const where0=$('#ttsWhere').textContent;
+        const sp=document.querySelector('#spread .ptext [data-w]'); fixOpen({ch:sp.closest('.ptext').dataset.ch,w:+sp.dataset.w}); await w(150);
+        document.body.classList.add('kbup'); document.body.style.height='430px'; await w(400);   // as if the phone keyboard took the bottom of the screen
+        const fb=$('#fixBox').getBoundingClientRect(), done=$('#fixDone').getBoundingClientRect(), ft=$('#fixText');
+        const headerShown=getComputedStyle(document.querySelector('header.top')).display!=='none';
+        const touch=getComputedStyle(document.querySelector('#stage')).touchAction;
+        const canScroll=ft.scrollHeight>ft.clientHeight; ft.scrollTop=40; const scrolled=ft.scrollTop>0; const dbg={sh:ft.scrollHeight,ch:ft.clientHeight,len:ft.value.length,ov:getComputedStyle(ft).overflowY,fs:getComputedStyle(ft).fontSize,fbH:fb.height};
+        ft.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:7,clientX:fb.left+30,clientY:fb.top+80})); const grabbed=!!ptr; ptr=null;
+        const where1=$('#ttsWhere').textContent;
+        document.body.classList.remove('kbup'); document.body.style.height=''; fixDone(); try{ ttsStop(); }catch(_){ } await w(400);
+        return {dbg,fbTop:fb.top,fbBottom:fb.bottom,doneTop:done.top,doneBottom:done.bottom,fbH:fb.height,headerShown,touch,canScroll,scrolled,grabbed,where0,where1}; });
+      if(r.headerShown) throw new Error('logo and tabs still take room above the Fix box');
+      if(r.doneTop<0||r.doneBottom>430) throw new Error('Done is off screen ('+Math.round(r.doneTop)+'–'+Math.round(r.doneBottom)+')');
+      if(r.fbBottom>432) throw new Error('Fix box runs under the keyboard (bottom '+Math.round(r.fbBottom)+')');
+      if(r.fbH<250) throw new Error('Fix box is only '+Math.round(r.fbH)+' px tall above the keyboard');
+      if(r.touch!=='auto') throw new Error('the page area still keeps the finger (touch-action '+r.touch+')');
+      if(!r.canScroll||!r.scrolled) throw new Error('the Fix text cannot scroll ('+JSON.stringify(r.dbg)+')');
+      if(r.grabbed) throw new Error('a touch on the Fix text was taken for a page turn');
+      if(r.where0!==r.where1) throw new Error('player page changed while fixing: '+r.where0+' → '+r.where1);
+      if(!/page \d/.test(r.where0)) throw new Error('player does not show a book page: '+r.where0);
+    } finally {
+      await page.evaluate(f=>{ setTab(f); },fromTab); await page.waitForTimeout(400);
+      await page.fill('#manuscript',keep); await page.waitForTimeout(600);
+    }
+  });
   await step('Focus mode in and out', async () => { await tools(); await page.click('#focusBtn'); await page.waitForTimeout(300); const on=await page.evaluate(()=>document.body.className.includes('focus')); await page.keyboard.press('Escape'); await page.waitForTimeout(300); return on; });
   await step('Hoofprint opens and closes', async () => { await tools(); await page.click('#hpBtn'); await page.waitForTimeout(300); const v=await page.isVisible('#hpPanel'); await page.click('#hpDone'); return v; });
   await step('Hoofprint offers Bolduc for "bold duck"', async () => { await page.evaluate(()=>{ S.hp.words.push('Bolduc'); saveSettings(); }); await page.fill('#manuscript','My grandmother was a bold duck from Quebec. She was kind.'); await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setSelectionRange(t.value.length,t.value.length); }); await page.waitForTimeout(1500); return /Bolduc/.test(await page.textContent('#hpBar')); });
