@@ -97,6 +97,18 @@ const path = require('path');
     if(r.a!=='We are going testing the microphone') throw new Error('dictated phrase came in as: '+r.a);
     if(r.sug.some(x=>/^Testing>Testing To$/.test(x))) throw new Error('Hoofprint offered: '+r.sug.join(', '));
   });
+  await step('iPhone Safari: the Library warns that the Home Screen icon keeps separate books, and Got it hides it (rev 166)', async () => {
+    if(!(await page.evaluate(()=>typeof inIosSafari==='function'))) return 'SKIP: this version has no Safari note';
+    const r=await page.evaluate(async()=>{ Object.defineProperty(navigator,'standalone',{value:false,configurable:true}); localStorage.removeItem('inkhorse-safari-note-ok');
+      renderShelf(); const shown=!!document.querySelector('#safariNote');
+      Object.defineProperty(navigator,'standalone',{value:true,configurable:true}); renderShelf(); const inApp=!!document.querySelector('#safariNote');
+      Object.defineProperty(navigator,'standalone',{value:false,configurable:true}); renderShelf();
+      document.querySelector('[data-sfok]').click(); const gone=!document.querySelector('#safariNote'); renderShelf(); const stays=!document.querySelector('#safariNote');
+      delete navigator.standalone; return {shown,inApp,gone,stays}; });
+    if(!r.shown) throw new Error('no note in Safari although there is writing');
+    if(r.inApp) throw new Error('note shows inside the Home Screen app too');
+    if(!r.gone||!r.stays) throw new Error('Got it did not hide the note for good');
+  });
   await step('Focus mode in and out', async () => { await tools(); await page.click('#focusBtn'); await page.waitForTimeout(300); const on=await page.evaluate(()=>document.body.className.includes('focus')); await page.keyboard.press('Escape'); await page.waitForTimeout(300); return on; });
   await step('Hoofprint opens and closes', async () => { await tools(); await page.click('#hpBtn'); await page.waitForTimeout(300); const v=await page.isVisible('#hpPanel'); await page.click('#hpDone'); return v; });
   await step('Hoofprint offers Bolduc for "bold duck"', async () => { await page.evaluate(()=>{ S.hp.words.push('Bolduc'); saveSettings(); }); await page.fill('#manuscript','My grandmother was a bold duck from Quebec. She was kind.'); await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setSelectionRange(t.value.length,t.value.length); }); await page.waitForTimeout(1500); return /Bolduc/.test(await page.textContent('#hpBar')); });
