@@ -130,6 +130,36 @@ const path = require('path');
     if(!r.flashGone) throw new Error('the play/pause sign did not go away');
     if(!r.quiet) throw new Error('hint still shows after 3 times');
   });
+  await step('Full screen, real taps: double-tap left, middle or right plays/pauses without turning the page; one tap on a side turns it; one tap in the middle brings the controls back (rev 170)', async () => {
+    if(!(await page.evaluate(()=>typeof midTapX!=='undefined' && (window.INK_VERSION||{}).rev>=170))) return 'SKIP: before rev 170 double-tap only counted in the middle';
+    const fromTab=await page.evaluate(()=>S.tab), keep=await T();
+    await page.fill('#manuscript', Array.from({length:60},(_,i)=>'Paragraph '+i+' has a number of words in it so that the chapter runs to several pages for this check.').join('\n'));
+    await page.waitForTimeout(1200);
+    try{
+      await page.evaluate(()=>{ localStorage.setItem('inkhorse-fs-hint-shown','3'); setTab('read'); S.rch=S.cur; S.anchor=0; try{ refreshReader(); }catch(_){ } });
+      await page.waitForTimeout(600);
+      const pages=await page.evaluate(()=>pag(S.rch).pages.length); if(pages<3) throw new Error('the test chapter has only '+pages+' pages');
+      await page.evaluate(()=>setImmersive(true)); await page.waitForTimeout(600);
+      const st=await page.evaluate(()=>{ const r=document.querySelector('#stage').getBoundingClientRect(); return {l:r.left,w:r.width,y:r.top+r.height/2}; });
+      const pos=()=>page.evaluate(()=>S.rch+'@'+S.anchor), playing=()=>page.evaluate(()=>!!TTS.playing);
+      const dbl=async fx=>{ await page.touchscreen.tap(st.l+st.w*fx,st.y); await page.waitForTimeout(140); await page.touchscreen.tap(st.l+st.w*fx,st.y); await page.waitForTimeout(700); };
+      const p0=await pos();
+      for(const [fx,name] of [[0.85,'right'],[0.5,'middle'],[0.15,'left']]){
+        const was=await playing(); await dbl(fx);
+        if(await playing()) await page.evaluate(()=>{ ttsPause(); });   // keep the voice from turning pages by itself during the check
+        if(await pos()!==p0) throw new Error('double-tap on the '+name+' turned the page');
+        if(was) throw new Error('setup: was already playing');
+      }
+      await page.evaluate(()=>{ try{ ttsStop(); }catch(_){ } }); await page.waitForTimeout(200);
+      await page.touchscreen.tap(st.l+st.w*0.85,st.y); await page.waitForTimeout(1200);
+      if(await pos()===p0) throw new Error('one tap on the right side did not turn the page');
+      await page.touchscreen.tap(st.l+st.w*0.5,st.y); await page.waitForTimeout(700);
+      if(await page.evaluate(()=>document.body.classList.contains('immersive'))) throw new Error('one tap in the middle did not bring the controls back');
+    } finally {
+      await page.evaluate(f=>{ try{ ttsStop(); }catch(_){ } setImmersive(false); setTab(f); },fromTab); await page.waitForTimeout(400);
+      await page.fill('#manuscript',keep); await page.waitForTimeout(600);
+    }
+  });
   await step('Focus mode in and out', async () => { await tools(); await page.click('#focusBtn'); await page.waitForTimeout(300); const on=await page.evaluate(()=>document.body.className.includes('focus')); await page.keyboard.press('Escape'); await page.waitForTimeout(300); return on; });
   await step('Hoofprint opens and closes', async () => { await tools(); await page.click('#hpBtn'); await page.waitForTimeout(300); const v=await page.isVisible('#hpPanel'); await page.click('#hpDone'); return v; });
   await step('Hoofprint offers Bolduc for "bold duck"', async () => { await page.evaluate(()=>{ S.hp.words.push('Bolduc'); saveSettings(); }); await page.fill('#manuscript','My grandmother was a bold duck from Quebec. She was kind.'); await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setSelectionRange(t.value.length,t.value.length); }); await page.waitForTimeout(1500); return /Bolduc/.test(await page.textContent('#hpBar')); });
