@@ -115,20 +115,18 @@ const path = require('path');
     if(r.bt < r.tt + (r.tb-r.tt)/2) throw new Error('live words box is in the top half (top '+Math.round(r.bt)+', writing area '+Math.round(r.tt)+'–'+Math.round(r.tb)+')');
     if(r.bb > r.tb + 2) throw new Error('live words box hangs below the writing area');
   });
-  await step('Full screen: a hint the first times (double-tap to play or pause), a play/pause sign on double-tap, and no hint after 3 times (rev 169)', async () => {
-    if(!(await page.evaluate(()=>typeof fsHint==='function'))) return 'SKIP: this version has no full-screen hint';
-    const r=await page.evaluate(async()=>{ const w=ms=>new Promise(r=>setTimeout(r,ms)), fromTab=S.tab;
-      localStorage.removeItem('inkhorse-fs-hint-shown'); toldImmersive=false; setImmersive(true); await w(100);
-      const h=document.querySelector('#fsHint'), hint=!h.hidden && /Double-tap/.test(h.textContent);
-      listenToggle(); await w(60); const flash1=!document.querySelector('#ppFlash').hidden; listenToggle();   // pause straight away, so the reading doesn't move on to another chapter
+  await step('Full screen: the tap message every time it goes full screen, a note every time it leaves, and a play/pause sign on double-tap (rev 169, 171)', async () => {
+    if(!(await page.evaluate(()=>typeof fsHint==='function' && (window.INK_VERSION||{}).rev>=171))) return 'SKIP: before rev 171 the hint showed only the first few times';
+    const r=await page.evaluate(async()=>{ const w=ms=>new Promise(r=>setTimeout(r,ms)), fromTab=S.tab, h=document.querySelector('#fsHint'), out=[];
+      setTab('read'); await w(200);
+      for(let k=0;k<3;k++){ setImmersive(true); await w(100); out.push(!h.hidden && /Double-tap/.test(h.textContent)); setImmersive(false); await w(100); out.push(!h.hidden && /go full screen again/.test(h.textContent)); }
+      setImmersive(true); await w(50); listenToggle(); await w(60); const flash=!document.querySelector('#ppFlash').hidden; listenToggle();
       await w(900); const flashGone=document.querySelector('#ppFlash').hidden;
-      setImmersive(false); try{ ttsStop(); }catch(_){ }
-      localStorage.setItem('inkhorse-fs-hint-shown','3'); toldImmersive=false; h.hidden=true; setImmersive(true); await w(100); const quiet=h.hidden; setImmersive(false); setTab(fromTab); await w(300);   // put the app back where it was for the next checks
-      return {hint,flash1,flashGone,quiet}; });
-    if(!r.hint) throw new Error('no hint on entering full screen');
-    if(!r.flash1) throw new Error('no play/pause sign after the double-tap action');
+      setImmersive(false); try{ ttsStop(); }catch(_){ } setTab(fromTab); await w(300); h.hidden=true;
+      return {out,flash,flashGone}; });
+    if(r.out.some(x=>!x)) throw new Error('message missing on enter/leave: '+JSON.stringify(r.out));
+    if(!r.flash) throw new Error('no play/pause sign after the double-tap action');
     if(!r.flashGone) throw new Error('the play/pause sign did not go away');
-    if(!r.quiet) throw new Error('hint still shows after 3 times');
   });
   await step('Full screen, real taps: double-tap left, middle or right plays/pauses without turning the page; one tap on a side turns it; one tap in the middle brings the controls back (rev 170)', async () => {
     if(!(await page.evaluate(()=>typeof midTapX!=='undefined' && (window.INK_VERSION||{}).rev>=170))) return 'SKIP: before rev 170 double-tap only counted in the middle';
