@@ -14,6 +14,7 @@ Steve is not a coder. He tests on his iPhone 15 Pro Max and decides what goes li
 8. **Be honest.** Say what was tested, what wasn't, and how sure you are. Never claim a fix works on his iPhone without his screenshot.
 
 ## Where things are
+- `NEXT-SESSION.md` where the last session stopped and the agreed plan: read it right after this file
 - `app.html` live app · `preview/next.html` next version under test · `preview/app.html` Inkhorse Plus beta (set aside)
 - `docs/FORMATTING-STANDARD.md` the standard; `docs/Inkhorse Formatting Standard.epub` built from it by `tools/epub/build-epub.py` (every e-book must pass EPUBCheck)
 - `CHANGELOG.md` the Release Notes (history of every rev and release); `docs/Inkhorse Release Notes.epub` built from it
