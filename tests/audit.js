@@ -104,10 +104,27 @@ const path = require('path');
       Object.defineProperty(navigator,'standalone',{value:true,configurable:true}); renderShelf(); const inApp=!!document.querySelector('#safariNote');
       Object.defineProperty(navigator,'standalone',{value:false,configurable:true}); renderShelf();
       document.querySelector('[data-sfok]').click(); const gone=!document.querySelector('#safariNote'); renderShelf(); const stays=!document.querySelector('#safariNote');
-      delete navigator.standalone; return {shown,inApp,gone,stays}; });
+      const mini=!!document.querySelector('#safariMini'); if(mini) document.querySelector('#safariMini').click(); const back=!!document.querySelector('#safariNote');
+      document.querySelector('[data-sfok]').click(); const miniAgain=!!document.querySelector('#safariMini');
+      delete navigator.standalone; return {shown,inApp,gone,stays,mini,back,miniAgain}; });
     if(!r.shown) throw new Error('no note in Safari although there is writing');
     if(r.inApp) throw new Error('note shows inside the Home Screen app too');
     if(!r.gone||!r.stays) throw new Error('Got it did not hide the note for good');
+    if(!r.mini) throw new Error('after Got it there is no small link to bring the note back (rev 178)');
+    if(!r.back) throw new Error('the small link did not bring the note back (rev 178)');
+    if(!r.miniAgain) throw new Error('Got it a second time did not leave the small link (rev 178)');
+  });
+  await step('Drafts: every draft is listed, oldest first, numbered "Draft 1 of 3"; the name is the day, not the number; an empty draft is not listed (rev 178)', async () => {
+    const r=await page.evaluate(async()=>{ const prev=SLOT; if(await openDrafts()===false) return {err:'could not open drafts'};
+      const ids=['alpha one two','beta three four five','gamma six'].map(x=>{ const id=addChapter('Draft · Nov 3',x); dirty.add(id); return id; }); const empty=addChapter('',''); dirty.add(empty); touchIndex();
+      refreshDrafts(); renderShelf();
+      const rows=[...document.querySelectorAll('.bookrow.draftrow .binfo')].map(e=>e.textContent.replace(/\s+/g,' ').trim());
+      ids.concat([empty]).forEach(id=>{ if(CH.has(id)) dropChapter(id); }); refreshDrafts();
+      if(prev!==DSLOT){ await flushSync(); await switchToBook(prev); } renderShelf(); return {rows}; });
+    if(r.err) throw new Error(r.err);
+    const need=['Draft 1 of 3','Draft 2 of 3','Draft 3 of 3'];
+    if(r.rows.length!==3 || need.some((n,i)=>r.rows[i].indexOf(n)<0)) throw new Error('drafts are not numbered or not all listed: '+JSON.stringify(r.rows));
+    return 'OK: '+JSON.stringify(r.rows);
   });
   await step('Dictate: the live words sit at the bottom of the writing area, not over the first lines (rev 168)', async () => {
     if(!(await page.evaluate(()=>typeof liveWords==='function' && (window.INK_VERSION||{}).rev>=168))) return 'SKIP: before rev 168 the live words sat at the top';

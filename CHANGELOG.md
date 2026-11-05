@@ -17,6 +17,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- The note about Safari and the Home Screen keeps a small link after you tap Got it (ⓘ Safari and the Home Screen: how books move), so you can bring it back any time.
+- Drafts are numbered in the list (Draft 1 of 3, Draft 2 of 3…), oldest first. The name "Draft · Nov 3" is the day it was started, not its number.
 - Page sound (preview): the sound of a real book page turning, when a page you turn by swipe, tap or arrow key goes over. Aa → Page sound turns it off. It stays silent when reading aloud turns the page for you, so it never talks over the voice.
 - The full-screen tap messages stay up 4 seconds longer (9 seconds going in, 7 coming out).
 - Paper texture (preview): pages now have a faint paper grain and soft shading toward the edges, tuned for Light, StyleKnight, Sepia and Sky. Aa → Paper texture switches it off. It never changes your words, your pages or your exported books.
@@ -56,6 +58,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 178 (November 4, 2026, preview): From Steve's iPhone Library screen. (1) He tapped Got it on the Safari-and-Home-Screen note and then couldn't bring it back. Now a small link, "ⓘ Safari and the Home Screen: how books move", stays where the note was, and tapping it shows the note again. (2) The Drafts list showed one draft, "Draft · Nov 3", and Steve read the 3 as draft number three, thinking drafts 1 and 2 were missing. The 3 is the date. The list already showed every non-empty draft on that device, so this was a labeling problem: each draft is now numbered "Draft 1 of N", oldest first. A draft written in the other place (Safari vs the Home Screen icon) lives there, not here; the manual now says so. Two automatic checks cover both.
 
 Rev 177 (November 4, 2026, preview): Steve found rev 176's page sound annoying (it was made from noise, so it hissed). It is now a real recording of a book page turning: "Turned Page" by DavidGreck from BigSoundBank, CC0 (public domain, no credit required, but credited in the manual anyway). It was trimmed to about half a second and shrunk to about 6 KB, so it lives inside the app and works offline. Each turn plays it a hair faster or slower so it never sounds copied. Same rules as before: it plays only when you turn a page, stays silent when reading aloud turns the page, and Aa → Page sound switches it off. One new automatic check confirms the recording decodes and is audible. To do when this goes live: add the credit line to the About page.
 
