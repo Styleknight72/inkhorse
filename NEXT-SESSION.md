@@ -4,8 +4,8 @@ Written November 4, 2026, at the end of a session. Read CLAUDE.md first; this fi
 
 ## Where things stand
 
-- **Live** (getinkhorse.com/app.html), the **preview** (preview/next.html) and the pinned claude.ai Inkhorse artifact are the **same file: rev 174**, "1.1 candidate". Release 1.1 has not been called yet.
-- `node tests/audit.js app.html` passes **69 of 69**, none skipped (needs `jszip` and `pdfjs-dist@3.11.174` on NODE_PATH, and `PDFJS_DIR` set to its `build` folder, or the import steps skip).
+- **Live** (getinkhorse.com/app.html), the **preview** (preview/next.html) and the pinned claude.ai Inkhorse artifact are the **same file: rev 178**, "1.1 candidate" (went live Nov 4 night on Steve's "push it live"). Release 1.1 has not been called yet: Steve has not said a rev is stable.
+- `node tests/audit.js app.html` passes **74 of 74**, none skipped (needs `jszip` and `pdfjs-dist@3.11.174` on NODE_PATH, and `PDFJS_DIR` set to its `build` folder, or the import steps skip).
 - Revs 160–174 (Nov 1–4) came from Steve testing on his iPhone. See CHANGELOG.md for each one.
 
 ## Things learned this week (don't relearn them)
@@ -14,6 +14,12 @@ Written November 4, 2026, at the end of a session. Read CLAUDE.md first; this fi
 - **Real iPhone behaviour the test browser does not show:** Safari and the Home Screen app keep separate storage; focusing a textarea outside a tap leaves it "focused" with no keyboard; a thumb double-tap lands off center; the page area's `touch-action:none` and pointer capture block scrolling inside anything placed in it.
 - **Steve's memoir** ("What If It's Already Here?") is writable in **Safari**; in his Home Screen app it is only an added-to-read copy.
 - **Steve's rules:** Inkhorse never goes backwards (make the app live up to its claims, don't shrink the claims); never mislead users; the manual matches the app; history goes only in CHANGELOG.md.
+
+## New in revs 175–178 (live)
+
+- Paper texture on pages (Aa → Paper texture), a real recorded page-turn sound (Aa → Page sound; silent when read-aloud turns the page; CC0 "Turned Page" by DavidGreck, BigSoundBank), full-screen tap messages 4 s longer, a small link that brings back the Safari/Home Screen note after Got it, and drafts numbered "Draft N of M".
+- Steve thought "Draft · Nov 3" meant draft number 3. Still unknown: whether his drafts 1 and 2 are in the Home Screen app (separate storage). Ask him what he found.
+- Not yet heard on his iPhone: the page sound's loudness on the Home Screen app, and the texture strength in every theme.
 
 ## Open question for Steve
 
