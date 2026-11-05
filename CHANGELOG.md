@@ -17,6 +17,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- Hoofprint no longer offers to turn everyday words into your names ("kind" into Kindle, "bold" into Bolduc). Real mishearings like "bold duck" → Bolduc are still caught. (preview)
 - Drafts can travel between Safari and the Home Screen icon: Save drafts file in one place, Load drafts file in the other. It only adds; nothing is replaced or doubled. (preview)
 - The note about Safari and the Home Screen keeps a small link after you tap Got it (ⓘ Safari and the Home Screen: how books move), so you can bring it back any time.
 - Drafts are numbered in the list (Draft 1 of 3, Draft 2 of 3…), oldest first. The name "Draft · Nov 3" is the day it was started, not its number.
@@ -59,6 +60,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 180 (November 4, 2026, preview): Steve asked for every Write tool to be checked. All of them were tried by tapping, like a person would, on the live app (rev 178): Dictate, Hoofprint (panel, add a word, add a fix, Fix, Undo, on/off), Word count, Next mark (shows its count, selects the marked sentence, disappears once the sentence is retyped), Focus, Picture, Import, Paste, Copy, Top of chapter and Done all worked. Next mark was never taken out: it only shows up when there are lime marks in the book, and the number is how many are left. One real bug was found in Hoofprint: it offered to change ordinary words into names that start the same way ("She was kind" → Kindle, "a bold move" → Bolduc, "kind to" → Kindle). Now a single word is only offered as a name when it is the same length or one letter off and is not just the start of the name, and two or three words are not offered together when one end is a small word like to, of or the. "Bold duck" → Bolduc, "Lesard" → Lessard and "Peletier" → Pelletier are still offered, and fixes you taught it are untouched. The manual's Hoofprint section says so. Two new automatic checks: the Hoofprint false offers, and every Tools button tapped in turn.
 
 Rev 179 (November 4, 2026, preview): Steve's Home Screen app showed only "Draft · Nov 2" while Safari held "Draft · Nov 3": drafts are kept separately by Safari and the Home Screen icon, so none were lost, but he could not reach them from one place. The Drafts section now has Save drafts file and Load drafts file. Save writes every non-empty draft in this place to a small file; Load adds the drafts from such a file into this place, skipping any that are already here (same title and words), and never replaces or deletes anything. The manual's Drafts section describes it. One new automatic check covers saving, loading, and loading twice without doubling.
 

@@ -146,6 +146,35 @@ const path = require('path');
     if(!r.bad) throw new Error('a file that is not a drafts file was accepted');
     if(!r.back) throw new Error('did not return to the book that was open');
   });
+  await step('Hoofprint: everyday words are not offered as names that start the same ("kind" is not Kindle, "bold" is not Bolduc); real mishearings still are (rev 180)', async () => {
+    const r=await page.evaluate(()=>{ const keep=S.hp.words.slice(); S.hp.words.push('Bolduc','Kindle','Lessard','Pelletier'); HP.vk=''; const f=t=>hpScan(t,0,t.length).map(x=>x.to);
+      const out={kind:f('She was kind to me.'),bold:f('That was a bold move.'),Bold:f('Bold moves win.'),duck:f('My grandmother was a bold duck from Quebec.'),lesard:f('Her name was Lesard back then.'),pell:f('Eva Peletier came later.')};
+      S.hp.words=keep; HP.vk=''; return out; });
+    for(const k of ['kind','bold','Bold']) if(r[k].length) throw new Error(`"${k}" was offered as ${r[k].join(', ')}`);
+    if(!r.duck.includes('Bolduc')) throw new Error('"bold duck" is no longer offered as Bolduc');
+    if(!r.lesard.includes('Lessard')||!r.pell.includes('Pelletier')) throw new Error('a one-letter mishearing is no longer caught: '+JSON.stringify(r));
+  });
+  await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
+    await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
+    await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
+    await page.evaluate(()=>{ BOOK.marks=(BOOK.marks||[]).concat([{ch:S.cur,t:'The marked sentence sits here.',w:3}]); marksRev++; marksUI(); });
+    await tools(); if(!(await page.isVisible('#marksBtn'))||(await page.textContent('#marksN')).trim()!=='1') throw new Error('Next mark does not show its count');
+    await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setSelectionRange(0,0); }); await page.click('#marksBtn'); await page.waitForTimeout(300);
+    const sel=await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); return t.value.slice(t.selectionStart,t.selectionEnd); });
+    if(!/marked sentence sits here/.test(sel)) throw new Error('Next mark did not select the marked sentence: '+JSON.stringify(sel));
+    await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setRangeText('The rewritten sentence is new.',t.selectionStart,t.selectionEnd,'end'); t.dispatchEvent(new Event('input',{bubbles:true})); }); await page.waitForTimeout(1200);
+    if(await page.evaluate(()=>!document.querySelector('#marksBtn').hidden)) throw new Error('Next mark still shows after the sentence was retyped');
+    await tools(); const w0=await page.isVisible('#wordCount'); await page.click('#wcBtn'); await page.waitForTimeout(250); const w1=await page.isVisible('#wordCount'); await tools(); await page.click('#wcBtn'); await page.waitForTimeout(250);
+    if(w0===w1) throw new Error('Word count did not switch');
+    await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setSelectionRange(0,0); }); await tools(); await page.click('#copyBtn'); await page.waitForTimeout(300);
+    if(!/rewritten sentence/.test(await page.evaluate(()=>navigator.clipboard.readText()))) throw new Error('Copy did not copy the chapter');
+    await page.evaluate(()=>{ navigator.clipboard.writeText('Pasted words go here.'); const t=document.querySelector('#manuscript'); t.setSelectionRange(t.value.length,t.value.length); }); await tools(); await page.click('#pasteBtn'); await page.waitForTimeout(300);
+    if(!/Pasted words go here\./.test(await T())) throw new Error('Paste did not put the words in');
+    await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setSelectionRange(t.value.length,t.value.length); }); await tools(); await page.click('#pgTop'); await page.waitForTimeout(300);
+    if(!(await page.evaluate(()=>document.querySelector('#manuscript').selectionStart===0))) throw new Error('Top of chapter did not go to the start');
+    await tools(); await page.click('#wToolsDone'); await page.waitForTimeout(300); if(await page.getAttribute('#toolsBtn','aria-expanded')==='true') throw new Error('Done did not close the Tools menu');
+    await page.fill('#manuscript',keep); await page.waitForTimeout(300);
+  });
   await step('Dictate: the live words sit at the bottom of the writing area, not over the first lines (rev 168)', async () => {
     if(!(await page.evaluate(()=>typeof liveWords==='function' && (window.INK_VERSION||{}).rev>=168))) return 'SKIP: before rev 168 the live words sat at the top';
     const r=await page.evaluate(()=>{ liveWords('hearing these words'); const b=dictLive.getBoundingClientRect(), t=document.querySelector('#manuscript').getBoundingClientRect(); liveWords(''); return {bt:b.top,bb:b.bottom,tt:t.top,tb:t.bottom}; });
