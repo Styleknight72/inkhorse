@@ -424,6 +424,35 @@ const path = require('path');
     const a=await at(); await page.evaluate(()=>setHl(true)); await page.waitForTimeout(1000); const b=await at(); await page.evaluate(()=>setHl(false)); await page.waitForTimeout(800);
     return a===b || (()=>{ throw new Error('page moved: '+a+' -> '+b); })();
   });
+  await step('Full screen: the tap messages stay up longer, about 9 seconds going in and 7 coming out (rev 176)', async () => {
+    const r=await page.evaluate(async()=>{ const w=ms=>new Promise(r=>setTimeout(r,ms)), fromTab=S.tab, h=document.querySelector('#fsHint'), out={};
+      setTab('read'); await w(200);
+      setImmersive(true); await w(6000); out.inAt6s=!h.hidden && /Double-tap/.test(h.textContent); await w(3500); out.inGone=h.hidden;
+      setImmersive(false); await w(4500); out.outAt4_5s=!h.hidden && /go full screen again/.test(h.textContent); await w(3000); out.outGone=h.hidden;
+      setTab(fromTab); await w(200); return out; });
+    if(!r.inAt6s) throw new Error('the going-in message was gone before 6 seconds: '+JSON.stringify(r));
+    if(!r.outAt4_5s) throw new Error('the coming-out message was gone before 4.5 seconds: '+JSON.stringify(r));
+    if(!r.inGone || !r.outGone) throw new Error('a message never went away: '+JSON.stringify(r));
+    return 'OK: '+JSON.stringify(r);
+  });
+  await step('Page sound: plays when you turn a page (curl and slide), not when read-aloud turns it, and the Aa switch turns it off (rev 176)', async () => {
+    await page.click('#tab-read').catch(()=>{}); await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200);
+    const r=await page.evaluate(async()=>{ const w=ms=>new Promise(r=>setTimeout(r,ms)), out={}, n=()=>turnSound.count||0, chk=document.querySelector('#sndChk');
+      if(!chk.checked) return {err:'Page sound is not on by default'};
+      const setTurn=t=>{ S.turn=t; };
+      let b=n(); setTurn('curl'); flip(1); await w(1100); out.curl=n()-b;
+      b=n(); setTurn('slide'); flip(1); await w(900); out.slide=n()-b; setTurn('curl');
+      b=n(); noTurnSound=true; flip(1); await w(1100); noTurnSound=false; out.readAloud=n()-b;
+      chk.checked=false; chk.dispatchEvent(new Event('change',{bubbles:true})); await w(200);
+      b=n(); flip(1); await w(1100); out.off=n()-b;
+      chk.checked=true; chk.dispatchEvent(new Event('change',{bubbles:true})); await w(200);
+      return out; });
+    if(r.err) throw new Error(r.err);
+    if(r.curl!==1 || r.slide!==1) throw new Error('a turned page should make one sound: '+JSON.stringify(r));
+    if(r.readAloud!==0) throw new Error('read-aloud turns must be silent: '+JSON.stringify(r));
+    if(r.off!==0) throw new Error('the switch did not turn the sound off: '+JSON.stringify(r));
+    return 'OK: '+JSON.stringify(r);
+  });
   await step('Paper texture: on by default behind every page, off with the Aa switch, and it never changes the pages or the words (rev 175)', async () => {
     await page.click('#tab-read').catch(()=>{}); await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200);
     const st=()=>page.evaluate(()=>{ const f=document.querySelector('#spread .face'); const t=document.querySelector('#spread .ptext'); return {tex:document.body.classList.contains('tex'), bg:f?getComputedStyle(f).backgroundImage:'', info:(document.querySelector('#pageInfo')||{}).textContent, words:t?t.textContent.length:0, chk:document.querySelector('#texChk').checked}; });

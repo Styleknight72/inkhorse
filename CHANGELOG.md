@@ -17,6 +17,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- Page sound (preview): a soft paper sound, made on your phone, when a page you turn by swipe, tap or arrow key goes over. Aa → Page sound turns it off. It stays silent when reading aloud turns the page for you, so it never talks over the voice.
+- The full-screen tap messages stay up 4 seconds longer (9 seconds going in, 7 coming out).
 - Paper texture (preview): pages now have a faint paper grain and soft shading toward the edges, tuned for Light, StyleKnight, Sepia and Sky. Aa → Paper texture switches it off. It never changes your words, your pages or your exported books.
 - Fixing a page on a phone: scroll with your thumb, tap to place the cursor, and the page fills the space above the keyboard with Done always in view.
 - The player shows the same page number as the page bar under the book.
@@ -54,6 +56,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 176 (November 4, 2026, preview): Two things Steve asked for after trying rev 175 on his iPhone. (1) The full-screen messages ("Double-tap the page to play or pause…" and "Tap the middle of the page to go full screen again") stay on screen 4 seconds longer: 9 seconds going into full screen, 7 coming out. (2) Page sound: a soft paper sound, built from noise on the phone itself (no sound file to download), plays when a page you turn goes over, for both Curl and Slide. A cancelled half-turn makes no sound. It stays silent when reading aloud turns the page itself, so it never fights the voice. Aa → Page sound switches it off, and checking the box plays it once. On an iPhone the sound follows the ring/silent switch. The manual's Aa section describes it. Two new automatic checks cover the message timing and the sound.
 
 Rev 175 (November 4, 2026, preview): Premium paper look, from Steve's wish for realistic paper shading. A faint grain, a few soft horizontal paper fibres and a gentle darkening toward the page edges are drawn behind every page, including the back of a page while it curls. Each theme has its own strength (the dark theme is the quietest, so it reads as dark paper, not metal). Aa → Paper texture turns it off. It is only a background: text, pagination and exports are untouched. The manual's Aa section describes it. Still to do from the same wish: a page-turn sound.
 
