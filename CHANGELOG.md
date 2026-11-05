@@ -17,6 +17,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- Drafts can travel between Safari and the Home Screen icon: Save drafts file in one place, Load drafts file in the other. It only adds; nothing is replaced or doubled. (preview)
 - The note about Safari and the Home Screen keeps a small link after you tap Got it (ⓘ Safari and the Home Screen: how books move), so you can bring it back any time.
 - Drafts are numbered in the list (Draft 1 of 3, Draft 2 of 3…), oldest first. The name "Draft · Nov 3" is the day it was started, not its number.
 - Page sound: the sound of a real book page turning, when a page you turn by swipe, tap or arrow key goes over. Aa → Page sound turns it off. It stays silent when reading aloud turns the page for you, so it never talks over the voice.
@@ -58,6 +59,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 179 (November 4, 2026, preview): Steve's Home Screen app showed only "Draft · Nov 2" while Safari held "Draft · Nov 3": drafts are kept separately by Safari and the Home Screen icon, so none were lost, but he could not reach them from one place. The Drafts section now has Save drafts file and Load drafts file. Save writes every non-empty draft in this place to a small file; Load adds the drafts from such a file into this place, skipping any that are already here (same title and words), and never replaces or deletes anything. The manual's Drafts section describes it. One new automatic check covers saving, loading, and loading twice without doubling.
 
 Rev 178 (November 4, 2026, live): From Steve's iPhone Library screen. (1) He tapped Got it on the Safari-and-Home-Screen note and then couldn't bring it back. Now a small link, "ⓘ Safari and the Home Screen: how books move", stays where the note was, and tapping it shows the note again. (2) The Drafts list showed one draft, "Draft · Nov 3", and Steve read the 3 as draft number three, thinking drafts 1 and 2 were missing. The 3 is the date. The list already showed every non-empty draft on that device, so this was a labeling problem: each draft is now numbered "Draft 1 of N", oldest first. A draft written in the other place (Safari vs the Home Screen icon) lives there, not here; the manual now says so. Two automatic checks cover both.
 

@@ -126,6 +126,26 @@ const path = require('path');
     if(r.rows.length!==3 || need.some((n,i)=>r.rows[i].indexOf(n)<0)) throw new Error('drafts are not numbered or not all listed: '+JSON.stringify(r.rows));
     return 'OK: '+JSON.stringify(r.rows);
   });
+  await step('Drafts: Save drafts file / Load drafts file carry drafts between places, add only, never twice (rev 179)', async () => {
+    const r=await page.evaluate(async()=>{ const prev=SLOT; if(await openDrafts()===false) return {err:'could not open drafts'};
+      const mine=addChapter('Draft · Nov 2','kept alpha beta'); dirty.add(mine); touchIndex(); refreshDrafts();
+      const file={app:'inkhorse',kind:'drafts',v:1,drafts:[{id:'x1',title:'Draft · Nov 3',text:'from safari one two'},{id:'x2',title:'Draft · Nov 2',text:'kept alpha beta'},{id:'x3',title:'',text:''}]};
+      if(prev!==DSLOT){ await flushSync(); await switchToBook(prev); }
+      const btns=(renderShelf(), !!document.querySelector('[data-dsave]') && !!document.querySelector('[data-dload]'));
+      await mergeDraftsData(file); refreshDrafts(); const n1=liveDrafts().length, texts=liveDrafts().map(d=>d.text);
+      await mergeDraftsData(file); refreshDrafts(); const n2=liveDrafts().length;
+      let bad=false; try{ await mergeDraftsData({app:'other'}); }catch(_){ bad=true; }
+      const back=SLOT===prev;
+      await openDrafts(); BOOK.order.slice().forEach(id=>{ const c=CH.get(id); if(['kept alpha beta','from safari one two'].includes(c.text)) dropChapter(id); }); refreshDrafts();
+      if(prev!==DSLOT){ await flushSync(); await switchToBook(prev); } renderShelf();
+      return {btns,n1,n2,texts,bad,back}; });
+    if(r.err) throw new Error(r.err);
+    if(!r.btns) throw new Error('Save/Load drafts file buttons are missing');
+    if(r.n1!==2||!r.texts.includes('from safari one two')||!r.texts.includes('kept alpha beta')) throw new Error('load did not add exactly the one new draft: '+JSON.stringify(r));
+    if(r.n2!==2) throw new Error('loading the same file twice doubled the drafts');
+    if(!r.bad) throw new Error('a file that is not a drafts file was accepted');
+    if(!r.back) throw new Error('did not return to the book that was open');
+  });
   await step('Dictate: the live words sit at the bottom of the writing area, not over the first lines (rev 168)', async () => {
     if(!(await page.evaluate(()=>typeof liveWords==='function' && (window.INK_VERSION||{}).rev>=168))) return 'SKIP: before rev 168 the live words sat at the top';
     const r=await page.evaluate(()=>{ liveWords('hearing these words'); const b=dictLive.getBoundingClientRect(), t=document.querySelector('#manuscript').getBoundingClientRect(); liveWords(''); return {bt:b.top,bb:b.bottom,tt:t.top,tb:t.bottom}; });
