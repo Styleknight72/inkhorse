@@ -17,6 +17,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- Paper texture (preview): pages now have a faint paper grain and soft shading toward the edges, tuned for Light, StyleKnight, Sepia and Sky. Aa → Paper texture switches it off. It never changes your words, your pages or your exported books.
 - Fixing a page on a phone: scroll with your thumb, tap to place the cursor, and the page fills the space above the keyboard with Done always in view.
 - The player shows the same page number as the page bar under the book.
 - In full screen, double-tap anywhere on the page to play or pause reading aloud; a play or pause sign shows it worked, and a short note explains it every time you go in or out of full screen.
@@ -53,6 +54,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 175 (November 4, 2026, preview): Premium paper look, from Steve's wish for realistic paper shading. A faint grain, a few soft horizontal paper fibres and a gentle darkening toward the page edges are drawn behind every page, including the back of a page while it curls. Each theme has its own strength (the dark theme is the quietest, so it reads as dark paper, not metal). Aa → Paper texture turns it off. It is only a background: text, pagination and exports are untouched. The manual's Aa section describes it. Still to do from the same wish: a page-turn sound.
 
 Rev 174 (November 4, 2026, live): Rev 173 went live on getinkhorse.com on Steve's "Approved", after he tried it on his iPhone: in Fix, the thumb scrolls the page's text and a tap places the cursor, the Fix box fills the space above the keyboard with Done at the top, and the player shows the same book page number as the page bar and the Fix bar. The pinned Inkhorse app in Claude was updated to the same file. Live and preview are the same file again. Automatic checks: 69 of 69, none skipped.
 

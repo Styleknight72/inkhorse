@@ -424,6 +424,18 @@ const path = require('path');
     const a=await at(); await page.evaluate(()=>setHl(true)); await page.waitForTimeout(1000); const b=await at(); await page.evaluate(()=>setHl(false)); await page.waitForTimeout(800);
     return a===b || (()=>{ throw new Error('page moved: '+a+' -> '+b); })();
   });
+  await step('Paper texture: on by default behind every page, off with the Aa switch, and it never changes the pages or the words (rev 175)', async () => {
+    await page.click('#tab-read').catch(()=>{}); await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200);
+    const st=()=>page.evaluate(()=>{ const f=document.querySelector('#spread .face'); const t=document.querySelector('#spread .ptext'); return {tex:document.body.classList.contains('tex'), bg:f?getComputedStyle(f).backgroundImage:'', info:(document.querySelector('#pageInfo')||{}).textContent, words:t?t.textContent.length:0, chk:document.querySelector('#texChk').checked}; });
+    const on=await st(); if(!on.tex || !on.chk || on.bg.indexOf('url(')<0 || on.bg.indexOf('radial-gradient')<0) throw new Error('texture is not on by default: '+JSON.stringify(on));
+    await page.evaluate(()=>{ const c=document.querySelector('#texChk'); c.checked=false; c.dispatchEvent(new Event('change',{bubbles:true})); }); await page.waitForTimeout(500);
+    const off=await st(); if(off.tex || off.bg!=='none') throw new Error('texture did not switch off: '+JSON.stringify(off));
+    const saved=await page.evaluate(()=>{ try{ return Object.keys(localStorage).map(k=>localStorage.getItem(k)).some(v=>v&&v.indexOf('"tex":false')>=0); }catch(e){ return false; } }); await page.waitForTimeout(400);
+    if(on.info!==off.info || on.words!==off.words) throw new Error('texture changed the page: '+on.info+' / '+off.info+' ; '+on.words+' / '+off.words);
+    await page.evaluate(()=>{ const c=document.querySelector('#texChk'); c.checked=true; c.dispatchEvent(new Event('change',{bubbles:true})); }); await page.waitForTimeout(400);
+    const back=await st(); if(!back.tex || back.bg.indexOf('url(')<0) throw new Error('texture did not come back on');
+    return 'OK: on, off, on again; page and word counts identical' + (saved?'':' (saved-setting key not seen)');
+  });
   await step('Natural voice: a recording that stops early is remade by sentence, no words skipped (rev 141)', async () => {
     await page.click('#tab-write'); await page.evaluate(()=>newChapter&&0).catch(()=>{});
     const ok=await page.evaluate(async()=>{
