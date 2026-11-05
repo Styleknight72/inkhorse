@@ -1,12 +1,19 @@
 # Next session: start here
 
-Written November 4, 2026, at the end of a session. Read CLAUDE.md first; this file says where things stand and what comes next.
+Written November 5, 2026 (just after midnight), at the end of a session. Read CLAUDE.md first; this file says where things stand and what comes next.
 
 ## Where things stand
 
 - **Live** (getinkhorse.com/app.html), the **preview** (preview/next.html) and the pinned claude.ai Inkhorse artifact are the **same file: rev 178**, "1.1 candidate" (went live Nov 4 night on Steve's "push it live"). Release 1.1 has not been called yet: Steve has not said a rev is stable.
 - `node tests/audit.js app.html` passes **74 of 74**, none skipped (needs `jszip` and `pdfjs-dist@3.11.174` on NODE_PATH, and `PDFJS_DIR` set to its `build` folder, or the import steps skip).
 - Revs 160–174 (Nov 1–4) came from Steve testing on his iPhone. See CHANGELOG.md for each one.
+
+## Preview waiting for Steve (not live): revs 179–180
+
+- **Rev 179:** Library → Drafts has **Save drafts file** / **Load drafts file** to move drafts between Safari and the Home Screen app (load only adds, never doubles). Why: his Home Screen app holds "Draft · Nov 2", Safari holds "Draft · Nov 3"; nothing lost, just separate places.
+- **Rev 180:** Hoofprint no longer offers everyday words as names ("kind" → Kindle, "a bold move" → Bolduc, "kind to" → Kindle); real mishearings still caught. Every Tools button was tap-tested on live rev 178 and works. Next mark was never removed: it shows only when there are lime marks.
+- Preview passes **77 of 77**. Live is still rev 178. Steve said "hold" on Nov 5 ~midnight. Next: he tries the preview on his iPhone (move the Nov 3 draft; dictate a sentence with "kind"/"bold"), then says "approved" → copy preview to app.html, audit, push, republish the pinned artifact.
+- Open question: should tapping a draft's row open it? Recommended: Write (Read stays its own button). Steve hasn't decided.
 
 ## Things learned this week (don't relearn them)
 
