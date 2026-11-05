@@ -17,7 +17,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
-- Page sound (preview): a soft paper sound, made on your phone, when a page you turn by swipe, tap or arrow key goes over. Aa → Page sound turns it off. It stays silent when reading aloud turns the page for you, so it never talks over the voice.
+- Page sound (preview): the sound of a real book page turning, when a page you turn by swipe, tap or arrow key goes over. Aa → Page sound turns it off. It stays silent when reading aloud turns the page for you, so it never talks over the voice.
 - The full-screen tap messages stay up 4 seconds longer (9 seconds going in, 7 coming out).
 - Paper texture (preview): pages now have a faint paper grain and soft shading toward the edges, tuned for Light, StyleKnight, Sepia and Sky. Aa → Paper texture switches it off. It never changes your words, your pages or your exported books.
 - Fixing a page on a phone: scroll with your thumb, tap to place the cursor, and the page fills the space above the keyboard with Done always in view.
@@ -56,6 +56,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 177 (November 4, 2026, preview): Steve found rev 176's page sound annoying (it was made from noise, so it hissed). It is now a real recording of a book page turning: "Turned Page" by DavidGreck from BigSoundBank, CC0 (public domain, no credit required, but credited in the manual anyway). It was trimmed to about half a second and shrunk to about 6 KB, so it lives inside the app and works offline. Each turn plays it a hair faster or slower so it never sounds copied. Same rules as before: it plays only when you turn a page, stays silent when reading aloud turns the page, and Aa → Page sound switches it off. One new automatic check confirms the recording decodes and is audible. To do when this goes live: add the credit line to the About page.
 
 Rev 176 (November 4, 2026, preview): Two things Steve asked for after trying rev 175 on his iPhone. (1) The full-screen messages ("Double-tap the page to play or pause…" and "Tap the middle of the page to go full screen again") stay on screen 4 seconds longer: 9 seconds going into full screen, 7 coming out. (2) Page sound: a soft paper sound, built from noise on the phone itself (no sound file to download), plays when a page you turn goes over, for both Curl and Slide. A cancelled half-turn makes no sound. It stays silent when reading aloud turns the page itself, so it never fights the voice. Aa → Page sound switches it off, and checking the box plays it once. On an iPhone the sound follows the ring/silent switch. The manual's Aa section describes it. Two new automatic checks cover the message timing and the sound.
 

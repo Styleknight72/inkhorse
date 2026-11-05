@@ -435,6 +435,14 @@ const path = require('path');
     if(!r.inGone || !r.outGone) throw new Error('a message never went away: '+JSON.stringify(r));
     return 'OK: '+JSON.stringify(r);
   });
+  await step('Page sound: the real page-turn recording is inside the app, decodes, and is a short, audible clip (rev 177)', async () => {
+    const r=await page.evaluate(async()=>{ turnAudioWarm(); for(let k=0;k<40 && !turnBuf;k++) await new Promise(r=>setTimeout(r,100));
+      if(!turnBuf) return {err:'the recording did not decode'}; const d=turnBuf.getChannelData(0); let pk=0; for(let i=0;i<d.length;i++){ const v=Math.abs(d[i]); if(v>pk) pk=v; }
+      return {secs:+turnBuf.duration.toFixed(2), peak:+pk.toFixed(2), bytes:TURN_SND.length}; });
+    if(r.err) throw new Error(r.err);
+    if(r.secs<.3 || r.secs>1 || r.peak<.1 || r.peak>1.01) throw new Error('the recording looks wrong: '+JSON.stringify(r));
+    return 'OK: '+JSON.stringify(r);
+  });
   await step('Page sound: plays when you turn a page (curl and slide), not when read-aloud turns it, and the Aa switch turns it off (rev 176)', async () => {
     await page.click('#tab-read').catch(()=>{}); await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200);
     const r=await page.evaluate(async()=>{ const w=ms=>new Promise(r=>setTimeout(r,ms)), out={}, n=()=>turnSound.count||0, chk=document.querySelector('#sndChk');
