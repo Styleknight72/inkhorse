@@ -7,7 +7,8 @@ Written November 5, 2026 (just after midnight), at the end of a session. Read CL
 - **Live** (getinkhorse.com/app.html), the **preview** and the pinned claude.ai Inkhorse artifact are **rev 180** (Steve said "Approved" Nov 5, ~6:30 pm, after testing it on his iPhone). "1.1 candidate"; Release 1.1 not called yet.
 - `node tests/audit.js app.html` passes **77 of 77**.
 - Confirmed on his iPhone Nov 5: Hoofprint leaves "kind" and "bold" alone, typed and dictated. Not yet seen on his phone: Hoofprint catching a real mishearing; Save/Load drafts file.
-- **Found Nov 5, being fixed as rev 181 (preview):** (1) one tap on a wrong Hoofprint offer taught a rule (bold → Bolduc) that then rewrote his words on its own; he removed it in Tools → Hoofprint → Fixes it has learned. (2) Save backup file left him stuck in a blank iPhone file preview ("Loading…"); he had to close Safari to get out.
+- **Preview rev 181 (not live), waiting for Steve's iPhone:** Hoofprint asks "Always fix X → Y?" (Always / Once) before learning any rule, and Undo on a learned fix offers "Forget it"; on iPhone/iPad saving a file opens the Share sheet (Save to Files), with a "Your file is ready / Save to Files" box when the tap expired. 79/79 checks pass; the save check only pretends to be an iPhone. Phone test: Save backup file in Safari → Share sheet → Save to Files; Hoofprint: dictate "a bold duck", Fix, then Once/Always.
+- **The two bugs rev 181 fixes, found Nov 5:** (1) one tap on a wrong Hoofprint offer taught a rule (bold → Bolduc) that then rewrote his words on its own; he removed it in Tools → Hoofprint → Fixes it has learned. (2) Save backup file left him stuck in a blank iPhone file preview ("Loading…"); he had to close Safari to get out.
 - Open question: should tapping a draft's row open it? Recommended: Write. Steve hasn't decided.
 
 ## Things learned this week (don't relearn them)

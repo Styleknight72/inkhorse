@@ -154,6 +154,65 @@ const path = require('path');
     if(!r.duck.includes('Bolduc')) throw new Error('"bold duck" is no longer offered as Bolduc');
     if(!r.lesard.includes('Lessard')||!r.pell.includes('Pelletier')) throw new Error('a one-letter mishearing is no longer caught: '+JSON.stringify(r));
   });
+  await step('Hoofprint asks before it learns a fix: Fix changes it once, Always learns it, Undo offers Forget it (rev 181)', async () => {
+    await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
+    await page.evaluate(()=>{ HP.keepW=S.hp.words.slice(); HP.keepF=JSON.stringify(S.hp.fixes); HP.keepN=S.hp.no.slice(); S.hp.words.push('Bolduc'); S.hp.fixes={}; S.hp.no=[]; HP.vk=''; HP.sug=[]; HP.undo=null; HP.ask=null; HP.forget=null; });
+    const bar=()=>page.evaluate(()=>$('#hpBar').hidden?'':$('#hpBar').innerText);
+    const fixes=()=>page.evaluate(()=>JSON.stringify(S.hp.fixes));
+    const settle=async()=>{ await page.evaluate(()=>{ HP.waits=0; hpSettle(); }); await page.waitForTimeout(150); };
+    try{
+      await page.fill('#manuscript','My grandmother was a bold duck from Quebec.'); await settle();
+      if(!/Bolduc/.test(await bar())) throw new Error('no offer for "bold duck": '+await bar());
+      await page.click('#hpBar [data-hp="fix"]'); await page.waitForTimeout(150);
+      if(!/Bolduc from Quebec/.test(await T())) throw new Error('Fix did not change the word');
+      if((await fixes())!=='{}') throw new Error('Fix learned a rule without asking: '+await fixes());
+      if(!/Always/.test(await bar())) throw new Error('no "Always write…?" question after Fix: '+await bar());
+      await page.click('#hpBar [data-hp="once"]'); await page.waitForTimeout(100);
+      if((await fixes())!=='{}') throw new Error('"This time" learned a rule');
+      /* keep writing while the question is up: nothing is learned */
+      await page.fill('#manuscript','My grandmother was a bold duck.'); await settle(); await page.click('#hpBar [data-hp="fix"]'); await page.waitForTimeout(100);
+      await page.fill('#manuscript',(await T())+' She came from Quebec.'); await settle();
+      if((await fixes())!=='{}'||/Always/.test(await bar())) throw new Error('writing on did not clear the question, or it learned anyway');
+      /* Always learns it, and then it fixes by itself with Undo */
+      await page.fill('#manuscript','A bold duck again.'); await settle(); await page.click('#hpBar [data-hp="fix"]'); await page.waitForTimeout(100);
+      await page.click('#hpBar [data-hp="always"]'); await page.waitForTimeout(100);
+      if(!/Bolduc/.test(await fixes())) throw new Error('Always did not learn the fix');
+      await page.fill('#manuscript','Then a bold duck came by.'); await settle();
+      if(!/Then a Bolduc came by/.test(await T())||!/Undo/.test(await bar())) throw new Error('a learned fix was not made by itself with Undo: '+await T());
+      await page.click('#hpBar [data-hp="undo"]'); await page.waitForTimeout(100);
+      if(!/bold duck/.test(await T())||!/Forget/.test(await bar())) throw new Error('Undo did not offer Forget it: '+await bar());
+      await page.click('#hpBar [data-hp="forget"]'); await page.waitForTimeout(100);
+      if((await fixes())!=='{}') throw new Error('Forget it did not forget the fix: '+await fixes());
+    } finally {
+      await page.evaluate(()=>{ S.hp.words=HP.keepW; S.hp.fixes=JSON.parse(HP.keepF); S.hp.no=HP.keepN; HP.vk=''; HP.sug=[]; HP.undo=null; HP.ask=null; HP.forget=null; saveSettings(); hpBar(''); });
+      await page.fill('#manuscript',keep); await page.waitForTimeout(300);
+    }
+  });
+  await step('iPhone: saving a file opens the Share sheet (Save to Files), with a Save to Files button if the tap expired, and Cancel saves nothing (rev 181)', async () => {
+    const r=await page.evaluate(async()=>{
+      const had=('share' in navigator), oS=navigator.share, oC=navigator.canShare; let calls=[], mode='ok';
+      const err=n=>{ const e=new Error(n); e.name=n; return e; };
+      Object.defineProperty(navigator,'canShare',{value:()=>true,configurable:true});
+      Object.defineProperty(navigator,'share',{value:async(d)=>{ calls.push(d.files&&d.files[0]&&d.files[0].name); if(mode==='abort') throw err('AbortError'); if(mode==='late'){ mode='ok'; throw err('NotAllowedError'); } },configurable:true});
+      let clicked=0; const oc=HTMLAnchorElement.prototype.click; HTMLAnchorElement.prototype.click=function(){ clicked++; };
+      const out={ios:isIOS()};
+      try{
+        out.a=await saveFile('t-backup.json',new Blob(['{}'],{type:'application/json'}));
+        mode='abort'; out.b=await saveFile('t-backup.json',new Blob(['{}']));
+        mode='late'; const pr=saveFile('t-backup.json',new Blob(['{}'])); await new Promise(r=>setTimeout(r,50));
+        out.btn=!!document.getElementById('shareGo') && !$('#assist').hidden; if(out.btn) document.getElementById('shareGo').click(); out.c=await pr;
+        out.closed=$('#assist').hidden;
+      } finally {
+        HTMLAnchorElement.prototype.click=oc;
+        if(had){ Object.defineProperty(navigator,'share',{value:oS,configurable:true}); Object.defineProperty(navigator,'canShare',{value:oC,configurable:true}); } else { delete navigator.share; delete navigator.canShare; }
+      }
+      out.calls=calls; out.downloads=clicked; return out; });
+    if(!r.ios) return 'SKIP: this test browser is not set up as an iPhone';
+    if(r.a!==true||r.calls[0]!=='t-backup.json') throw new Error('did not use the Share sheet: '+JSON.stringify(r));
+    if(r.b!==false) throw new Error('a cancelled share was treated as saved');
+    if(!r.btn||r.c!==true||!r.closed) throw new Error('no working Save to Files button after the tap expired: '+JSON.stringify(r));
+    if(r.downloads) throw new Error('it also started a download, which opens the blank preview on iPhone');
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
