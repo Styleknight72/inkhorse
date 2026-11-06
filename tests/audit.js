@@ -234,6 +234,24 @@ const path = require('path');
     if(!r.flagFree) throw new Error('the switching guard was left on after a switch');
     if(!r.chOk||!r.playing) throw new Error('Play stayed on a chapter that is not in this book: '+JSON.stringify(r));
   });
+  await step('Full screen double-tap: plays or pauses inside the tap the iPhone trusts, and never pauses while the voice is getting ready (rev 183)', async () => {
+    await page.click('#tab-read'); await page.waitForTimeout(600);
+    await page.evaluate(()=>{ window.__lt0=listenToggle; window.__lt=[]; window.listenToggle=function(){ window.__lt.push((window.event&&window.event.type)||'timer'); }; setImmersive(true); });
+    await page.waitForTimeout(900);
+    try{
+      const b=await page.evaluate(()=>{ const r=stage.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2}; });
+      await page.touchscreen.tap(b.x,b.y); await page.waitForTimeout(250); await page.touchscreen.tap(b.x,b.y); await page.waitForTimeout(500);
+      const ev=await page.evaluate(()=>window.__lt.slice());
+      if(ev.length!==1) throw new Error('a relaxed double-tap (250 ms apart) did not play/pause exactly once: '+JSON.stringify(ev));
+      if(ev[0]!=='touchend') throw new Error('play/pause ran outside the tap ('+ev[0]+'), which an iPhone may not allow to start sound');
+      const r=await page.evaluate(()=>{ window.listenToggle=window.__lt0; const k=KOK.waiting, on=TTS.on, pl=TTS.playing; let paused=0; const tp=ttsPause; window.ttsPause=()=>{ paused++; };
+        TTS.on=true; TTS.playing=true; KOK.waiting=true; listenToggle(); ttsUI(); const shown=!$('#fsWait').hidden;
+        window.ttsPause=tp; KOK.waiting=k; TTS.on=on; TTS.playing=pl; ttsUI(); return {paused,shown,hidden:$('#fsWait').hidden}; });
+      if(r.paused) throw new Error('a double-tap while getting ready paused it');
+      if(!r.shown) throw new Error('no "Getting ready…" sign while the voice was coming');
+      if(!r.hidden) throw new Error('"Getting ready…" stayed up after');
+    } finally { await page.evaluate(()=>{ if(window.__lt0) window.listenToggle=window.__lt0; setImmersive(false); }); await page.waitForTimeout(400); }
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
