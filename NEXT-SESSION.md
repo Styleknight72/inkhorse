@@ -4,11 +4,11 @@ Written November 5, 2026 (just after midnight), at the end of a session. Read CL
 
 ## Where things stand
 
-- **Live** (getinkhorse.com/app.html), the **preview** and the pinned claude.ai Inkhorse artifact are **rev 180** (Steve said "Approved" Nov 5, ~6:30 pm, after testing it on his iPhone). "1.1 candidate"; Release 1.1 not called yet.
-- `node tests/audit.js app.html` passes **77 of 77**.
+- **Live** (getinkhorse.com/app.html), the **preview** and the pinned claude.ai Inkhorse artifact are **rev 182** (Steve said "Approved" Nov 5, 8:44 pm; rev 180 went live earlier that evening). "1.1 candidate"; Release 1.1 not called yet.
+- `node tests/audit.js app.html` passes **80 of 80**.
 - Confirmed on his iPhone Nov 5: Hoofprint leaves "kind" and "bold" alone, typed and dictated. Not yet seen on his phone: Hoofprint catching a real mishearing; Save/Load drafts file.
-- **Preview rev 181 (not live), waiting for Steve's iPhone:** Hoofprint asks "Always fix X → Y?" (Always / Once) before learning any rule, and Undo on a learned fix offers "Forget it"; on iPhone/iPad saving a file opens the Share sheet (Save to Files), with a "Your file is ready / Save to Files" box when the tap expired. 79/79 checks pass; the save check only pretends to be an iPhone. Phone test: Save backup file in Safari → Share sheet → Save to Files; Hoofprint: dictate "a bold duck", Fix, then Once/Always.
-- **Preview rev 182 (not live):** switching books stops the player again (rev 154 had commented out `switching=true; ttsStop()` in switchToBook), and Play restarts if the player points at a chapter not in the open book. Found when double-tap in full screen played nothing after he switched from Drafts to his memoir. 80/80 checks pass.
+- **Rev 181 (live in 182):** Hoofprint asks "Always fix X → Y?" (Always / Once) before learning any rule, and Undo on a learned fix offers "Forget it"; on iPhone/iPad saving a file opens the Share sheet (Save to Files), with a "Your file is ready / Save to Files" box when the tap expired. 79/79 checks pass; the save check only pretends to be an iPhone. Phone test: Save backup file in Safari → Share sheet → Save to Files; Hoofprint: dictate "a bold duck", Fix, then Once/Always.
+- **Rev 182 (live):** switching books stops the player again (rev 154 had commented out `switching=true; ttsStop()` in switchToBook), and Play restarts if the player points at a chapter not in the open book. Found when double-tap in full screen played nothing after he switched from Drafts to his memoir. 80/80 checks pass.
 - **The two bugs rev 181 fixes, found Nov 5:** (1) one tap on a wrong Hoofprint offer taught a rule (bold → Bolduc) that then rewrote his words on its own; he removed it in Tools → Hoofprint → Fixes it has learned. (2) Save backup file left him stuck in a blank iPhone file preview ("Loading…"); he had to close Safari to get out.
 - Open question: should tapping a draft's row open it? Recommended: Write. Steve hasn't decided.
 
