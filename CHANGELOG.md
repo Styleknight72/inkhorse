@@ -17,6 +17,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- A third page turn, Instant: Aa → Page turn → Instant, and the page simply changes, with no motion. (preview)
 - In full screen, a double-tap now starts the voice reliably on iPhone, "Getting ready…" shows at the top while she's coming, and a second double-tap won't stop her before she starts.
 - Switching books now stops reading aloud, so Play and the full-screen double-tap always read the book you have open.
 - Hoofprint asks before it learns. After you tap Fix, it asks "Always fix bold duck → Bolduc?": Always makes it fix that by itself from then on, Once fixes it just there. If it ever changes a word wrongly, Undo now offers Forget it.
@@ -64,6 +65,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 185 (November 5, 2026, preview): Steve asked for a third page turn beside Curl and Slide, and chose Instant: the page simply changes, with no motion, the quickest way to flip through a book (and gentle on anyone who finds motion on screen uncomfortable). Swiping still works; the page changes when you let go. Page sound, if on, still plays. The manual's Type settings page lists it. One new automatic check.
 
 Rev 184 (November 5, 2026, live November 5): Confirmed on Steve's iPhone: double-tap in full screen started Meilin, and "Getting ready…" showed while she was coming. Two more checks on the full-screen double-tap. (1) Rev 183 started the voice in the touchend that follows the finger lifting; if Safari sends those two signals in the other order, that fix would quietly fall back to the old way. Now every tap in full screen also readies the voice (a moment of silence inside the tap), so a double-tap can start her whichever order the phone uses. (2) Messages such as "Tap Play to hear Meilin." weren't lifted in front of the 3D page the way the play sign and the full-screen hint are, so in full screen Safari could draw them behind the page, and a failed start looked like nothing at all. They are lifted now. 81 automatic checks pass; real sound on an iPhone still needs Steve's test.
 

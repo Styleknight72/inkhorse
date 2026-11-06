@@ -252,6 +252,22 @@ const path = require('path');
       if(!r.hidden) throw new Error('"Getting ready…" stayed up after');
     } finally { await page.evaluate(()=>{ if(window.__lt0) window.listenToggle=window.__lt0; setImmersive(false); }); await page.waitForTimeout(400); }
   });
+  await step('Page turn: Instant changes the page with no motion, and is offered next to Curl and Slide (rev 185)', async () => {
+    await page.click('#tab-read'); await page.waitForTimeout(600);
+    const r=await page.evaluate(async()=>{ const keep=S.turn, opts=[...$('#turnSel').options].map(o=>o.value);
+      const raf=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      try{
+        S.turn='instant'; const at=curIndex(), ch=S.rch; let moved=false;
+        const sp=$('#spread'); const mo=new MutationObserver(()=>{ const b=sp.querySelector('.slide'); if(b&&b.style.transform) moved=true; }); mo.observe(sp,{subtree:true,attributes:true,childList:true});
+        flip(1); await raf(); mo.disconnect();
+        const after=curIndex(), ch2=S.rch; flip(-1); await raf();
+        return {opts, changed:(after!==at||ch2!==ch), moved, back:(curIndex()===at&&S.rch===ch)};
+      } finally { S.turn=keep; } });
+    if(!r.opts.includes('instant')) throw new Error('no Instant choice: '+r.opts.join(','));
+    if(!r.changed) throw new Error('Instant did not turn the page');
+    if(r.moved) throw new Error('Instant still animated the page');
+    if(!r.back) throw new Error('Instant back did not return to the same page');
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
