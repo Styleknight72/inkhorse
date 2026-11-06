@@ -234,7 +234,7 @@ const path = require('path');
     if(!r.flagFree) throw new Error('the switching guard was left on after a switch');
     if(!r.chOk||!r.playing) throw new Error('Play stayed on a chapter that is not in this book: '+JSON.stringify(r));
   });
-  await step('Full screen double-tap: plays or pauses inside the tap the iPhone trusts, and never pauses while the voice is getting ready (rev 183)', async () => {
+  await step('Full screen double-tap: plays or pauses inside the tap the iPhone trusts, never pauses before her first words, but always pauses once she is reading (rev 183, 186)', async () => {
     await page.click('#tab-read'); await page.waitForTimeout(600);
     await page.evaluate(()=>{ window.__lt0=listenToggle; window.__lt=[]; window.listenToggle=function(){ window.__lt.push((window.event&&window.event.type)||'timer'); }; setImmersive(true); });
     await page.waitForTimeout(900);
@@ -245,9 +245,11 @@ const path = require('path');
       if(ev.length!==1) throw new Error('a relaxed double-tap (250 ms apart) did not play/pause exactly once: '+JSON.stringify(ev));
       if(ev[0]!=='touchend') throw new Error('play/pause ran outside the tap ('+ev[0]+'), which an iPhone may not allow to start sound');
       const r=await page.evaluate(()=>{ window.listenToggle=window.__lt0; const k=KOK.waiting, on=TTS.on, pl=TTS.playing; let paused=0; const tp=ttsPause; window.ttsPause=()=>{ paused++; };
-        TTS.on=true; TTS.playing=true; KOK.waiting=true; listenToggle(); ttsUI(); const shown=!$('#fsWait').hidden;
-        window.ttsPause=tp; KOK.waiting=k; TTS.on=on; TTS.playing=pl; ttsUI(); return {paused,shown,hidden:$('#fsWait').hidden}; });
-      if(r.paused) throw new Error('a double-tap while getting ready paused it');
+        const al=TTS.alive, pa=TTS.playAt;
+        TTS.on=true; TTS.playing=true; KOK.waiting=true; TTS.playAt=Date.now(); TTS.alive=TTS.playAt-1000; listenToggle(); ttsUI(); const shown=!$('#fsWait').hidden;
+        TTS.alive=Date.now()+1; TTS.playing=true; listenToggle(); const midPaused=paused;   /* rev 186: she has already spoken: a double-tap must pause even while the next sentence loads */
+        window.ttsPause=tp; KOK.waiting=k; TTS.on=on; TTS.playing=pl; TTS.alive=al; TTS.playAt=pa; ttsUI(); return {paused:paused-midPaused,first:midPaused?0:1,midPaused,shown,hidden:$('#fsWait').hidden}; });
+      if(r.midPaused!==1) throw new Error('mid-reading (next sentence still loading) a double-tap did not pause: '+JSON.stringify(r));
       if(!r.shown) throw new Error('no "Getting ready…" sign while the voice was coming');
       if(!r.hidden) throw new Error('"Getting ready…" stayed up after');
     } finally { await page.evaluate(()=>{ if(window.__lt0) window.listenToggle=window.__lt0; setImmersive(false); }); await page.waitForTimeout(400); }

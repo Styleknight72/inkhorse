@@ -17,6 +17,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- In full screen, a double-tap always pauses once she is reading, even while the next sentence is still loading. (preview)
 - A third page turn, Instant: Aa → Page turn → Instant, and the page simply changes, with no motion. (preview)
 - In full screen, a double-tap now starts the voice reliably on iPhone, "Getting ready…" shows at the top while she's coming, and a second double-tap won't stop her before she starts.
 - Switching books now stops reading aloud, so Play and the full-screen double-tap always read the book you have open.
@@ -65,6 +66,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 186 (November 6, 2026, preview): Steve: "The double tapping, there's just something about it that doesn't work." A mistake in rev 183: to stop a second double-tap from pausing the voice before she started, a double-tap was ignored whenever she was "getting ready". But with Boost on she is also "getting ready" in the middle of reading, each time the next sentence or paragraph is still coming from the internet (his screenshot showed it on Nov 5). At those moments a double-tap to pause was ignored and she kept reading. Now that rule only applies before her first words since you pressed play (and for at most 30 seconds); once she is reading, a double-tap always pauses. The automatic check now covers both cases, and it fails on rev 184, so it really catches this.
 
 Rev 185 (November 5, 2026, preview): Steve asked for a third page turn beside Curl and Slide, and chose Instant: the page simply changes, with no motion, the quickest way to flip through a book (and gentle on anyone who finds motion on screen uncomfortable). Swiping still works; the page changes when you let go. Page sound, if on, still plays. The manual's Type settings page lists it. One new automatic check.
 
