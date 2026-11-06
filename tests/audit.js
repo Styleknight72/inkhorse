@@ -213,6 +213,27 @@ const path = require('path');
     if(!r.btn||r.c!==true||!r.closed) throw new Error('no working Save to Files button after the tap expired: '+JSON.stringify(r));
     if(r.downloads) throw new Error('it also started a download, which opens the blank preview on iPhone');
   });
+  await step('Read aloud: switching books stops the player, and Play never sits silent on a chapter from another book (rev 182)', async () => {
+    const r=await page.evaluate(async()=>{ const prev=SLOT, ko=window.kokOn, sp=speechSynthesis.speak, sc=speechSynthesis.cancel; const said=[];
+      window.kokOn=()=>false; speechSynthesis.speak=u=>{ said.push(u.text); }; speechSynthesis.cancel=()=>{};
+      const out={};
+      try{
+        ttsStop(); TTS.on=true; TTS.playing=false; TTS.ch='gone-chapter';
+        await switchToBook(DSLOT); out.stoppedOnSwitch=!TTS.on; out.flagFree=(typeof switching==='undefined')||switching===false;
+        if(!BOOK.order.some(id=>(CH.get(id)||{}).text)){ const id=addChapter('Draft · test','A sentence to read aloud after switching books.'); dirty.add(id); touchIndex(); S.cur=id; }
+        TTS.on=true; TTS.playing=false; TTS.ch='gone-chapter';
+        ttsPlay(); out.chOk=!!getCh(TTS.ch); out.playing=TTS.playing; out.said=said.length;
+        ttsStop();
+      } finally {
+        window.kokOn=ko; speechSynthesis.speak=sp; speechSynthesis.cancel=sc;
+        BOOK.order.slice().forEach(id=>{ const c=CH.get(id); if(c&&c.title==='Draft · test') dropChapter(id); });
+        if(SLOT!==prev){ await flushSync(); await switchToBook(prev); }
+      }
+      return out; });
+    if(!r.stoppedOnSwitch) throw new Error('switching books left the player on: '+JSON.stringify(r));
+    if(!r.flagFree) throw new Error('the switching guard was left on after a switch');
+    if(!r.chOk||!r.playing) throw new Error('Play stayed on a chapter that is not in this book: '+JSON.stringify(r));
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
