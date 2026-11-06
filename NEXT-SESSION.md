@@ -14,6 +14,12 @@ Written November 5, 2026 (just after midnight), at the end of a session. Read CL
 - **The two bugs rev 181 fixes, found Nov 5:** (1) one tap on a wrong Hoofprint offer taught a rule (bold → Bolduc) that then rewrote his words on its own; he removed it in Tools → Hoofprint → Fixes it has learned. (2) Save backup file left him stuck in a blank iPhone file preview ("Loading…"); he had to close Safari to get out.
 - Open question: should tapping a draft's row open it? Recommended: Write. Steve hasn't decided.
 
+## Agreed next feature (Nov 5, after Release 1.1)
+- **AI bar above the iPhone keyboard** (not our own keyboard: a web app can't replace it, and an iPhone keyboard extension can't use the mic). One slim row, only while the keyboard is up in your own books, working seamlessly with **Hoofprint** (its suggestions and the "Always?" question move into the bar instead of the bar at the top).
+- **Bar v1, tap only:** Hoofprint, Heading (section heading; his Florida chapter's "The Truck" shows as a plain indented line), Dash (—), Quotes (“ ”), Undo. Build on the keyboard handling the Fix box already uses. New audit steps, manual page with a picture.
+- **Later, only if he misses them:** long-press extras (tap for main, hold for more: dash → – … -, quotes → ‘ ’ « », Heading → scene break / new chapter, Hear it → paragraph/page, Undo → redo, Hoofprint → Always / Not this word / Edit), with a small dot and a one-time hint.
+- **Order:** rev 184 used a day or two → "stable" → Release 1.1 → bar v1.
+
 ## Things learned this week (don't relearn them)
 
 - **The check runner used to pass any step that returned a message.** Since rev 163 a returned string fails unless it starts with `SKIP` or `OK`. New steps must `throw` on failure.
