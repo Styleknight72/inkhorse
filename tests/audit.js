@@ -393,12 +393,23 @@ const path = require('path');
       const st=await page.evaluate(()=>{ const r=document.querySelector('#stage').getBoundingClientRect(); return {l:r.left,w:r.width,y:r.top+r.height/2}; });
       const pos=()=>page.evaluate(()=>S.rch+'@'+S.anchor), playing=()=>page.evaluate(()=>!!TTS.playing);
       const dbl=async fx=>{ await page.touchscreen.tap(st.l+st.w*fx,st.y); await page.waitForTimeout(140); await page.touchscreen.tap(st.l+st.w*fx,st.y); await page.waitForTimeout(700); };
-      const p0=await pos();
-      for(const [fx,name] of [[0.85,'right'],[0.5,'middle'],[0.15,'left']]){
+      const p0=await pos(), rev193=await page.evaluate(()=>(window.INK_VERSION||{}).rev>=193);
+      /* rev 193 (F3.7, Steve Nov 7): double-tap play/pause lives in the middle; quick taps on the sides each turn one page and never start the voice */
+      for(const [fx,name] of (rev193?[[0.5,'middle']]:[[0.85,'right'],[0.5,'middle'],[0.15,'left']])){
         const was=await playing(); await dbl(fx);
-        if(await playing()) await page.evaluate(()=>{ ttsPause(); });   // keep the voice from turning pages by itself during the check
+        const on=await playing(); if(on) await page.evaluate(()=>{ ttsPause(); });   // keep the voice from turning pages by itself during the check
         if(await pos()!==p0) throw new Error('double-tap on the '+name+' turned the page');
         if(was) throw new Error('setup: was already playing');
+        if(rev193 && !on) throw new Error('double-tap in the middle did not start reading aloud');
+      }
+      if(rev193){
+        await page.evaluate(()=>{ try{ ttsStop(); }catch(_){ } }); await page.waitForTimeout(200);
+        const i0=await page.evaluate(()=>curIndex());
+        await dbl(0.85); await page.waitForTimeout(1200);
+        const r=await page.evaluate(()=>({i:curIndex(),tts:!!TTS.on&&!!TTS.playing}));
+        if(r.tts) throw new Error('a quick double tap on the right side started the voice');
+        if(r.i!==i0+2) throw new Error('two quick taps on the right side turned '+(r.i-i0)+' pages, not 2');
+        await page.evaluate(()=>{ S.anchor=0; refreshReader(); }); await page.waitForTimeout(400);
       }
       await page.evaluate(()=>{ try{ ttsStop(); }catch(_){ } }); await page.waitForTimeout(200);
       await page.touchscreen.tap(st.l+st.w*0.85,st.y); await page.waitForTimeout(1200);
@@ -636,7 +647,41 @@ const path = require('path');
     return !hits.length || (()=>{ throw new Error('found '+hits.join(', ')); })();
   });
   await step('Manual opens with a Contents page and page numbers', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1500); let all=''; for(let i=0;i<12;i++){ all+=await page.evaluate(()=>document.querySelector('#spread').innerText); await page.click('#next').catch(()=>{}); await page.waitForTimeout(450);} await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return /(^|\n)Welcome to Inkhorse\s+\d/.test(all) && /Chapter 1 · The big picture\s+\d/.test(all); });   /* rev 158: front pages carry no number in the Contents, like on their own pages */
-  await step('Manual: tapping a Contents line goes to that page', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1500); let line=null; for(let i=0;i<8&&!line;i++){ line=await page.$('#spread p.toc.t2[data-goto]'); if(!line){ await page.click('#next'); await page.waitForTimeout(450);} } if(!line) return 'no contents line found'; await page.waitForTimeout(900); line=await page.$('#spread .page:not(.curl) p.toc.t2[data-goto], #spread p.toc.t2[data-goto]'); const want=await line.getAttribute('data-goto'); const bx=await line.boundingBox(); await page.mouse.click(bx.x+30, bx.y+bx.height/2); await page.waitForTimeout(1200); const got=(await page.textContent('#pgCur')).replace(/[^0-9–]/g,''); await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return got.split('–').includes(want) ? true : {want,got}; });
+  await step('F3.7 Full screen: quick side taps turn one page each, in order, and leaving full screen mid-turn keeps the place (rev 193)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=193))) return 'SKIP: before rev 193';
+    await page.waitForFunction(()=>!turning && !turnQ.length,null,{timeout:8000}).catch(()=>{});   /* earlier steps' page turns finish first */
+    await page.evaluate(()=>{ try{ if(RB) leaveLibraryBook(); }catch(_){ } }); await page.waitForTimeout(400);
+    const fromTab=await page.evaluate(()=>S.tab), keepTurn=await page.evaluate(()=>S.turn);
+    const id=await page.evaluate(()=>addChapter('Tap test',Array.from({length:120},(_,i)=>'Paragraph '+i+' has a number of words in it so that the chapter runs to many pages for this check.').join('\n')));
+    try{
+      const res={};
+      for(const mode of ['curl','slide','instant']){
+        await page.evaluate(([m,m2])=>{ localStorage.setItem('inkhorse-fs-hint-shown','3'); S.turn=m; setTab('read'); S.rch=m2; S.anchor=0; try{ refreshReader(); }catch(_){ } setImmersive(true); },[mode,id]);
+        await page.waitForTimeout(700); await page.waitForFunction(()=>!turning && !turnQ.length,null,{timeout:8000}).catch(()=>{});
+        const st=await page.evaluate(()=>{ const r=document.querySelector('#stage').getBoundingClientRect(); return {l:r.left,w:r.width,y:r.top+r.height/2}; });
+        await page.evaluate(()=>{ window.TLOG=[]; if(!window.TLOGon){ window.TLOGon=1; const sg=document.querySelector('#stage'); ['pointerdown','pointerup','pointercancel'].forEach(t=>sg.addEventListener(t,e=>TLOG.push(t[7]+Math.round(performance.now()%100000)+(turning?'T':'')+turnQ.length),true)); } });
+        const seen=[await page.evaluate(()=>curIndex())];
+        for(let k=0;k<4;k++){ await page.touchscreen.tap(st.l+st.w*0.88,st.y); await page.waitForTimeout(300); seen.push(await page.evaluate(()=>curIndex())); }
+        await page.waitForFunction(()=>!turning && !turnQ.length,null,{timeout:6000}).catch(()=>{}); await page.waitForTimeout(150);
+        const end=await page.evaluate(()=>({i:curIndex(),tts:!!TTS.on}));
+        if(end.tts) throw new Error(mode+': side taps started the voice');
+        for(let k=1;k<seen.length;k++) if(seen[k]<seen[k-1]||seen[k]-seen[k-1]>1) throw new Error(mode+': pages went '+seen.join(' → '));
+        if(end.i-seen[0]!==4) throw new Error(mode+': 4 taps turned '+(end.i-seen[0])+' pages ('+seen.join(' → ')+' → '+end.i+') '+(await page.evaluate(()=>TLOG.join(' '))));
+        // leave full screen while a page is turning: the page it was heading to keeps its words
+        await page.evaluate(()=>flip(1));
+        const want=await page.evaluate(()=>{ const t=curIndex()+(two?2:1); return pag(S.rch).pages[Math.min(t,pag(S.rch).pages.length-1)][0]; });
+        await page.evaluate(()=>setImmersive(false));
+        await page.waitForFunction(()=>!turning,null,{timeout:6000}).catch(()=>{}); await page.waitForTimeout(200);
+        const ok=await page.evaluate(w=>{ const [a,b]=pag(S.rch).pages[curIndex()]; return w>=a&&w<b; },want);
+        if(!ok && mode!=='instant') throw new Error(mode+': leaving full screen mid-turn lost the place');
+        res[mode]=seen.join('→')+'→'+end.i;
+      }
+      return true;
+    } finally {
+      await page.evaluate(([f,t,id])=>{ try{ ttsStop(); }catch(_){ } S.turn=t; setImmersive(false); try{ dropChapter(id); }catch(_){ } setTab(f); },[fromTab,keepTurn,id]); await page.waitForTimeout(400);
+    }
+  });
+  await step('Manual: tapping a Contents line goes to that page', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1500); let line=null; for(let i=0;i<8&&!line;i++){ line=await page.$('#spread p.toc.t2[data-goto]'); if(!line){ await page.click('#next'); await page.waitForTimeout(450); await page.waitForFunction(()=>!turning,null,{timeout:4000}).catch(()=>{}); } } if(!line) return 'no contents line found'; await page.waitForTimeout(900); line=await page.$('#spread .page:not(.curl) p.toc.t2[data-goto], #spread p.toc.t2[data-goto]'); const want=await line.getAttribute('data-goto'); const bx=await line.boundingBox(); await page.mouse.click(bx.x+30, bx.y+bx.height/2); await page.waitForTimeout(1200); const got=(await page.textContent('#pgCur')).replace(/[^0-9–]/g,''); await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return got.split('–').includes(want) ? true : {want,got}; });
   await step('Jump to: typing a page number goes there', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200); await page.click('#whereBtn'); await page.fill('#gotoNum','20'); await page.click('#gotoGo'); await page.waitForTimeout(800); const got=(await page.textContent('#pgCur')).replace(/[^0-9–]/g,''); const closed=!(await page.isVisible('#gotoDone')); await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return got.split('–').includes('20')&&closed ? true : {got,closed}; });
   await step('Highlighter: tap and Clear page remove highlights (rev 135, Erase removed rev 142)', async () => {
     await page.click('#tab-read').catch(()=>{}); await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200);
