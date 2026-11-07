@@ -13,6 +13,9 @@ Steve is not a coder. He tests on his iPhone 15 Pro Max and decides what goes li
 7. **Version numbers.** rev = number of commits (`git rev-list --count HEAD`). Bump with `python3 tools/bump-version.py "<release>" <rev> <date> [preview/next.html]` (also repaints the manual cover; the 4th argument targets the preview, default app.html). A release (1.0, 1.1…) is only given when Steve says a rev is stable after `PHONE-CHECK.md`; record it in `RELEASES.md` and freeze a `release-X.Y` branch.
 8. **Be honest.** Say what was tested, what wasn't, and how sure you are. Never claim a fix works on his iPhone without his screenshot.
 
+## Search engines
+- `index.html` carries the `google-site-verification` meta tag that keeps getinkhorse.com verified in Steve's Google Search Console (verified Nov 7, 2026). Never remove or change it.
+
 ## Where things are
 - `NEXT-SESSION.md` where the last session stopped and the agreed plan: read it right after this file
 - `app.html` live app · `preview/next.html` next version under test · `preview/app.html` Inkhorse Plus beta (set aside)
