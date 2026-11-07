@@ -13,11 +13,22 @@ The newest release is first. Under each release is a short summary of what chang
 
 The built-in User manual explains how to use Inkhorse as it is today. These notes are the history.
 
-# Release 1.1 · in progress
+# Release 1.2 · in progress
 
 ## What's new for you
 
 - In full screen, a tap on the left or right side turns the page straight away, one page per tap, in order, however fast you tap. Double-tap the middle of the page to play or pause reading aloud.
+
+## Revisions
+
+Rev 193 (November 7, 2026, preview): Steve: "We have some page turning inconsistencies, we jumped out of sequential order when tapping… make sure that pages are turning sequentially, not jumping in big gaps." Found three causes, measured on a simulated iPhone 14 Pro Max in full screen with the Curl turn. First, since rev 170 every full-screen tap waited a moment in case it was a double-tap, so two quick taps on the right side counted as a double-tap and started reading aloud; she then turned the pages by herself, which is the big jump (in the test, six quick taps started the voice and the book ran on ahead). Second, a tap that landed while a page was still turning was thrown away (six taps 0.35 seconds apart turned only 2 pages). Third, leaving or entering full screen while a page was still turning sent you to the old page number in the new page size (in the test, back from paragraph 59 to 41). Now a tap on either side turns the page at once and never counts toward a double-tap; a tap during a turn waits its turn (up to 3 waiting), so pages go one by one in order; and a turn remembers the first word of the page it is heading to, so a size change mid-turn lands on that word. Double-tap to play or pause now lives in the middle of the page, the full-screen note and the manual say so. Measured after: six taps turned six pages in order at 0.7 and 0.35 seconds apart in Curl, Slide and Instant, the voice never started, and full screen on and off kept the place. One new automatic check, and the rev 170 check now tests the middle double-tap and two quick side taps. Not yet seen on his iPhone.
+
+# Release 1.1 · rev 192 · November 7, 2026
+
+Steve tested rev 192 from his iPhone's Home Screen icon and called it stable on November 7: "I like it the best so far." Known issue in 1.1, fixed in 1.2 (rev 193): in full screen, two quick taps on the side of the page can count as a double-tap and start reading aloud, so the pages run ahead.
+
+## What's new for you
+
 - On a phone in full screen, the page now fills the screen the same way it does on an iPad, most visibly with the phone sideways. The normal phone view is unchanged.
 - In the two-page spread, when you turn the spread or press Play, reading starts at the top of the left-hand page.
 - Reading aloud in the two-page spread (an iPad sideways, a computer) no longer skips the right-hand page when the spread turns.
@@ -72,8 +83,6 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
-
-Rev 193 (November 7, 2026, preview): Steve: "We have some page turning inconsistencies, we jumped out of sequential order when tapping… make sure that pages are turning sequentially, not jumping in big gaps." Found three causes, measured on a simulated iPhone 14 Pro Max in full screen with the Curl turn. First, since rev 170 every full-screen tap waited a moment in case it was a double-tap, so two quick taps on the right side counted as a double-tap and started reading aloud; she then turned the pages by herself, which is the big jump (in the test, six quick taps started the voice and the book ran on ahead). Second, a tap that landed while a page was still turning was thrown away (six taps 0.35 seconds apart turned only 2 pages). Third, leaving or entering full screen while a page was still turning sent you to the old page number in the new page size (in the test, back from paragraph 59 to 41). Now a tap on either side turns the page at once and never counts toward a double-tap; a tap during a turn waits its turn (up to 3 waiting), so pages go one by one in order; and a turn remembers the first word of the page it is heading to, so a size change mid-turn lands on that word. Double-tap to play or pause now lives in the middle of the page, the full-screen note and the manual say so. Measured after: six taps turned six pages in order at 0.7 and 0.35 seconds apart in Curl, Slide and Instant, the voice never started, and full screen on and off kept the place. One new automatic check, and the rev 170 check now tests the middle double-tap and two quick side taps. Not yet seen on his iPhone.
 
 Rev 192 (November 7, 2026, live November 7): Steve said "Let's push the updates" (approved) after testing revs 185–192 on his iPhone and iPad. Steve's iPhone held sideways in full screen still showed gray on both sides: Safari keeps its address bar and tabs at the top, so there is little height, and rev 191 let a page be at most as wide as it is tall. He chose the mild option: on a phone in full screen a page may now be a fifth wider than tall, so the spread reaches nearer the edges and still looks like a book. Measured on a simulated iPhone 14 Pro Max sideways: with Safari's bars taking the most height the spread went from 67% to 81% of the width; with less of Safari showing, from 88–91% to 98–99%. The iPad and the iPhone held upright are unchanged (identical pictures). For no bars at all, the Home Screen icon gives the book the full height. Not yet seen on his iPhone.
 

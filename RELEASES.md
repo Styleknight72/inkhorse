@@ -15,3 +15,4 @@ and copy its app.html over the live one.
 | Release | rev | Date | Marker | Notes |
 |---|---|---|---|---|
 | 1.0 | 64 | 2026-10-27 | branch release-1.0 | Colors (Light, StyleKnight, Sepia, Sky, own colors), At night, Night warmth, Hoofprint, manual matching the live app, version line added. No voice commands, no Clean up (those are beta only). |
+| 1.1 | 192 | 2026-11-07 | branch release-1.1 | Steve: "I wanna call stable. I like it the best so far" (tested from the Home Screen icon). Hoofprint asks before learning, Share sheet saving, Instant page turn, double-tap play/pause in full screen, iPad and phone pages fill the screen, iPad real full screen, two-page reading without skips. Known issue: quick side taps in full screen can start the voice and run pages ahead (fixed in rev 193, preview). |

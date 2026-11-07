@@ -4,7 +4,7 @@ Written November 5, 2026 (just after midnight), at the end of a session. Read CL
 
 ## Where things stand
 
-- **Live** (getinkhorse.com/app.html), the **preview** and the pinned claude.ai Inkhorse artifact are **rev 192** (Steve: "Let's push the updates", Nov 7, 8:00 am, after testing on his iPhone and iPad). "1.1 candidate"; Release 1.1 not called yet.
+- **Live** (getinkhorse.com/app.html), the **preview** and the pinned claude.ai Inkhorse artifact are **rev 192** (Steve: "Let's push the updates", Nov 7, 8:00 am, after testing on his iPhone and iPad). **Release 1.1 = rev 192** (Steve called it stable Nov 7, 4:05 pm, from the Home Screen icon; branch release-1.1). Preview rev 193 is "1.2 candidate".
 - **Preview is rev 193** (Nov 7, waiting for Steve's iPhone and "approved"): full-screen side taps turn at once, one page per tap (no double-tap wait); taps during a turn wait in turnQ (max 3, same book and tab only) instead of being dropped; a turn keeps the first word of its target page (wordOf/refNow) so leaving full screen mid-turn keeps the place. Double-tap play/pause now in the middle only (changes Steve's rev 170 "anywhere"); hint and manual updated. Cause of his "big gaps": two quick side taps counted as a double-tap, started the voice, and she turned pages by herself. Phone test: full screen, tap the right side quickly 5–6 times, pages go one by one and she never starts; double-tap the middle plays.
 - `node tests/audit.js app.html` passes **87 of 87**; `preview/next.html` passes **88 of 88**.
 - Confirmed on his iPhone Nov 5: Hoofprint leaves "kind" and "bold" alone, typed and dictated. Not yet seen on his phone: Hoofprint catching a real mishearing; Save/Load drafts file.
