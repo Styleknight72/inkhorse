@@ -282,6 +282,22 @@ const path = require('path');
     if(r.tabW<760) throw new Error('the tablet page does not fill the width: '+JSON.stringify(r));
     if(r.text>r.cap+2) throw new Error('tablet lines are too long: '+JSON.stringify(r));
   });
+  await step('iPad full screen also hides Safari\'s bars (real full screen), and phones never ask for it (rev 188)', async () => {
+    await page.click('#tab-read'); await page.waitForTimeout(500);
+    const r=await page.evaluate(()=>{ const keep=_isTab, el=document.documentElement, rq=el.requestFullscreen, ex=document.exitFullscreen; let asked=0, left=0, fake=null;
+      Object.defineProperty(document,'fullscreenElement',{get:()=>fake,configurable:true});
+      el.requestFullscreen=()=>{ asked++; fake=el; return Promise.resolve(); }; document.exitFullscreen=()=>{ left++; fake=null; return Promise.resolve(); };
+      const out={};
+      try{
+        _isTab=false; setImmersive(true); setImmersive(false); out.phoneAsked=asked;
+        _isTab=true; setImmersive(true); out.tabAsked=asked; setImmersive(false); out.tabLeft=left;
+        setImmersive(true); fake=null; document.dispatchEvent(new Event('fullscreenchange')); out.leftWithSafari=!document.body.classList.contains('immersive');
+      } finally { _isTab=keep; el.requestFullscreen=rq; document.exitFullscreen=ex; delete document.fullscreenElement; setImmersive(false); }
+      return out; });
+    if(r.phoneAsked) throw new Error('a phone asked for real full screen: '+JSON.stringify(r));
+    if(r.tabAsked!==1||r.tabLeft!==1) throw new Error('a tablet did not enter and leave real full screen: '+JSON.stringify(r));
+    if(!r.leftWithSafari) throw new Error('leaving with Safari\'s own ✕ did not leave Inkhorse full screen');
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
