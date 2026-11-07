@@ -329,6 +329,17 @@ const path = require('path');
     if(!(r.turnFrom<=r.left)) throw new Error('after your turn she started on the right-hand page: '+JSON.stringify(r));
     if(!(r.oneUp>r.left)) throw new Error('one-page view changed: '+JSON.stringify(r));
   });
+  await step('Phone in full screen: the page fills the width like a tablet; the normal phone view keeps the book shape (rev 191)', async () => {
+    const r=await page.evaluate(()=>{ const keepT=_isTab, keepD=S.dev, ss=window.stageSize, wasImm=document.body.classList.contains('immersive'); const out={};
+      try{ S.dev='screen'; _isTab=false; window.stageSize=()=>({w:810,h:392});   /* an iPhone held sideways */
+        document.body.classList.remove('immersive'); const n=devDims(curDev());
+        document.body.classList.add('immersive'); const f=devDims(curDev());
+        out.normalW=n.w; out.fullW=f.w; out.h=f.h;
+      } finally { _isTab=keepT; S.dev=keepD; window.stageSize=ss; document.body.classList.toggle('immersive',wasImm); }
+      return out; });
+    if(r.normalW>Math.floor(r.h*0.75)+1) throw new Error('the normal phone view lost its book shape: '+JSON.stringify(r));
+    if(r.fullW<=r.normalW) throw new Error('full screen on a phone does not widen the page: '+JSON.stringify(r));
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);

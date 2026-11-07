@@ -17,6 +17,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- On a phone in full screen, the page now fills the screen the same way it does on an iPad, most visibly with the phone sideways. The normal phone view is unchanged. (preview)
 - In the two-page spread, when you turn the spread or press Play, reading starts at the top of the left-hand page. (preview)
 - Reading aloud in the two-page spread (an iPad sideways, a computer) no longer skips the right-hand page when the spread turns. (preview)
 - On an iPad, full screen now also hides Safari's address bar and tabs, so you see the whole page. (preview)
@@ -70,6 +71,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 191 (November 6, 2026, preview): Steve, after seeing the iPad fill its screen: "Now I want my iPhone to be full page in landscape and portrait mode when expanded to the full viewing area, just like our iPad. It looks amazing and feels like a real book." The rev 187 tablet rule now also applies to any phone while it is in full screen. Measured on a simulated iPhone 14 Pro Max held sideways in full screen: the two pages went from 552 to 736 of 798 points wide. Upright in full screen the page already used 402 of 414 points, so it is unchanged, and the normal (not full screen) phone view held upright is unchanged too; its pictures are identical. Sideways, an iPhone goes into full screen by itself, so it now always gets the wider book. What a web page can't do on an iPhone: hide Safari's own bars (Apple allows that on the iPad only); the Home Screen icon runs Inkhorse with no Safari bars at all. The manual's This screen paragraph says so. One new automatic check. Not yet seen on his iPhone.
 
 Rev 190 (November 6, 2026, preview): Steve, testing rev 189 on his iPad: "When I turn a page she reads on the second page instead of the first page." In a two-page spread Inkhorse records where you are as the spread's right-hand page, so when you turned the spread while she was reading, or pressed Play on a spread, she started at the top of the right-hand page and skipped the left. Measured in a test chapter: the left page started in paragraph 4 and she began at paragraph 9; now she begins at paragraph 4. In a spread, reading now starts at the top of the left-hand page; one-page view (the iPhone held upright) is unchanged and its pictures are identical. One new automatic check (on its own long test chapter), which fails on live rev 184 and passes now. Not yet heard on his iPad.
 
