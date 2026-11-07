@@ -17,6 +17,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- On an iPad or other tablet, the page now fills the width of the screen (no gray sides) and keeps comfortable line lengths. Phones and computers are unchanged. (preview)
 - In full screen, a double-tap always pauses once she is reading, even while the next sentence is still loading. (preview)
 - A third page turn, Instant: Aa → Page turn → Instant, and the page simply changes, with no motion. (preview)
 - In full screen, a double-tap now starts the voice reliably on iPhone, "Getting ready…" shows at the top while she's coming, and a second double-tap won't stop her before she starts.
@@ -66,6 +67,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 187 (November 6, 2026, preview): Steve tested on his iPad: with This screen · fill at normal size, the page sat in the middle with wide gray on both sides (zoomed in it looked right). Cause: a page was never allowed to be wider than three quarters of its height, so on a tablet, with the toolbars taking height, the leftover width turned gray. On a tablet only (a touch screen whose shorter side is at least 700 points, which every iPad is and no phone comes close to), a page may now be as wide as it is tall, and wide pages get wider margins inside so lines stay about 70 to 75 letters, the usual book measure. Measured on a simulated iPad held upright: the page went from 598 to 764 of 776 points wide; held sideways, the two pages went from 792 to 1,034 of 1,046. Steve asked for the iPhone to be left alone: page sizes on iPhone 14 Pro Max, iPhone SE and a computer are unchanged, and before/after pictures are identical except for one small animated progress bar, which differs the same way between two pictures of the old version. The manual's This screen paragraph says so. One new automatic check. Not yet seen on his iPad.
 
 Rev 186 (November 6, 2026, preview): Steve: "The double tapping, there's just something about it that doesn't work." A mistake in rev 183: to stop a second double-tap from pausing the voice before she started, a double-tap was ignored whenever she was "getting ready". But with Boost on she is also "getting ready" in the middle of reading, each time the next sentence or paragraph is still coming from the internet (his screenshot showed it on Nov 5). At those moments a double-tap to pause was ignored and she kept reading. Now that rule only applies before her first words since you pressed play (and for at most 30 seconds); once she is reading, a double-tap always pauses. The automatic check now covers both cases, and it fails on rev 184, so it really catches this.
 

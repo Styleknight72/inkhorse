@@ -270,6 +270,18 @@ const path = require('path');
     if(r.moved) throw new Error('Instant still animated the page');
     if(!r.back) throw new Error('Instant back did not return to the same page');
   });
+  await step('Tablet: with This screen the page fills the width (no gray sides) with comfortable lines; phones keep the book shape (rev 187)', async () => {
+    const r=await page.evaluate(()=>{ const keepT=_isTab, keepD=S.dev, ss=window.stageSize; const out={phoneIsTablet:isTablet()};
+      try{ S.dev='screen'; window.stageSize=()=>({w:788,h:822});   /* an iPad held upright, toolbars showing */
+        _isTab=false; const p=devDims(curDev()); _isTab=true; const tb=devDims(curDev());
+        out.phoneW=p.w; out.tabW=tb.w; out.tabH=tb.h; out.text=tb.w-2*tb.mx; out.cap=Math.round((+S.fs||18)*30);
+      } finally { _isTab=keepT; S.dev=keepD; window.stageSize=ss; }
+      return out; });
+    if(r.phoneIsTablet) throw new Error('an iPhone-sized screen was taken for a tablet');
+    if(r.phoneW>Math.floor(r.tabH*0.75)+1) throw new Error('the phone/computer page lost its book shape: '+JSON.stringify(r));
+    if(r.tabW<760) throw new Error('the tablet page does not fill the width: '+JSON.stringify(r));
+    if(r.text>r.cap+2) throw new Error('tablet lines are too long: '+JSON.stringify(r));
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
