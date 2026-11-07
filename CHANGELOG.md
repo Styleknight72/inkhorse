@@ -17,6 +17,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- In the two-page spread, when you turn the spread or press Play, reading starts at the top of the left-hand page. (preview)
 - Reading aloud in the two-page spread (an iPad sideways, a computer) no longer skips the right-hand page when the spread turns. (preview)
 - On an iPad, full screen now also hides Safari's address bar and tabs, so you see the whole page. (preview)
 - On an iPad or other tablet, the page now fills the width of the screen (no gray sides) and keeps comfortable line lengths. Phones and computers are unchanged. (preview)
@@ -69,6 +70,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 190 (November 6, 2026, preview): Steve, testing rev 189 on his iPad: "When I turn a page she reads on the second page instead of the first page." In a two-page spread Inkhorse records where you are as the spread's right-hand page, so when you turned the spread while she was reading, or pressed Play on a spread, she started at the top of the right-hand page and skipped the left. Measured in a test chapter: the left page started in paragraph 4 and she began at paragraph 9; now she begins at paragraph 4. In a spread, reading now starts at the top of the left-hand page; one-page view (the iPhone held upright) is unchanged and its pictures are identical. One new automatic check (on its own long test chapter), which fails on live rev 184 and passes now. Not yet heard on his iPad.
 
 Rev 189 (November 6, 2026, preview): Steve noticed on his iPad, sideways, that when the page turned while Meilin was reading she carried on from the wrong page. Reproduced: in the two-page spread she read the left-hand page, then turned and started at the top of the next spread, skipping everything on the right-hand page (paragraphs 6 to 8, then 16 to 18, in a test chapter), whether the iPad had been turned or started sideways. Cause: when she turns the page herself, Inkhorse notes which page she turned to so it isn't taken as a turn of yours; in a spread the turn lands on the other page of the same spread, the note didn't match, and she restarted from the new spread's first page. Now, in a spread, a turn to the same spread counts as hers. One-page view (the iPhone held upright) is unchanged; its pictures are identical. One new automatic check, which fails on live rev 184 and passes now. Not yet heard on his iPad.
 

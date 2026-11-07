@@ -312,6 +312,23 @@ const path = require('path');
     if(r.sameSpreadRebuilt) throw new Error('her own turn to the other page of the spread was taken as yours, so she would skip a page: '+JSON.stringify(r));
     if(!r.otherSpreadRebuilt) throw new Error('a real turn to another spread no longer restarts reading there: '+JSON.stringify(r));
   });
+  await step('Two-page spread: when you turn the spread, or press Play on one, reading starts at the top of the left-hand page (rev 190)', async () => {
+    await page.click('#tab-read'); await page.waitForTimeout(400);
+    const r=await page.evaluate(()=>{ const keep=two; const out={};
+      const long=Array.from({length:80},(_,i)=>`Paragraph ${i+1} begins here. It has a second sentence about the bridge and the river. And a third sentence closes it.`).join('\n');
+      const id=addChapter('Spread test',long);
+      try{
+        const pages=pag(id).pages; out.pages=pages.length; if(pages.length<3) return {skip:'test chapter has only '+pages.length+' pages'};
+        two=true; ttsStop(); TTS.on=true; TTS.playing=false; TTS.expect=null;
+        ttsOnTurn({ch:id,i:2});   /* you turned to the spread [1,2]; the turn reports page 2 */
+        out.turnFrom=TTS.q[0]&&TTS.q[0].start; out.left=pages[1][0]; out.right=pages[2][0];
+        two=false; ttsStop(); TTS.on=true; TTS.playing=false; TTS.expect=null; ttsOnTurn({ch:id,i:2}); out.oneUp=TTS.q[0]&&TTS.q[0].start;   /* one-page view: unchanged */
+      } finally { two=keep; ttsStop(); try{ dropChapter(id); }catch(_){ } }
+      return out; });
+    if(r.skip) return 'SKIP: '+r.skip;
+    if(!(r.turnFrom<=r.left)) throw new Error('after your turn she started on the right-hand page: '+JSON.stringify(r));
+    if(!(r.oneUp>r.left)) throw new Error('one-page view changed: '+JSON.stringify(r));
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
