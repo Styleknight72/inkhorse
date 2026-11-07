@@ -17,6 +17,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- Reading aloud in the two-page spread (an iPad sideways, a computer) no longer skips the right-hand page when the spread turns. (preview)
 - On an iPad, full screen now also hides Safari's address bar and tabs, so you see the whole page. (preview)
 - On an iPad or other tablet, the page now fills the width of the screen (no gray sides) and keeps comfortable line lengths. Phones and computers are unchanged. (preview)
 - In full screen, a double-tap always pauses once she is reading, even while the next sentence is still loading. (preview)
@@ -68,6 +69,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - A chapter title like “Chapter One: Point of Origin” shows CHAPTER ONE above Point of Origin, like a printed book, and a PDF's title page and Contents are front pages, not chapter 1.
 
 ## Revisions
+
+Rev 189 (November 6, 2026, preview): Steve noticed on his iPad, sideways, that when the page turned while Meilin was reading she carried on from the wrong page. Reproduced: in the two-page spread she read the left-hand page, then turned and started at the top of the next spread, skipping everything on the right-hand page (paragraphs 6 to 8, then 16 to 18, in a test chapter), whether the iPad had been turned or started sideways. Cause: when she turns the page herself, Inkhorse notes which page she turned to so it isn't taken as a turn of yours; in a spread the turn lands on the other page of the same spread, the note didn't match, and she restarted from the new spread's first page. Now, in a spread, a turn to the same spread counts as hers. One-page view (the iPhone held upright) is unchanged; its pictures are identical. One new automatic check, which fails on live rev 184 and passes now. Not yet heard on his iPad.
 
 Rev 188 (November 6, 2026, preview): Steve: in full screen on the iPad, Safari's address bar and tabs stayed at the top; he wanted to see the entire page. Inkhorse's full screen only hid its own controls. On a tablet it now also asks Safari for real full screen, which the iPad's Safari allows (the iPhone's doesn't). Leaving Inkhorse's full screen (tap the middle, the corner button, or switching tabs) leaves Safari's too, and leaving with Safari's own ✕ leaves Inkhorse's. Phones and computers never ask for it, and their pictures are unchanged. The manual's Full screen line says so. One new automatic check; it pretends to be an iPad, so whether Safari on his iPad hides its bars is untested until he tries it.
 

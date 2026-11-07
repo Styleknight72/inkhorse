@@ -298,6 +298,20 @@ const path = require('path');
     if(r.tabAsked!==1||r.tabLeft!==1) throw new Error('a tablet did not enter and leave real full screen: '+JSON.stringify(r));
     if(!r.leftWithSafari) throw new Error('leaving with Safari\'s own ✕ did not leave Inkhorse full screen');
   });
+  await step('Two-page spread: reading aloud never skips the right-hand page when she turns the spread (rev 189)', async () => {
+    await page.click('#tab-read'); await page.waitForTimeout(400);
+    const r=await page.evaluate(()=>{ const keep=two; const out={};
+      try{
+        two=true; ttsStop(); TTS.on=true; TTS.playing=false;
+        let built=0; const tb=ttsBuild; window.ttsBuild=function(){ built++; return tb.apply(this,arguments); };
+        TTS.expect={ch:S.rch,i:1}; ttsOnTurn({ch:S.rch,i:2}); out.sameSpreadRebuilt=built;   /* she asked for page 1; the spread landed on page 2 (same spread) */
+        TTS.on=true; TTS.expect={ch:S.rch,i:1}; built=0; ttsOnTurn({ch:S.rch,i:4}); out.otherSpreadRebuilt=built;   /* a different spread: that is a turn of yours */
+        window.ttsBuild=tb;
+      } finally { two=keep; ttsStop(); }
+      return out; });
+    if(r.sameSpreadRebuilt) throw new Error('her own turn to the other page of the spread was taken as yours, so she would skip a page: '+JSON.stringify(r));
+    if(!r.otherSpreadRebuilt) throw new Error('a real turn to another spread no longer restarts reading there: '+JSON.stringify(r));
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
