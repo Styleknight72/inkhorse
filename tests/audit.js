@@ -371,6 +371,29 @@ const path = require('path');
     if(Math.abs(r.coverMid)>8) throw new Error('the cover is not centred on the screen: '+JSON.stringify(r));
     return true;
   });
+  await step('Show tips: off hides how-to tips (full-screen note, highlighter how-to) but keeps status messages; on brings them back (rev 195)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=195))) return 'SKIP: before rev 195';
+    await page.click('#tab-read'); await page.waitForTimeout(300);
+    const r=await page.evaluate(async()=>{ const keep=S.tips, out={};
+      const shown=()=>({fs:!$('#fsHint').hidden, toast:$('#toast').hidden?'':$('#toast').textContent});
+      try{
+        $('#tipsChk').checked=false; $('#tipsChk').dispatchEvent(new Event('change')); await new Promise(r=>setTimeout(r,50));
+        setImmersive(true); out.offFs=shown().fs; setImmersive(false); out.offFsOut=shown().fs;
+        tip('Highlighter on. Drag across words…','Highlighter on.'); out.offShort=shown().toast;
+        tip('Drag your finger across words to highlight them.'); out.offNone=shown().toast;
+        toast('Getting ready…'); out.offStatus=shown().toast;
+        $('#tipsChk').checked=true; $('#tipsChk').dispatchEvent(new Event('change')); await new Promise(r=>setTimeout(r,50));
+        setImmersive(true); out.onFs=shown().fs; setImmersive(false);
+        tip('Highlighter on. Drag across words…','Highlighter on.'); out.onFull=shown().toast;
+      } finally { S.tips=keep; $('#tipsChk').checked=S.tips!==false; setImmersive(false); }
+      return out; });
+    if(r.offFs||r.offFsOut) throw new Error('the full-screen tip still shows with tips off: '+JSON.stringify(r));
+    if(r.offShort!=='Highlighter on.') throw new Error('with tips off the short news was not shown: '+JSON.stringify(r));
+    if(r.offNone==='Drag your finger across words to highlight them.') throw new Error('a how-to tip showed with tips off: '+JSON.stringify(r));
+    if(r.offStatus!=='Getting ready…') throw new Error('a status message was hidden with tips off: '+JSON.stringify(r));
+    if(!r.onFs||!/Drag across/.test(r.onFull)) throw new Error('tips did not come back when switched on: '+JSON.stringify(r));
+    return true;
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
