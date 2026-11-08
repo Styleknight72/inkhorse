@@ -416,6 +416,30 @@ const path = require('path');
       return true;
     } finally { await page.evaluate(id=>{ try{ dropChapter(id); }catch(_){ } },id); await page.evaluate(c=>{ if(CH.has(c[0])){ S.cur=c[0]; S.rch=c[1]; S.anchor=c[2]; try{ loadEditor(); renderChapterUI(); refreshReader(); }catch(_){ } } },curBefore); if(was) await page.evaluate(async w=>{ await openLibBook(w,true); },was); }
   });
+  await step('F2.3 Chapter opening styles: Classic, Ornament, Big number and Drop cap each draw, re-measure the pages, follow the book\'s own label, and never apply to books added to read (rev 199)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=199))) return 'SKIP: before rev 199';
+    const was=await page.evaluate(()=>RB&&RB.id); if(was) await page.evaluate(()=>leaveLibraryBook()); const cur=await page.evaluate(()=>[S.cur,S.rch,S.anchor,FM().chStyle]);
+    const id=await page.evaluate(()=>addChapter('Chapter Four: Style test',Array.from({length:60},(_,i)=>'Sentence '+i+' of the style test, long enough to fill a few lines of the page.').join('\n')));
+    try{
+      const r=await page.evaluate(async id=>{ const out={}; setTab('read'); S.rch=id; S.anchor=0;
+        for(const cs of ['classic','ornament','bignum','dropcap']){
+          const sel=document.querySelector('#fmChStyle'); sel.value=cs; sel.dispatchEvent(new Event('change')); drawView(); await new Promise(r=>setTimeout(r,350));
+          const f=document.querySelector('#spread .ptext[data-ch="'+id+'"]'), h=f.querySelector('h2.cht'), p1=h.nextElementSibling;
+          out[cs]={first:pag(id).pages[0][1], ck:f.querySelector('.ck')?.textContent||'', bn:f.querySelector('.bn')?.textContent||'', after:getComputedStyle(h,'::after').content, cap:getComputedStyle(p1,'::first-letter').float, over:f.scrollHeight>f.clientHeight+2};
+        }
+        return out; },id);
+      if(!/chapter four/i.test(r.classic.ck)) throw new Error('Classic label missing: '+JSON.stringify(r.classic));
+      if(!/❦/.test(r.ornament.after)) throw new Error('Ornament flourish missing: '+JSON.stringify(r.ornament));
+      if(r.bignum.bn!=='4'||r.bignum.ck) throw new Error('Big number should show 4 (from "Chapter Four") and no label: '+JSON.stringify(r.bignum));
+      if(r.dropcap.cap!=='left') throw new Error('Drop cap missing: '+JSON.stringify(r.dropcap));
+      if(!(r.ornament.first<r.classic.first&&r.dropcap.first<r.classic.first)) throw new Error('pages were not re-measured for the taller openings: '+JSON.stringify(r));
+      for(const k in r) if(r[k].over) throw new Error(k+': the first page overflows');
+      const lib=await page.evaluate(async()=>{ FM().chStyle='dropcap'; await openLibBook('manual',true); return chStyle(); });
+      if(lib!=='classic') throw new Error('a book added to read took the style: '+lib);
+      return true;
+    } finally { await page.evaluate(async c=>{ try{ if(RB) leaveLibraryBook(); }catch(_){ } FM().chStyle=c[3]; },cur); await page.evaluate(id=>{ try{ dropChapter(id); }catch(_){ } },id);
+      await page.evaluate(c=>{ if(CH.has(c[0])){ S.cur=c[0]; S.rch=c[1]; S.anchor=c[2]; try{ loadEditor(); renderChapterUI(); refreshReader(); }catch(_){ } } },cur); if(was) await page.evaluate(async w=>{ await openLibBook(w,true); },was); }
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
