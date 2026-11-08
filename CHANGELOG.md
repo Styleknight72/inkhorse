@@ -17,12 +17,15 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- Book Hub: the page counter below the book is now a button marked Book Hub. Tap it to go to any page, slide through the book, see and copy your highlights, and open any chapter.
 - Copy, beside Clear page when the Highlighter is on: copies the highlights on the page you're looking at, with their paragraph breaks, ready to paste into Write, Notes or another app.
 - Show tips, in the Aa panel: turn off the dark notes that teach you the app once you know your way around. Messages about what's happening now, like Getting ready… and Saved, still show.
 - The book fills the space it has on a phone or iPad, held upright or sideways. Held upright, you see one big page even with Two-page spread chosen; turn it sideways and the open book comes back. A cover on its own sits in the middle of the screen.
 - In full screen, a tap on the left or right side turns the page straight away, one page per tap, in order, however fast you tap. Double-tap the middle of the page to play or pause reading aloud.
 
 ## Revisions
+
+Rev 197 (November 7, 2026, preview): Steve sent a mock-up with "Book Hub" written above the page counter: "Click here to open the Book Hub." The panel that opens when you tap the counter (Go to page, the slider, Highlights, Chapters) was called Jump to, and nothing showed the counter could be tapped; that's why he hadn't found Copy in it. The counter now has a light border with BOOK HUB ⌃ set into its top edge, so the page loses only 3 points of height and no text is cut, and the panel is titled Book Hub. The label sits on the counter, not above the ‹ › arrows, so it can't look like the arrows open it. Checked in the light and StyleKnight colors. Manual updated everywhere it said Jump to (the old name stays as a search word); the manual's picture of the panel still shows the old title. One new automatic check. Not yet seen on his iPhone.
 
 Rev 196 (November 7, 2026, live November 7 at Steve's "Push it"): Steve, using the Highlighter on his memoir: "works incredibly well, but it's missing a copy functionality, just in case I need to transfer paragraphs for editing reasons." Copy had been in Jump to → Highlights since rev 134, but he hadn't found it ("Well, I didn't see the tool"), so a Copy button now sits beside Clear page on the Highlighter's bar above the page. It copies every highlight on the page you're looking at, in reading order, keeping paragraph breaks (two highlights become two paragraphs). If the page has no highlights, it says so. The Copy in Jump to stays. Manual updated (Highlighter, Read tools list). One new automatic check proves the copied text, paragraph breaks included. Tried on his iPhone before going live: he copied a highlighted passage of his memoir and pasted it into Messages word for word ("Super kick ass, love it").
 

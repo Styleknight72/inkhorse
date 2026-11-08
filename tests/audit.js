@@ -516,6 +516,16 @@ const path = require('path');
   await step('Read tab shows pages and page numbers', async () => { await page.click('#tab-read'); await page.waitForTimeout(800); return /of \d/.test(await page.textContent('#pgOf')); });
   await step('Jump to: numbers agree with the counter', async () => { const of=(await page.textContent('#pgOf')).match(/\d+/)[0]; await page.click('#whereBtn'); await page.waitForTimeout(300); const now=await page.textContent('#gotoNow'); const list=await page.textContent('#gotoList'); await page.click('#gotoDone'); return now.includes('of '+of) && !/of 7[0-9]|starts on/.test(list) ? true : {of,now:now.slice(0,40)}; });
   await step('page turn by arrow key', async () => { await page.keyboard.press('ArrowRight'); await page.waitForTimeout(600); await page.keyboard.press('ArrowLeft'); await page.waitForTimeout(600); });
+  await step('Book Hub: the counter below the book is labelled Book Hub and opens the panel titled Book Hub (rev 197)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=197))) return 'SKIP: before rev 197';
+    await page.click('#tab-read'); await page.waitForTimeout(300);
+    const tag=await page.evaluate(()=>{ const t=document.querySelector('#whereBtn .hubtag'); return t&&getComputedStyle(t).display!=='none'&&t.getBoundingClientRect().height>0?t.textContent:''; });
+    if(!/Book Hub/.test(tag)) throw new Error('no visible Book Hub label on the counter');
+    await page.click('#whereBtn'); await page.waitForTimeout(300);
+    const title=await page.textContent('#goto .gh b'); await page.click('#gotoDone'); await page.waitForTimeout(200);
+    if(title.trim()!=='Book Hub') throw new Error('panel title is '+JSON.stringify(title));
+    return true;
+  });
   await step('Jump-to sheet opens', async () => { await page.click('#whereBtn'); await page.waitForTimeout(300); const v=await page.isVisible('#gotoDone'); await page.click('#gotoDone').catch(()=>{}); return v; });
   await step('Colors: every theme applies', async () => { for (const th of ['light','dark','sepia','sky','custom']) { await page.evaluate(t=>{ localStorage.setItem('inkhorse-theme',t); inkApplyTheme(); },th); if((await page.evaluate(()=>document.documentElement.getAttribute('data-theme')))!==th) return th+' failed'; } await page.evaluate(()=>{ localStorage.removeItem('inkhorse-theme'); inkApplyTheme(); }); });
   await step('Night schedule + warmth apply', async () => { await page.evaluate(()=>{ localStorage.setItem('inkhorse-night','dark'); localStorage.setItem('inkhorse-night-from','00:00'); localStorage.setItem('inkhorse-night-to','23:59'); localStorage.setItem('inkhorse-warmth','40'); inkApplyTheme(); }); const r=await page.evaluate(()=>[document.documentElement.getAttribute('data-theme'),document.documentElement.hasAttribute('data-warm')]); await page.evaluate(()=>{ ['inkhorse-night','inkhorse-night-from','inkhorse-night-to','inkhorse-warmth'].forEach(k=>localStorage.removeItem(k)); inkApplyTheme(); }); return r[0]==='dark'&&r[1]; });

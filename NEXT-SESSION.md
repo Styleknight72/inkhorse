@@ -5,6 +5,7 @@ Written November 5, 2026 (just after midnight), at the end of a session. Read CL
 ## Where things stand
 
 - **Live, preview and the artifact are rev 193** since Nov 7, 4:10 pm. Before that they were **rev 192** (Steve: "Let's push the updates", Nov 7, 8:00 am, after testing on his iPhone and iPad). **Release 1.1 = rev 192** (Steve called it stable Nov 7, 4:05 pm, from the Home Screen icon; branch release-1.1). Preview rev 193 is "1.2 candidate".
+- **Preview is rev 197** (Nov 7, waiting for Steve): Book Hub (counter is a labelled button; Jump to renamed). Manual picture of the panel still shows "Jump to". Audit 92/92.
 - **Rev 196 is LIVE** (Nov 7, 11:10 pm, Steve: "Push it", after trying it on his iPhone; live, preview and artifact match): Copy button beside Clear page (copyPageMarks). Audit 91/91.
 - **Rev 195 is LIVE** (Nov 7, 10:34 pm, Steve: "Push it"; live, preview and artifact match): Show tips switch in Aa (S.tips, tip(full,short), fsHint respects it). Audit 90/90.
 - **Rev 194 is LIVE** (Nov 7, 9:17 pm, Steve: "Let's push it to live"; live, preview and artifact match; still needs his iPhone/iPad check): two pages only when there's room (upright phone/iPad = one big page even with Two-page on), a lone cover centred in two-page view (lone/loneShift/unLone), phone normal view fills like full screen. Audit 89/89.
