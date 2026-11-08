@@ -17,6 +17,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- Backup files now end in .inkhorse, so the iPhone's Files app no longer tries to open them (a big backup could freeze it on Loading…). Older .json backups still restore.
 - Chapter opening, in each book's settings (Chapters panel, under Author): choose Classic, Ornament, Big number or Drop cap for how every chapter's first page looks, in Read, the print PDF and the EPUB.
 - Chapter openings: the label (like CHAPTER ONE) now sits just above the chapter title, a third of the way down the page, with nothing at the top, the way professionally formatted books open a chapter. The same in Read, the print PDF and the EPUB.
 - Book Hub: the page counter below the book is now a button marked Book Hub. Tap it to go to any page, slide through the book, see and copy your highlights, and open any chapter.
@@ -26,6 +27,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - In full screen, a tap on the left or right side turns the page straight away, one page per tap, in order, however fast you tap. Double-tap the middle of the page to play or pause reading aloud.
 
 ## Revisions
+
+Rev 202 (November 8, 2026, preview): Steve saved a backup, tapped it in the Files app, and the screen sat on "Loading…"; the ✕ did nothing and closing Files didn't clear it, so he had to restart the phone. It had happened before (November 5). The backup was a .json file, which the iPhone tries to preview, and a large one (8.8 to 13 MB) jams the preview. Backups and drafts files now end in .inkhorse and are marked as plain data, so Files shows a plain file with nothing to open. Restore from file and Load drafts file now let you pick any file and check what's inside, so older .json backups restore exactly as before. Manual updated (Save backup file: what the .inkhorse file is, and what to do if an old .json backup sticks on Loading…). The automatic backup check now saves a backup, then restores it both as .inkhorse and renamed .json. Not yet seen on his iPhone: how Files shows a .inkhorse file can only be confirmed on a real iPhone.
 
 Rev 201 (November 8, 2026, preview): Steve, fixing "Rimmon Club, on Rimmon St." in his memoir by ear, saw Hoofprint offer "Main → Mail?" for "South Main Street" and didn't know what to do (the answer: tap No; nothing changes unless you tap Fix). Why it happened: Hoofprint treats a capitalized word as one of your names unless you also write it in lowercase. "Mail" is capitalized somewhere in his book and never lowercase, so it counted as a name; "Main" he also writes in lowercase, so it isn't a name, but the "everyday word" rule only covered words written in lowercase, so a capitalized "Main" looked like a misspelled "Mail". Now a capitalized everyday word that you also write in lowercase is never offered as a misheard name. Reproduced on the live app (Main → Mail offered) and gone on the preview, while a real mishearing (Boldoc → Bolduc) is still caught. One new automatic check. Not yet seen on his iPhone.
 

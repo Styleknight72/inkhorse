@@ -998,7 +998,19 @@ const path = require('path');
   });
   await step('Compare tab measures pages', async () => { await page.click('#tab-compare'); await page.waitForTimeout(1500); return /words/.test(await page.textContent('#headline')); });
   await step('Chapters panel lists export and backup', async () => { await page.click('#tab-write'); await page.click('#chBtn'); await page.waitForTimeout(300); const t=await page.evaluate(()=>document.body.innerText); return ['EPUB','Print PDF','Word manuscript','Save backup file','Restore from file'].every(w=>t.includes(w)); });
-  await step('Save backup file downloads a file', async () => { const [d]=await Promise.all([page.waitForEvent('download',{timeout:6000}), page.click('#fbkSave')]); return /backup.*\.json$/.test(await d.suggestedFilename()); });
+  await step('Save backup file downloads a file', async () => { const [d]=await Promise.all([page.waitForEvent('download',{timeout:6000}), page.click('#fbkSave')]); const fn=await d.suggestedFilename(), r202=await page.evaluate(()=>(window.INK_VERSION||{}).rev>=202);
+    if(!(r202?/backup.*\.inkhorse$/:/backup.*\.json$/).test(fn)) throw new Error('file name '+fn);
+    if(!r202) return true;
+    /* rev 202: the .inkhorse file restores, and so does the same backup named .json (older backups) */
+    const buf=require('fs').readFileSync(await d.path());
+    for(const name of ['book-backup.inkhorse','book-backup.json']){
+      await page.setInputFiles('#fbkIn',{name,mimeType:name.endsWith('.json')?'application/json':'application/octet-stream',buffer:buf}); await page.waitForTimeout(600);
+      const shown=await page.evaluate(()=>{ const b=document.querySelector('#fbkPending'); return b&&!b.hidden?b.textContent:''; });
+      if(!/Restore this/i.test(shown)) throw new Error(name+' was not accepted for restore: '+JSON.stringify(shown.slice(0,120)));
+      await page.evaluate(()=>{ const c=[...document.querySelectorAll('#fbkPending button')].find(b=>/cancel/i.test(b.textContent)); if(c) c.click(); });
+    }
+    const acc=await page.getAttribute('#fbkIn','accept'); if(acc) throw new Error('Restore from file still limits the file type: '+acc);
+    return true; });
   await step('EPUB export downloads a file', async () => { if(!(await page.evaluate(()=>typeof JSZip!=='undefined'))) return 'SKIP: zip library not reachable from this test machine (phones keep their own copy)'; const [d]=await Promise.all([page.waitForEvent('download',{timeout:15000}), page.click('#expEpub')]); return /\.epub$/.test(await d.suggestedFilename()); });
   await step('text survives a reload', async () => { await page.click('#drawerDone').catch(()=>{}); await page.reload(); await page.waitForTimeout(2500); return (await T()).length>0; });
   await step('wide screen: the same tabs and one room at a time, like a phone (rev 156)', async () => { await page.setViewportSize({width:1400,height:900}); await page.waitForTimeout(1200); await page.click('#tab-read'); await page.waitForTimeout(500); const r=await page.evaluate(()=>({tabs:!!$('#tab-write').offsetParent, shown:['write','read','compare'].filter(id=>!!$('#'+id).offsetParent)})); return (r.tabs && r.shown.join()==='read') || (()=>{ throw new Error(JSON.stringify(r)); })(); });
