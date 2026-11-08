@@ -273,14 +273,14 @@ const path = require('path');
   await step('Tablet: with This screen the page fills the width (no gray sides) with comfortable lines; computers keep the book shape (rev 187, phones fill since rev 194)', async () => {
     const r=await page.evaluate(()=>{ const keepT=_isTab, keepD=S.dev, ss=window.stageSize; const out={phoneIsTablet:isTablet()};
       try{ S.dev='screen'; window.stageSize=()=>({w:788,h:822});   /* an iPad held upright, toolbars showing */
-        out.r194=(window.INK_VERSION||{}).rev>=194;
+        out.r194=(window.INK_VERSION||{}).rev>=194; out.r204=(window.INK_VERSION||{}).rev>=204;   /* since rev 204 a computer fills too */
         if(out.r194) Object.defineProperty(navigator,'maxTouchPoints',{get:()=>0,configurable:true});   /* since rev 194 phones fill too; a computer (no touch) keeps the book shape */
         _isTab=false; const p=devDims(curDev()); if(out.r194) delete navigator.maxTouchPoints; _isTab=true; const tb=devDims(curDev());
         out.phoneW=p.w; out.tabW=tb.w; out.tabH=tb.h; out.text=tb.w-2*tb.mx; out.cap=Math.round((+S.fs||18)*30);
       } finally { _isTab=keepT; S.dev=keepD; window.stageSize=ss; }
       return out; });
     if(r.phoneIsTablet) throw new Error('an iPhone-sized screen was taken for a tablet');
-    if(r.phoneW>Math.floor(r.tabH*0.75)+1) throw new Error('the phone/computer page lost its book shape: '+JSON.stringify(r));
+    if(!r.r204 && r.phoneW>Math.floor(r.tabH*0.75)+1) throw new Error('the phone/computer page lost its book shape: '+JSON.stringify(r));
     if(r.tabW<760) throw new Error('the tablet page does not fill the width: '+JSON.stringify(r));
     if(r.text>r.cap+2) throw new Error('tablet lines are too long: '+JSON.stringify(r));
   });
@@ -482,6 +482,23 @@ const path = require('path');
     for(const k of ['fullKept','droppedCaught','fenFull','fenDrop','belFull','belDrop']) if(!r[k]) throw new Error(k+' failed: '+JSON.stringify(r));
     if(!r.parts||!r.parts.some(x=>/^Steve Claude Patient,$/.test(x))) throw new Error('the name is not its own smaller piece: '+JSON.stringify(r.parts));
     if(!r.chunks.includes('My birth certificate records the basics plainly:')||!r.chunks.some(x=>/^Steve Claude Patient,/.test(x))) throw new Error('a colon did not start a new piece: '+JSON.stringify(r.chunks));
+    return true;
+  });
+  await step('F3 Computer: with Fit my screen the open book fills the whole window (two pages share the width), lines stay comfortable, and the size menu says Fit my screen (rev 204)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=204))) return 'SKIP: before rev 204';
+    const r=await page.evaluate(()=>{ const keepT=_isTab, keepD=S.dev, keepV=S.view, ss=window.stageSize; const out={};
+      Object.defineProperty(navigator,'maxTouchPoints',{get:()=>0,configurable:true});
+      try{ _isTab=false; S.dev='screen';
+        window.stageSize=()=>({w:1700,h:880});   /* a 16-inch laptop at 150% in Chrome, full screen */
+        S.view='auto'; const d2=devDims(curDev()); out.two=screenTwo(1700-SCREEN_PAD,880-SCREEN_PAD); out.spreadW=d2.w*2; out.pageH=d2.h; out.sw=1700-SCREEN_PAD; out.text=d2.w-2*d2.mx; out.cap=Math.round((+S.fs||18)*30);
+        S.view='1'; const d1=devDims(curDev()); out.oneW=d1.w; out.oneH=d1.h;
+        out.label=[...document.querySelectorAll('#deviceSel option')].find(o=>o.value==='screen')?.textContent;
+      } finally { delete navigator.maxTouchPoints; _isTab=keepT; S.dev=keepD; S.view=keepV; window.stageSize=ss; }
+      return out; });
+    if(!r.two||r.spreadW<r.sw-2) throw new Error('the open book does not fill the width: '+JSON.stringify(r));
+    if(r.text>r.cap+2) throw new Error('lines are too long on a wide page: '+JSON.stringify(r));
+    if(r.oneW>r.oneH+1) throw new Error('one page is wider than tall: '+JSON.stringify(r));
+    if(r.label!=='Fit my screen') throw new Error('the size menu says '+r.label);
     return true;
   });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
