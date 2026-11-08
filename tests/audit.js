@@ -463,6 +463,27 @@ const path = require('path');
     } finally { await page.evaluate(id=>{ try{ dropChapter(id); }catch(_){ } },id);
       await page.evaluate(c=>{ if(CH.has(c[0])){ S.cur=c[0]; S.rch=c[1]; S.anchor=c[2]; try{ loadEditor(); renderChapterUI(); refreshReader(); }catch(_){ } } },cur); if(was) await page.evaluate(async w=>{ await openLibBook(w,true); },was); }
   });
+  await step('Natural voice: a piece that comes out too fast for its words (dropped words) is caught and remade in smaller pieces; a colon starts a new piece; ↺ remakes the piece (rev 203)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=203))) return 'SKIP: before rev 203';
+    const r=await page.evaluate(()=>{ const keepV=S.ttsVoice, keepOn=window.kokOn; const out={};
+      try{
+        S.ttsVoice='kokoro:am_michael'; KOK.paces={};
+        const t='My birth certificate records the basics plainly: Steve Claude Patient, male, born August 6, 1972,';
+        out.fullKept=!kokSlip(t,8.70); out.droppedCaught=kokSlip(t,7.45);   /* real Calvin recordings: whole sentence 8.70 s, name dropped 7.45 s */
+        S.ttsVoice='kokoro:am_fenrir'; out.fenFull=!kokSlip(t,7.85); out.fenDrop=kokSlip(t,6.58);
+        S.ttsVoice='kokoro:af_bella'; out.belFull=!kokSlip(t,8.30); out.belDrop=kokSlip(t,7.05);
+        const words=t.split(' '); const parts=kokSplitFine({start:0,end:words.length,text:t,words,p:0});
+        out.parts=parts?parts.map(x=>x.text):null;
+        window.kokOn=()=>true;
+        const id=addChapter('Pieces test','My birth certificate records the basics plainly: Steve Claude Patient, male, born August 6, 1972, in Manchester.');
+        out.chunks=ttsChunks(id,0).map(c=>c.text); dropChapter(id);
+      } finally { S.ttsVoice=keepV; window.kokOn=keepOn; KOK.paces={}; }
+      return out; });
+    for(const k of ['fullKept','droppedCaught','fenFull','fenDrop','belFull','belDrop']) if(!r[k]) throw new Error(k+' failed: '+JSON.stringify(r));
+    if(!r.parts||!r.parts.some(x=>/^Steve Claude Patient,$/.test(x))) throw new Error('the name is not its own smaller piece: '+JSON.stringify(r.parts));
+    if(!r.chunks.includes('My birth certificate records the basics plainly:')||!r.chunks.some(x=>/^Steve Claude Patient,/.test(x))) throw new Error('a colon did not start a new piece: '+JSON.stringify(r.chunks));
+    return true;
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
