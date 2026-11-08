@@ -270,10 +270,12 @@ const path = require('path');
     if(r.moved) throw new Error('Instant still animated the page');
     if(!r.back) throw new Error('Instant back did not return to the same page');
   });
-  await step('Tablet: with This screen the page fills the width (no gray sides) with comfortable lines; phones keep the book shape (rev 187)', async () => {
+  await step('Tablet: with This screen the page fills the width (no gray sides) with comfortable lines; computers keep the book shape (rev 187, phones fill since rev 194)', async () => {
     const r=await page.evaluate(()=>{ const keepT=_isTab, keepD=S.dev, ss=window.stageSize; const out={phoneIsTablet:isTablet()};
       try{ S.dev='screen'; window.stageSize=()=>({w:788,h:822});   /* an iPad held upright, toolbars showing */
-        _isTab=false; const p=devDims(curDev()); _isTab=true; const tb=devDims(curDev());
+        out.r194=(window.INK_VERSION||{}).rev>=194;
+        if(out.r194) Object.defineProperty(navigator,'maxTouchPoints',{get:()=>0,configurable:true});   /* since rev 194 phones fill too; a computer (no touch) keeps the book shape */
+        _isTab=false; const p=devDims(curDev()); if(out.r194) delete navigator.maxTouchPoints; _isTab=true; const tb=devDims(curDev());
         out.phoneW=p.w; out.tabW=tb.w; out.tabH=tb.h; out.text=tb.w-2*tb.mx; out.cap=Math.round((+S.fs||18)*30);
       } finally { _isTab=keepT; S.dev=keepD; window.stageSize=ss; }
       return out; });
@@ -329,7 +331,7 @@ const path = require('path');
     if(!(r.turnFrom<=r.left)) throw new Error('after your turn she started on the right-hand page: '+JSON.stringify(r));
     if(!(r.oneUp>r.left)) throw new Error('one-page view changed: '+JSON.stringify(r));
   });
-  await step('Phone in full screen: the page fills the width like a tablet; the normal phone view keeps the book shape (rev 191)', async () => {
+  await step('Phone in full screen: the page fills the width like a tablet; since rev 194 the normal phone view fills too (rev 191)', async () => {
     const r=await page.evaluate(()=>{ const keepT=_isTab, keepD=S.dev, ss=window.stageSize, wasImm=document.body.classList.contains('immersive'); const out={};
       try{ S.dev='screen'; _isTab=false; window.stageSize=()=>({w:810,h:392});   /* an iPhone held sideways */
         document.body.classList.remove('immersive'); const n=devDims(curDev());
@@ -337,8 +339,37 @@ const path = require('path');
         out.normalW=n.w; out.fullW=f.w; out.h=f.h;
       } finally { _isTab=keepT; S.dev=keepD; window.stageSize=ss; document.body.classList.toggle('immersive',wasImm); }
       return out; });
+    if(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=194)){   /* rev 194: the normal phone view fills its space too (Steve, Nov 7) */
+      if(r.normalW!==r.fullW || r.fullW<=Math.floor(r.h*0.75)+1) throw new Error('a phone does not fill the space in both views: '+JSON.stringify(r));
+      return true;
+    }
     if(r.normalW>Math.floor(r.h*0.75)+1) throw new Error('the normal phone view lost its book shape: '+JSON.stringify(r));
     if(r.fullW<=r.normalW) throw new Error('full screen on a phone does not widen the page: '+JSON.stringify(r));
+  });
+  await step('F3 Page fills the screen: an upright phone or tablet shows one page even with Two-page spread on; sideways shows two; a cover on its own is centred (rev 194)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=194))) return 'SKIP: before rev 194';
+    await page.click('#tab-read'); await page.waitForTimeout(400);
+    const r=await page.evaluate(async()=>{ const keepV=S.view, keepD=S.dev, ss=window.stageSize, out={};
+      try{
+        S.dev='screen'; S.view='2';
+        window.stageSize=()=>({w:396,h:491}); out.uprightTwo=screenTwo(384,479);   /* iPhone upright */
+        window.stageSize=()=>({w:800,h:924}); out.ipadUprightTwo=screenTwo(788,912);   /* iPad upright */
+        out.sidewaysTwo=screenTwo(786,368) && screenTwo(1148,552);   /* phone and iPad sideways */
+        window.stageSize=ss;
+        const st=document.querySelector('#stage'); const w=st.clientWidth, h=st.clientHeight;
+        out.stage=[w,h]; out.liveTwo=spreadMode(); out.expectTwo=w/h>=0.9;
+        // the cover alone: centred when the screen shows two pages
+        await goTo({ch:'__front',i:0}); drawView(); await new Promise(r=>setTimeout(r,500));
+        out.lone=lone; const bw=document.querySelector('#bookwrap').getBoundingClientRect(), sr=st.getBoundingClientRect();
+        const face=two? {l:bw.left+bw.width/2, r:bw.right} : {l:bw.left, r:bw.right};
+        out.coverMid=Math.round((face.l+face.r)/2 - (sr.left+sr.width/2));
+      } finally { S.view=keepV; S.dev=keepD; window.stageSize=ss; try{ drawView(); }catch(_){ } }
+      return out; });
+    if(r.uprightTwo||r.ipadUprightTwo) throw new Error('an upright phone or tablet still splits into two pages: '+JSON.stringify(r));
+    if(!r.sidewaysTwo) throw new Error('sideways no longer shows two pages: '+JSON.stringify(r));
+    if(r.liveTwo!==r.expectTwo) throw new Error('the live view does not follow the room rule: '+JSON.stringify(r));
+    if(Math.abs(r.coverMid)>8) throw new Error('the cover is not centred on the screen: '+JSON.stringify(r));
+    return true;
   });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
