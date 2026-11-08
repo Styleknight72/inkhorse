@@ -440,6 +440,17 @@ const path = require('path');
     } finally { await page.evaluate(async c=>{ try{ if(RB) leaveLibraryBook(); }catch(_){ } FM().chStyle=c[3]; },cur); await page.evaluate(id=>{ try{ dropChapter(id); }catch(_){ } },id);
       await page.evaluate(c=>{ if(CH.has(c[0])){ S.cur=c[0]; S.rch=c[1]; S.anchor=c[2]; try{ loadEditor(); renderChapterUI(); refreshReader(); }catch(_){ } } },cur); if(was) await page.evaluate(async w=>{ await openLibBook(w,true); },was); }
   });
+  await step('Voice download note: the progress bar is a thin bar whose fill shows the percent (rev 200)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=200))) return 'SKIP: before rev 200';
+    await page.click('#tab-read'); await page.waitForTimeout(200);
+    const r=await page.evaluate(async()=>{ const tb=document.querySelector('.ttsbar'); const was=tb.hidden; tb.hidden=false;
+      kokNote('Downloading Meilin… <span class="pc">40%</span><div class="dlbar"><i style="width:40%"></i></div>'); await new Promise(r=>setTimeout(r,400));
+      const bar=document.querySelector('#kokNote .dlbar'), fill=bar&&bar.querySelector('i'); const out={barH:bar?bar.getBoundingClientRect().height:0, fillH:fill?fill.getBoundingClientRect().height:0, fillW:fill?fill.getBoundingClientRect().width:0, barW:bar?bar.getBoundingClientRect().width:0};
+      kokNote(''); tb.hidden=was; return out; });
+    if(!(r.barH>=4&&r.barH<=10)) throw new Error('the bar is not a thin bar: '+JSON.stringify(r));
+    if(!(r.fillH>=4&&Math.abs(r.fillW/r.barW-0.4)<0.03)) throw new Error('the fill does not show 40%: '+JSON.stringify(r));
+    return true;
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
