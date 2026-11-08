@@ -756,6 +756,24 @@ const path = require('path');
       return true;
     });
   });
+  await step('Highlighter: Copy beside Clear page copies the page\'s highlights with their paragraph breaks (rev 196)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=196))) return 'SKIP: before rev 196';
+    await page.click('#tab-write').catch(()=>{}); await page.waitForTimeout(300);
+    const id=await page.evaluate(()=>{ try{ if(RB) leaveLibraryBook(); }catch(_){ } return addChapter('Copy test','Alpha bravo charlie delta echo.\nFoxtrot golf hotel india juliet.\nKilo lima mike.'); });
+    try{
+      await page.evaluate(async id=>{ setTab('read'); S.rch=id; S.anchor=0; refreshReader(); drawView(); await new Promise(r=>setTimeout(r,500)); },id);
+      const r=await page.evaluate(async id=>{
+        const W=pag(id).doc.words, idx=v=>W.findIndex(w=>w.v===v);
+        addMark(id,idx('charlie'),idx('golf')); addMark(id,idx('lima'),idx('mike.')); drawView(); await new Promise(r=>setTimeout(r,400));
+        let got=null; const keep=hlCopy; window.hlCopy=t=>{ got=t; };
+        try{ document.querySelector('#hlCopyPage').click(); } finally { window.hlCopy=keep; }
+        return {got, btn:!!document.querySelector('#hlCopyPage')};
+      },id);
+      if(!r.btn) throw new Error('no Copy button in the highlighter bar');
+      if(r.got!=='charlie delta echo.\n\nFoxtrot golf\n\nlima mike.') throw new Error('copied text was '+JSON.stringify(r.got));
+      return true;
+    } finally { await page.evaluate(id=>{ try{ dropChapter(id); }catch(_){ } },id); }
+  });
   await step('Highlighter on: a swipe never turns the page; drag past the line end reaches the last word (rev 138)', async () => {
     await page.click('#tab-read').catch(()=>{}); await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200);
     for(let i=0;i<4;i++){ await page.keyboard.press('ArrowRight'); await page.waitForTimeout(900); }

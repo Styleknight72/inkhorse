@@ -17,11 +17,14 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- Copy, beside Clear page when the Highlighter is on: copies the highlights on the page you're looking at, with their paragraph breaks, ready to paste into Write, Notes or another app.
 - Show tips, in the Aa panel: turn off the dark notes that teach you the app once you know your way around. Messages about what's happening now, like Getting ready… and Saved, still show.
 - The book fills the space it has on a phone or iPad, held upright or sideways. Held upright, you see one big page even with Two-page spread chosen; turn it sideways and the open book comes back. A cover on its own sits in the middle of the screen.
 - In full screen, a tap on the left or right side turns the page straight away, one page per tap, in order, however fast you tap. Double-tap the middle of the page to play or pause reading aloud.
 
 ## Revisions
+
+Rev 196 (November 7, 2026, preview): Steve, using the Highlighter on his memoir: "works incredibly well, but it's missing a copy functionality, just in case I need to transfer paragraphs for editing reasons." Copy had been in Jump to → Highlights since rev 134, but he hadn't found it ("Well, I didn't see the tool"), so a Copy button now sits beside Clear page on the Highlighter's bar above the page. It copies every highlight on the page you're looking at, in reading order, keeping paragraph breaks (two highlights become two paragraphs). If the page has no highlights, it says so. The Copy in Jump to stays. Manual updated (Highlighter, Read tools list). One new automatic check proves the copied text, paragraph breaks included. Not yet seen on his iPhone.
 
 Rev 195 (November 7, 2026, live November 7 at Steve's "Push it", after he saw the switch on the preview on his iPhone): Steve: "The black helpful information that we have guiding us through our app… I call these helpful informational tips… to have a toggle setting for it… if you don't need it, shut it off. Personally for me, until I get used to the app, I'll leave it on." New Show tips switch in the Aa panel, on by default. Off hides the how-to tips: the full-screen notes (how to tap, double-tap and get the controls back), the highlighter how-to, the Write full-screen and focus notes, the draft note, and the second half of the Dictate and Next mark notes (they shrink to "Listening." and "Mark 1 of 3."). Messages about what's happening now always show: Getting ready…, Paused, Saved, Fixed, backups, warnings and errors, and the Dictate help that appears when the microphone can't start. Manual updated (Type settings, Show tips). One new automatic check. He saw the switch in the Aa panel on his iPhone; turning it off there wasn't reported yet.
 
