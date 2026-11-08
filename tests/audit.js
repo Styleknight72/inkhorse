@@ -451,6 +451,18 @@ const path = require('path');
     if(!(r.fillH>=4&&Math.abs(r.fillW/r.barW-0.4)<0.03)) throw new Error('the fill does not show 40%: '+JSON.stringify(r));
     return true;
   });
+  await step('Hoofprint: a capitalized everyday word you also write in lowercase is never offered as a name ("South Main Street" is not "Mail") (rev 201)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=201))) return 'SKIP: before rev 201';
+    const was=await page.evaluate(()=>RB&&RB.id); if(was) await page.evaluate(()=>leaveLibraryBook()); const cur=await page.evaluate(()=>[S.cur,S.rch,S.anchor]);
+    const id=await page.evaluate(()=>addChapter('Hoofprint test','The main reason was simple.\nHe read it in the Union Mail every morning, and the Union Mail was his paper.\nThey met at the club on South Main Street.\nHe wrote to Bolduc and visited Bolduc often.'));
+    try{
+      const r=await page.evaluate(()=>{ HP.vk=null; const t='They met at the club on South Main Street. Later he saw Boldoc there.'; return hpScan(t,0,t.length).map(x=>x.t+'>'+x.to); });
+      if(r.some(x=>/^Main>/.test(x))) throw new Error('Main was offered as a name: '+JSON.stringify(r));
+      if(!r.includes('Boldoc>Bolduc')) throw new Error('a real misheard name was no longer caught: '+JSON.stringify(r));
+      return true;
+    } finally { await page.evaluate(id=>{ try{ dropChapter(id); }catch(_){ } },id);
+      await page.evaluate(c=>{ if(CH.has(c[0])){ S.cur=c[0]; S.rch=c[1]; S.anchor=c[2]; try{ loadEditor(); renderChapterUI(); refreshReader(); }catch(_){ } } },cur); if(was) await page.evaluate(async w=>{ await openLibBook(w,true); },was); }
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
