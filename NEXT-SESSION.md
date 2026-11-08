@@ -5,6 +5,7 @@ Written November 5, 2026 (just after midnight), at the end of a session. Read CL
 ## Where things stand
 
 - **Live, preview and the artifact are rev 193** since Nov 7, 4:10 pm. Before that they were **rev 192** (Steve: "Let's push the updates", Nov 7, 8:00 am, after testing on his iPhone and iPad). **Release 1.1 = rev 192** (Steve called it stable Nov 7, 4:05 pm, from the Home Screen icon; branch release-1.1). Preview rev 193 is "1.2 candidate".
+- **Preview is rev 198** (Nov 8, waiting for Steve): Classic chapter opening (label .ck in the sink, no .rh on opener; PDF and EPUB match). Later: PDF small caps (F2.5), EPUB UUID warning, Ornament/Big number/Drop cap styles as a Book setting (mock-ups made, Steve chose Classic as standard). Audit 93/93.
 - **Rev 197 is LIVE** (Nov 7, 11:44 pm, Steve: "Push it" after "Works great"; live, preview and artifact match): Book Hub (counter is a labelled button; Jump to renamed). Manual picture of the panel still shows "Jump to". Audit 92/92.
 - **Rev 196 is LIVE** (Nov 7, 11:10 pm, Steve: "Push it", after trying it on his iPhone; live, preview and artifact match): Copy button beside Clear page (copyPageMarks). Audit 91/91.
 - **Rev 195 is LIVE** (Nov 7, 10:34 pm, Steve: "Push it"; live, preview and artifact match): Show tips switch in Aa (S.tips, tip(full,short), fsHint respects it). Audit 90/90.

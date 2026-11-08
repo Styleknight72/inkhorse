@@ -394,6 +394,28 @@ const path = require('path');
     if(!r.onFs||!/Drag across/.test(r.onFull)) throw new Error('tips did not come back when switched on: '+JSON.stringify(r));
     return true;
   });
+  await step('F2.3 + F2.6 Chapter opening (Classic): no page header on a chapter\'s first page; the label sits just above the title in the sink; print PDF and EPUB carry the same label (rev 198)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=198))) return 'SKIP: before rev 198';
+    const was=await page.evaluate(()=>RB&&RB.id); if(was) await page.evaluate(()=>leaveLibraryBook()); const curBefore=await page.evaluate(()=>[S.cur,S.rch,S.anchor]);
+    const id=await page.evaluate(()=>{ return addChapter('Chapter Nine: Opening test',Array.from({length:40},(_,i)=>'Sentence '+i+' of the opening test, long enough to fill a few lines of the page.').join('\n')); });
+    try{
+      const r=await page.evaluate(async id=>{ setTab('read'); S.rch=id; S.anchor=0; refreshReader(); drawView(); await new Promise(r=>setTimeout(r,500));
+        const f=[...document.querySelectorAll('#spread .face')].find(x=>x.querySelector('.ptext[data-ch="'+id+'"] h2.cht'));
+        const out={rh:f&&f.querySelector('.rh')?f.querySelector('.rh').textContent:null};
+        const ck=f&&f.querySelector('.ck'), h=f&&f.querySelector('h2.cht'), pt=f&&f.querySelector('.ptext');
+        if(ck&&h){ const a=ck.getBoundingClientRect(), b=h.getBoundingClientRect(), p=pt.getBoundingClientRect(); out.ck=ck.textContent; out.title=h.textContent; out.gap=Math.round(b.top-a.bottom); out.ckDepth=(a.top-p.top)/p.height; }
+        // the next page still carries its header
+        goTo({ch:id,i:1}); drawView(); await new Promise(r=>setTimeout(r,300));
+        out.nextRh=!!document.querySelector('#spread .face .rh');
+        return out; },id);
+      if(r.rh) throw new Error('chapter first page still has a page header: '+JSON.stringify(r));
+      if(!/chapter nine/i.test(r.ck||'')||r.title!=='Opening test') throw new Error('label or title wrong: '+JSON.stringify(r));
+      if(!(r.gap>=0&&r.gap<40)) throw new Error('label is not just above the title: '+JSON.stringify(r));
+      if(!(r.ckDepth>0.15&&r.ckDepth<0.33)) throw new Error('label is not in the sink: '+JSON.stringify(r));
+      if(!r.nextRh) throw new Error('the pages after the opener lost their header');
+      return true;
+    } finally { await page.evaluate(id=>{ try{ dropChapter(id); }catch(_){ } },id); await page.evaluate(c=>{ if(CH.has(c[0])){ S.cur=c[0]; S.rch=c[1]; S.anchor=c[2]; try{ loadEditor(); renderChapterUI(); refreshReader(); }catch(_){ } } },curBefore); if(was) await page.evaluate(async w=>{ await openLibBook(w,true); },was); }
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
@@ -654,7 +676,7 @@ const path = require('path');
     await page.evaluate(async id=>{ await openLibBook(id); },id); await page.waitForTimeout(1000);
     const titles=await page.evaluate(()=>rOrder().map(i=>getCh(i).title));
     const pages=[];
-    for(let i=0;i<12;i++){ pages.push(await page.evaluate(()=>{ const pg=document.querySelector('#spread .face:not(.left) .ptext')||document.querySelector('#spread .ptext'); if(!pg) return null; const rh=pg.parentElement.querySelector('.rh'); const h=pg.querySelector('h2.cht'), fp=h&&h.nextElementSibling, sb=pg.querySelector('p.sb');
+    for(let i=0;i<12;i++){ pages.push(await page.evaluate(()=>{ const pg=document.querySelector('#spread .face:not(.left) .ptext')||document.querySelector('#spread .ptext'); if(!pg) return null; const rh=pg.querySelector('.ck')||pg.parentElement.querySelector('.rh');   /* since rev 198 the opener's label sits in the page (F2.3 + F2.6) */ const h=pg.querySelector('h2.cht'), fp=h&&h.nextElementSibling, sb=pg.querySelector('p.sb');
       return {front:pg.classList.contains('front'),label:rh?rh.innerText.trim():'',title:h?h.innerText:'',drop:h?(h.getBoundingClientRect().top-pg.getBoundingClientRect().top)/pg.clientHeight:null,firstIndent:fp?parseFloat(getComputedStyle(fp).textIndent):null,smallCaps:fp?getComputedStyle(fp,'::first-line').fontVariantCaps||getComputedStyle(fp,'::first-line').fontVariant:null,
         sb:sb?{txt:sb.innerText.replace(/\s+/g,''),center:getComputedStyle(sb).textAlign,nextIndent:sb.nextElementSibling?parseFloat(getComputedStyle(sb.nextElementSibling).textIndent):null}:null}; }));
       await page.click('#next').catch(()=>{}); await page.waitForTimeout(450); }

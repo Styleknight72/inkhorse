@@ -17,6 +17,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- Chapter openings: the label (like CHAPTER ONE) now sits just above the chapter title, a third of the way down the page, with nothing at the top, the way professionally formatted books open a chapter. The same in Read, the print PDF and the EPUB.
 - Book Hub: the page counter below the book is now a button marked Book Hub. Tap it to go to any page, slide through the book, see and copy your highlights, and open any chapter.
 - Copy, beside Clear page when the Highlighter is on: copies the highlights on the page you're looking at, with their paragraph breaks, ready to paste into Write, Notes or another app.
 - Show tips, in the Aa panel: turn off the dark notes that teach you the app once you know your way around. Messages about what's happening now, like Getting ready… and Saved, still show.
@@ -24,6 +25,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - In full screen, a tap on the left or right side turns the page straight away, one page per tap, in order, however fast you tap. Double-tap the middle of the page to play or pause reading aloud.
 
 ## Revisions
+
+Rev 198 (November 8, 2026, preview): Steve, on his Chapter One in full screen: "The top seems dropped down quite a bit, can we verify this is right formatting?" The drop was right: the title sat 30 to 32% down the page, as F2.2 asks (the sink). But the CHAPTER ONE label sat at the very top of the page, where page headers go, with a large gap before the title. That broke F2.3 (the label belongs with the title) and F2.6 (no page header on a chapter's first page). Four chapter-opening styles were mocked up in Inkhorse on his text (Classic, Ornament, Big number, Drop cap); he chose Classic as the standard. Now a chapter's first page has nothing at the top; the label sits just above the title in the white space, small and spaced; the title keeps its depth, so no page breaks move (checked: the same pages before and after). The print PDF does the same (9-point spaced label above the 18-point title, header still off on the opener), and the EPUB puts the label above the title too (passes EPUBCheck). Manual updated (how a chapter title prints). One new automatic check for F2.3 + F2.6, and the formatting checks now read the label from its new place. Not yet seen on his iPhone. Noticed while checking, not changed: the print PDF's first line isn't in small capitals as on screen (F2.5), and the EPUB's book identifier is flagged by EPUBCheck as a warning (not a valid UUID); both are for later.
 
 About page correction (November 7, 2026, live; the app is unchanged at rev 197): Steve asked whether everything in the About page's "More than it looks" list is true ("Just make sure we're not making shit up"). Each line was checked against the app and its manual. Two were too strong and are now exact: Hoofprint "offers to fix" misheard names and asks before it learns a new fix (it only fixes on its own after you choose Always), and read-aloud for added books doesn't work on a PDF that is only pictures of pages. The other six lines (marks, drafts, measuring, importing, export, the manual) were already true.
 
