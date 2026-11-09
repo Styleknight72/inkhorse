@@ -520,6 +520,19 @@ const path = require('path');
     await page.keyboard.press('Backspace');
     return true;
   });
+  await step('Manual pictures match the app: each pictured panel still has the labels it had when its picture was taken (rev 206)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=206))) return 'SKIP: before rev 206';
+    /* When a panel's buttons or labels change, its picture in the manual is out of date (Steve, Nov 8: the manual still showed "Jump to").
+       Retake that picture from the app, then copy the new fingerprint printed in the error into PICS below. */
+    const PICS={"toolbar": "Aa | Auto | Device | Full screen reading | Highlighter | Library | One page | Read aloud | Two-page spread", "sizeMenu": "Fit my screen", "counter": "Book Hub ⌃", "hub": "Book Hub", "aa": "At night Don't switchStyleKnightSepiaSkyLightMy own colors | Colors Match my deviceLightStyleKnightSepiaSkyChoose my own… | H | Justify | Margin | New page for each section | Night warmth Off | Page | Page sound | Page turn CurlSlideInstant | Paper texture | Show tips | Spacing TightSnugNormalRelaxedDouble | Text | Typeface GaramondCaslonBaskervilleCrimson ProSource SerifLiterata (e-reader)MerriweatherLoraTimes New RomanGeorgiaPalatinoCourier (submission format)Plex Sans | W | from | to", "highlighter": "Clear page | Copy", "chapters": "Add back | Add front | Author | Book title | Chapter opening | Contents page in the EPUB and PDF | Copyright year | Credit line | Dedication | ISBN | Import a file | More copyright-page notes | Publisher or imprint | Restore from file | Subtitle"};
+    const now=await page.evaluate(()=>{ const norm=t=>String(t||'').replace(/\s+/g,' ').trim();
+      const sig=(sel,q)=>{ const el=document.querySelector(sel); if(!el) return 'MISSING'; return [...new Set([...el.querySelectorAll(q)].map(x=>norm(x.getAttribute('aria-label')||x.textContent)).filter(t=>t&&!/\d/.test(t)))].sort().join(' | '); };
+      return { toolbar:sig('#read .bar','button,select'), sizeMenu:norm([...document.querySelectorAll('#deviceSel option')].find(o=>o.value==='screen')?.textContent),
+        counter:sig('#whereBtn','.hubtag'), hub:sig('#goto','.gh b'), aa:sig('#typeSheet','label'), highlighter:sig('#hlBar','button'), chapters:sig('#drawer','label') }; });
+    const stale=Object.keys(PICS).filter(k=>PICS[k]!==now[k]);
+    if(stale.length) throw new Error('the manual picture of '+stale.join(', ')+' is out of date. Now: '+JSON.stringify(Object.fromEntries(stale.map(k=>[k,now[k]]))));
+    return true;
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
