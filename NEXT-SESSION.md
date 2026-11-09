@@ -1,6 +1,32 @@
 # Next session: start here
 
-Written November 5, 2026 (just after midnight), at the end of a session. Read CLAUDE.md first; this file says where things stand and what comes next.
+Read CLAUDE.md first, then this top section. Everything under "Older notes" is history kept for reference.
+
+## Where we left off (November 8, 2026, 9:30 pm, end of a long session)
+
+- **Live = preview = the claude.ai artifact = rev 209** ("1.2 candidate"). `node tests/audit.js` passes **103 of 103**, 0 page errors, on both files. Release 1.1 = rev 192 (branch release-1.1). Release 1.2 waits for Steve to call a rev stable after PHONE-CHECK.md.
+- **Steve's standing word (Nov 8):** for revisions, double-check them (audit + your own check) and then push to live yourself; if you find a problem, hold and tell him. Still say plainly what was and wasn't tested.
+- **Waiting on Steve (first thing to ask him):**
+  1. Rev 209: on his laptop (Ctrl+F5 first), does the highlight now keep up with **Google UK English Male**? It learns the voice's pace over the first few sentences. If it's ahead/behind by a steady amount, tune `ttsTimeWord`/`ttsPace` (start pace 14 letters/s × speed). Microsoft Mark already kept up (rev 208 era).
+  2. Rev 203: does Meilin/Calvin/Soren still skip words (his name in Chapter One)? ↺ remakes a sentence.
+  3. Revs 193–208 on his iPhone/iPad (full-screen taps, book fills the gray area, Book Hub, chapter-opening styles, .inkhorse backups).
+- **Done this session (revs 193–209, all live):** full-screen taps in order; book fills the screen on every device (phone, iPad, computer window); Show tips switch; Copy for highlights; Book Hub; chapter-opening styles (Classic, Ornament, Big number, Drop cap) in Read, PDF and EPUB; voice download bar; Hoofprint no longer offers fixes for real lowercase words (Main → Mail); backups save as .inkhorse; natural voices re-read sentences that dropped words; computer keys (Space, F, Esc, Home/End, F11); 10 manual pictures retaken + a check that flags stale ones; click-to-fix with a text cursor on a computer; tips worded for mouse vs touch; hover labels on symbol buttons; Google voices followed by time.
+- **SEO done:** Google Search Console verified (keep the meta tag in index.html); Bing indexed with sitemap; landing page and About made accurate; Ko-fi linked. **Still to do from his laptop:** Search Console "Request indexing" and submit sitemap.xml. Reddit / Hacker News / Product Hunt posts are drafted, not posted.
+- **Open bugs/ideas, in rough order:**
+  - Manual: words beside pictures wrap oddly ("sor.").
+  - Status line page number vs. folio mismatch (e.g. "page 36 of 270" on folio 28).
+  - "Getting ready…" pill overlaps the running header in full screen.
+  - iPhone sideways in Safari full screen: book pushed up under the tabs (not reproduced).
+  - A "newer Inkhorse is ready · Update" notice for stuck Home Screen icon copies.
+  - PDF first line lacks small caps (F2.5); EPUB UUID warning in EPUBCheck.
+  - On hold: PDF/EPUB importer fixes (iPad findings Nov 6); Compare tab quietly changing page size.
+  - Agreed next feature (after 1.2): AI bar above the iPhone keyboard (see below).
+- **Reminders for Steve (not code):** replace his DeepInfra key (seen in a screenshot); rename/re-password the "SpectrumSetup-68C6" Wi-Fi.
+- **Working notes:** repo is shallow, so bump revs by hand (next is 210): `python3 tools/bump-version.py "1.2 candidate" 210 <date> preview/next.html`. Audit: `NODE_PATH=/root/jsdeps/node_modules:/opt/npm-tools/node_modules PDFJS_DIR=/root/jsdeps/node_modules/pdfjs-dist/build node tests/audit.js <file>` (takes ~8 min; run it in the background and wait on a file). Go live: cp preview/next.html app.html → audit app.html → CHANGELOG + this file + rebuild Release Notes epub → commit as "StyleKnight & Claude" <styleknight72@gmail.com> → `git push origin HEAD:main` → republish the artifact → curl getinkhorse.com/app.html until `cmp` matches (~5–8 min). Manual pictures retake script: tools/manual-pics/shoot.js.
+
+# Older notes
+
+Written November 5, 2026 (just after midnight), at the end of a session.
 
 ## Where things stand
 
