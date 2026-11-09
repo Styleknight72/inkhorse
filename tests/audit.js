@@ -672,6 +672,57 @@ const path = require('path');
       if(left.n!==0||!left.badge||left.list) throw new Error('Clear all did not clear everything: '+JSON.stringify(left));
     } finally { await page.evaluate(()=>{ const g=document.querySelector('#gotoDone'); if(g&&g.offsetParent) g.click(); }); await page.evaluate((m)=>{ BOOK.marks=JSON.parse(m); marksRev++; marksUI(); },keepMarks); await page.click('#tab-write'); await page.waitForTimeout(300); await page.fill('#manuscript',keep); await page.waitForTimeout(300); }
   });
+  /* rev 214: the formatting rules found unchecked in the Nov 9 review, each with its F-number */
+  const r214 = async () => page.evaluate(()=>(window.INK_VERSION||{}).rev>=214);
+  const p214 = ['First paragraph "quoted" here -- an aside -- then more words, and here--there too. The years 1980-1981 and a phone 555-1234 and dots... end of a long line that wraps across the page so it shows several lines.','***','After the break this paragraph has no indent.','A normal paragraph that is long enough to wrap onto a second line, so both edges show.'].join('\n');
+  const toFirstPage = async () => { await page.click('#tab-read'); await page.waitForTimeout(900); await page.evaluate(()=>{ try{ goTo({ch:S.cur,i:0}); refreshReader(); }catch(_){ } }); await page.waitForTimeout(600); };
+  await step('F3.5 Justify on a phone: with Justify on, the page is justified at phone width with hyphenation; off gives a ragged edge (rev 214)', async () => {
+    if(!(await r214())) return 'SKIP: before rev 214 a phone quietly fell back to a ragged edge';
+    await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
+    try{
+      await page.fill('#manuscript',p214); await page.waitForTimeout(600); await toFirstPage();
+      const on=await page.evaluate(()=>{ const p=document.querySelector('#spread .ptext p:not(.sb)'); const cs=getComputedStyle(p); return {ta:cs.textAlign, hy:cs.hyphens||cs.webkitHyphens, just:S.just, w:innerWidth}; });
+      if(!on.just) throw new Error('Justify is not on by default');
+      if(on.ta!=='justify') throw new Error('at '+on.w+' px wide, Justify on shows text-align '+on.ta);
+      if(on.hy!=='auto') throw new Error('hyphenation is '+on.hy+', so justified lines can open wide gaps');
+      await page.evaluate(()=>{ S.just=false; applyType(); relayout(); }); await page.waitForTimeout(700);
+      const off=await page.evaluate(()=>getComputedStyle(document.querySelector('#spread .ptext p:not(.sb)')).textAlign);
+      if(off!=='left') throw new Error('Justify off still shows '+off);
+    } finally { await page.evaluate(()=>{ S.just=true; applyType(); relayout(); }); await page.click('#tab-write'); await page.waitForTimeout(300); await page.fill('#manuscript',keep); await page.waitForTimeout(300); }
+  });
+  await step('F4.1 F4.2 F4.3 F4.4 on the page: curly quotes, -- becomes a closed em dash, ... one ellipsis, 1980-1981 a range dash, a phone number untouched, no line starts with a dash, the writing itself unchanged (rev 214)', async () => {
+    if(!(await r214())) return 'SKIP: before rev 214 only quotes were set';
+    await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
+    try{
+      await page.fill('#manuscript',p214); await page.waitForTimeout(600); await toFirstPage();
+      const r=await page.evaluate(()=>{ const b=document.querySelector('#spread .ptext'), txt=b.textContent.replace(/\u2060/g,'');
+        const tops=[...b.querySelectorAll('p:not(.sb)')].flatMap(p=>{ const sp=[...p.querySelectorAll('span[data-w]')]; return sp.map((s,k)=>({t:s.textContent.replace(/\u2060/g,''),top:Math.round(s.getBoundingClientRect().top),prev:k?Math.round(sp[k-1].getBoundingClientRect().top):null})); });
+        return {txt, dashStartsLine:tops.some(x=>/^—/.test(x.t)&&x.prev!==null&&x.top>x.prev)}; });
+      const want=['“quoted”','here—an aside—then','here—there','1980–1981','555-1234','dots…'];
+      const miss=want.filter(w=>r.txt.indexOf(w)<0); if(miss.length) throw new Error('missing on the page: '+miss.join(' | ')+'  page text: '+r.txt.slice(0,240));
+      if(/ -- |\.\.\./.test(r.txt)) throw new Error('two hyphens or three dots still show on the page');
+      if(r.dashStartsLine) throw new Error('a line starts with a dash');
+      if((await T())!==p214) throw new Error('the writing in Write was changed');
+    } finally { await page.click('#tab-write'); await page.waitForTimeout(300); await page.fill('#manuscript',keep); await page.waitForTimeout(300); }
+  });
+  await step('F5.2 F3.4 F4.2 F8 EPUB: a scene break is a centered ornament and the paragraph after it has no indent; dashes and ellipsis are set; no importer marker leaks in; the identifier is a valid UUID (rev 214)', async () => {
+    if(!(await r214())) return 'SKIP: before rev 214 the e-book wrote *** as an ordinary paragraph';
+    if(!(await page.evaluate(()=>typeof JSZip!=='undefined'))) return 'SKIP: zip library not reachable from this test machine';
+    let JSZip=null; try{ JSZip=require('jszip'); }catch(_){ return 'SKIP: jszip is not installed for the test'; }
+    await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
+    try{
+      await page.fill('#manuscript','%%front\n'+p214); await page.waitForTimeout(600);
+      const [d]=await Promise.all([page.waitForEvent('download',{timeout:20000}), page.evaluate(()=>document.querySelector('#expEpub').click())]);
+      const z=await JSZip.loadAsync(require('fs').readFileSync(await d.path()));
+      const ch=await z.file('OEBPS/ch1.xhtml').async('string'), opf=await z.file('OEBPS/content.opf').async('string'), css=await z.file('OEBPS/style.css').async('string');
+      if(!/<p class="sb">[^<]*\*[^<]*<\/p>\s*<p>After the break/.test(ch)) throw new Error('the scene break is not an ornament paragraph followed by the next paragraph: '+ch.slice(ch.indexOf('***')-40,ch.indexOf('***')+80));
+      if(!/p\.sb\{[^}]*text-align:center[^}]*text-indent:0/.test(css) || !/p\.sb\+p\{text-indent:0\}/.test(css)) throw new Error('the e-book style does not center the ornament or un-indent the next paragraph');
+      if(ch.indexOf('here—an aside—then')<0 || ch.indexOf('dots…')<0 || ch.indexOf('1980–1981')<0) throw new Error('dashes, ellipsis or the year range are not set in the e-book');
+      if(/%%front|%%toc/.test(ch)) throw new Error('an importer marker (%%front or %%toc) shows as text in the e-book');
+      if(/\u2060/.test(ch)) throw new Error('the screen-only word joiner leaked into the e-book');
+      const id=(/urn:uuid:([^<"]+)/.exec(opf)||[])[1]||''; if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)) throw new Error('the identifier is not a valid UUID: '+id);
+    } finally { await page.fill('#manuscript',keep); await page.waitForTimeout(300); }
+  });
   await step('Dictate: the live words sit at the bottom of the writing area, not over the first lines (rev 168)', async () => {
     if(!(await page.evaluate(()=>typeof liveWords==='function' && (window.INK_VERSION||{}).rev>=168))) return 'SKIP: before rev 168 the live words sat at the top';
     const r=await page.evaluate(()=>{ liveWords('hearing these words'); const b=dictLive.getBoundingClientRect(), t=document.querySelector('#manuscript').getBoundingClientRect(); liveWords(''); return {bt:b.top,bb:b.bottom,tt:t.top,tb:t.bottom}; });

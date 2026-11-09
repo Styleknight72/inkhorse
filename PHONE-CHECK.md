@@ -1,6 +1,6 @@
 # Phone check before calling a revision stable
 
-The automated test (`node tests/audit.js app.html`) covers 61 steps in a phone-size browser.
+The automated test (`node tests/audit.js app.html`) covers over 100 steps in a phone-size browser.
 These are the things only a real phone can prove. About 10 minutes on the iPhone.
 
 1. Open Inkhorse from the Home Screen icon. Tap the save dot: it shows the new rev number.
