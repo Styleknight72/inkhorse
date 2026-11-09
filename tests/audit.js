@@ -723,6 +723,26 @@ const path = require('path');
       const id=(/urn:uuid:([^<"]+)/.exec(opf)||[])[1]||''; if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)) throw new Error('the identifier is not a valid UUID: '+id);
     } finally { await page.fill('#manuscript',keep); await page.waitForTimeout(300); }
   });
+  await step('F1.1 F1.3 F1.4 F6 EPUB: a book with its own typed title page and copyright page gets each one once, as front matter, and neither is in the Contents (rev 215)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=215))) return 'SKIP: before rev 215 a typed title and copyright page came out twice';
+    if(!(await page.evaluate(()=>typeof JSZip!=='undefined'))) return 'SKIP: zip library not reachable from this test machine';
+    let JSZip=null; try{ JSZip=require('jszip'); }catch(_){ return 'SKIP: jszip is not installed for the test'; }
+    const keep=await page.evaluate(()=>JSON.stringify({title:BOOK.title,author:BOOK.author,order:BOOK.order.slice()}));
+    try{
+      await page.evaluate(()=>{ BOOK.title="What If It's Already Here?"; BOOK.author='Steve Claude Patient';
+        window.__t215=[addChapter("What If It's Already Here?","A Memoir\nSteve Claude Patient",0), addChapter('Copyright page','Copyright © 2026 Steve Claude Patient\nAll rights reserved.',1)]; });
+      const kinds=await page.evaluate(()=>window.__t215.map(frontKind));
+      if(kinds.join()!=='title,copyright') throw new Error('the typed pages were not recognised as a title page and a copyright page: '+kinds.join());
+      const [d]=await Promise.all([page.waitForEvent('download',{timeout:20000}), page.evaluate(()=>document.querySelector('#expEpub').click())]);
+      const z=await JSZip.loadAsync(require('fs').readFileSync(await d.path())); const opf=await z.file('OEBPS/content.opf').async('string'), nav=await z.file('OEBPS/nav.xhtml').async('string');
+      const files=await Promise.all(Object.keys(z.files).filter(f=>/\.xhtml$/.test(f)).map(async f=>[f,await z.file(f).async('string')]));
+      const n=(re)=>files.filter(([f,s])=>re.test(s.replace(/<head>[\s\S]*?<\/head>/,''))).length;
+      if(n(/All rights reserved/)!==1) throw new Error('the copyright lines appear in '+n(/All rights reserved/)+' files, not 1');
+      if(n(/A Memoir/)!==1) throw new Error('the title page appears '+n(/A Memoir/)+' times');
+      if(/Copyright page|Already Here/.test(nav.replace(/<head>[\s\S]*?<\/head>/,''))) throw new Error('the Contents lists a front page: '+nav.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').slice(0,200));
+      const po=[...opf.matchAll(/itemref idref="([^"]+)"/g)].map(m=>m[1]); if(po[0]!=='title'||po[1]!=='copyright') throw new Error('front matter is not first in the book: '+po.join(' '));
+    } finally { await page.evaluate((k)=>{ const o=JSON.parse(k); (window.__t215||[]).forEach(id=>CH.delete(id)); BOOK.order=o.order; BOOK.title=o.title; BOOK.author=o.author; try{ renderAll(); }catch(_){ } },keep); }
+  });
   await step('Dictate: the live words sit at the bottom of the writing area, not over the first lines (rev 168)', async () => {
     if(!(await page.evaluate(()=>typeof liveWords==='function' && (window.INK_VERSION||{}).rev>=168))) return 'SKIP: before rev 168 the live words sat at the top';
     const r=await page.evaluate(()=>{ liveWords('hearing these words'); const b=dictLive.getBoundingClientRect(), t=document.querySelector('#manuscript').getBoundingClientRect(); liveWords(''); return {bt:b.top,bb:b.bottom,tt:t.top,tb:t.bottom}; });
