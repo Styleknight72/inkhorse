@@ -5,6 +5,7 @@ Written November 5, 2026 (just after midnight), at the end of a session. Read CL
 ## Where things stand
 
 - **Live, preview and the artifact are rev 193** since Nov 7, 4:10 pm. Before that they were **rev 192** (Steve: "Let's push the updates", Nov 7, 8:00 am, after testing on his iPhone and iPad). **Release 1.1 = rev 192** (Steve called it stable Nov 7, 4:05 pm, from the Home Screen icon; branch release-1.1). Preview rev 193 is "1.2 candidate".
+- **Rev 209 is LIVE** (Nov 8, evening, standing word): Chrome Google (server, localService false) voices followed by time at a learned pace (ttsPace/ttsPaceNote/ttsTimeWord); their onboundary ignored. Waiting on Steve's laptop test with Google UK English Male.
 - **Rev 208 is LIVE** (Nov 8, evening, standing word): hover labels on all symbol-only buttons + check.
 - **Rev 207 was LIVE** (Nov 8, evening, standing word): mouseUser() (hover+fine pointer): computer tips; click a word to fix in own books (endPtr), body.canfix text cursor.
 - **Rev 206 was LIVE** (Nov 8, evening, standing word): 10 manual pictures retaken + Highlighter bar picture; audit step "Manual pictures match the app" (PICS fingerprints; when it fails, retake the picture and paste the new fingerprint). Retake script idea: /tmp shoot.js used iPhone 14 Pro Max 430×932 @2x, fresh app (sample book), tips off.

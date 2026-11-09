@@ -562,6 +562,23 @@ const path = require('path');
     if(bad.length) throw new Error('no hover label: '+bad.join(', '));
     return true;
   });
+  await step('A voice made on the internet (Chrome\'s Google voices) is followed by time at its learned pace, not by its late word signals (rev 209)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=209))) return 'SKIP: before rev 209';
+    const r=await page.evaluate(()=>{
+      const words='The quick brown fox jumps over the lazy dog'.split(' '), c={start:100,words,text:words.join(' ')};
+      const off=[]; let o=0; words.forEach(w=>{ off.push(o); o+=w.length+1; });
+      const keep=TTS.paces; TTS.paces={};
+      const first=ttsPace('Google UK English Male|1',1), at0=ttsTimeWord(c,off,0,10), at1=ttsTimeWord(c,off,1,10), at9=ttsTimeWord(c,off,9,10), atNeg=ttsTimeWord(c,off,-1,10);
+      [9,30,11,10,12].forEach(v=>ttsPaceNote('Google UK English Male|1',v)); const learned=ttsPace('Google UK English Male|1',1), other=ttsPace('Mark|1',1.5);
+      for(let k=0;k<30;k++) ttsPaceNote('x|1',k); const kept=TTS.paces['x|1'].length;
+      TTS.paces=keep;
+      const src=ttsSpeak.toString(), ign=/localService===false/.test(src) && /\|\| remote\) return/.test(src);
+      return {first,at0,at1,at9,atNeg,learned,other,kept,ign};
+    });
+    const ok=r.first===14 && r.at0===100 && r.at1===102 && r.at9===108 && r.atNeg===100 && r.learned===11 && r.other===21 && r.kept===20 && r.ign;
+    if(!ok) throw new Error(JSON.stringify(r));
+    return true;
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);

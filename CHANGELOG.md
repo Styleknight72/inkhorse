@@ -17,6 +17,7 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 
 ## What's new for you
 
+- Read aloud on a computer: with Chrome's Google voices (like Google UK English Male), the highlight now keeps up with the voice. Those voices are made on the internet and their word signals arrive late, so Inkhorse follows the sound by time instead and learns the voice's pace over the first few sentences.
 - On a computer, in your own book: the text cursor shows over the words, and a click on a word opens the page for fixing right there. Tips speak to a mouse and keyboard on a computer and to a finger on a phone or tablet.
 - Computer keys in Read: Space plays or pauses reading aloud (full screen too), F goes in and out of full screen, Esc backs out one step (a panel, then full screen), Home and End go to the start and end of the chapter, and F11 also hides Inkhorse's controls.
 - On a computer, Fit my screen (the first choice in the size menu, which was called This screen) fills the whole window with the open book.
@@ -31,6 +32,8 @@ The built-in User manual explains how to use Inkhorse as it is today. These note
 - In full screen, a tap on the left or right side turns the page straight away, one page per tap, in order, however fast you tap. Double-tap the middle of the page to play or pause reading aloud.
 
 ## Revisions
+
+Rev 209 (November 8, 2026, live November 8 on Steve's standing word to double-check and push): Steve, on his laptop, listened with Google UK English Male and the highlighted words fell behind the voice. With Microsoft Mark the highlight kept up, which showed the follow-along itself was right and the Google voice's word signals were late (Google voices are made on Google's servers, not on the laptop). For any voice made on the internet, Inkhorse now ignores its word signals and moves the highlight by time, at that voice's own pace, learned from the sentences it finishes (it starts from a usual pace). The manual's Follow words note says so. Tested here: the timing and pace-learning by an automatic check; not tested: the real Google voice, which needs Steve's laptop.
 
 Rev 208 (November 8, 2026, live November 8 on Steve's standing word to double-check and push): Steve, on his laptop, moved the mouse along the Read toolbar: the headphones showed "Read the book aloud", but Aa showed nothing. Every button was then checked for a hover label: the ones that show only a symbol and had none were Aa, the ‹ › page buttons, the reading-speed menu, the chapter list's ↑ ↓ arrows and the × on the Dictate note. Each now has one (Aa: "Type settings: text size, typeface, colors, page turn and more"; ‹ ›: "Previous page (← key)" / "Next page (→ key)"; ↑ ↓: "Move this chapter earlier / later"), and the headphones and full-screen labels now mention their keys (Space; F and Esc). One new automatic check fails if any symbol-only button lacks a hover label. The manual-picture check from rev 206 noticed the toolbar's names changed (Aa now has a name) and stopped the push until its fingerprint was confirmed; the picture itself looks the same, so only the fingerprint was updated.
 
