@@ -579,16 +579,10 @@ const path = require('path');
     if(!ok) throw new Error(JSON.stringify(r));
     return true;
   });
-  await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
+  await step('Tools: every Write tool works when tapped (Word count, Copy, Paste, Top of chapter, Done) (rev 180, Next mark moved to the page bar in rev 211)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
-    await page.evaluate(()=>{ BOOK.marks=(BOOK.marks||[]).concat([{ch:S.cur,t:'The marked sentence sits here.',w:3}]); marksRev++; marksUI(); });
-    await tools(); if(!(await page.isVisible('#marksBtn'))||(await page.textContent('#marksN')).trim()!=='1') throw new Error('Next mark does not show its count');
-    await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setSelectionRange(0,0); }); await page.click('#marksBtn'); await page.waitForTimeout(300);
-    const sel=await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); return t.value.slice(t.selectionStart,t.selectionEnd); });
-    if(!/marked sentence sits here/.test(sel)) throw new Error('Next mark did not select the marked sentence: '+JSON.stringify(sel));
-    await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setRangeText('The rewritten sentence is new.',t.selectionStart,t.selectionEnd,'end'); t.dispatchEvent(new Event('input',{bubbles:true})); }); await page.waitForTimeout(1200);
-    if(await page.evaluate(()=>!document.querySelector('#marksBtn').hidden)) throw new Error('Next mark still shows after the sentence was retyped');
+    await page.fill('#manuscript','One sentence here. The rewritten sentence is new. Last one.'); await page.waitForTimeout(400);
     await tools(); const w0=await page.isVisible('#wordCount'); await page.click('#wcBtn'); await page.waitForTimeout(250); const w1=await page.isVisible('#wordCount'); await tools(); await page.click('#wcBtn'); await page.waitForTimeout(250);
     if(w0===w1) throw new Error('Word count did not switch');
     await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setSelectionRange(0,0); }); await tools(); await page.click('#copyBtn'); await page.waitForTimeout(300);
@@ -611,9 +605,12 @@ const path = require('path');
       if(!(await page.evaluate(()=>document.querySelector('#marksBtn2').hidden))) throw new Error('the page-bar Next mark shows when there are no marks');
       await page.evaluate(()=>{ BOOK.marks=[{ch:S.cur,t:'Alpha one is here.',w:0},{ch:S.cur,t:'Charlie three is next.',w:9},{ch:S.cur,t:'Delta four closes the page.',w:13}]; marksRev++; marksUI(); });
       if((await page.textContent('#marksN2')).trim()!=='3') throw new Error('the page-bar Next mark does not show the count 3');
+      if(await page.evaluate(()=>!!document.querySelector('#marksBtn'))) throw new Error('rev 211: the duplicate Next mark button is still in Tools');
       const sel=()=>page.evaluate(()=>{ const t=document.querySelector('#manuscript'); return t.value.slice(t.selectionStart,t.selectionEnd); });
       const toastNow=()=>page.evaluate(()=>{ const t=document.querySelector('#toast'); return t.hidden?'':t.textContent; });
       const tap=async()=>{ const b=await page.locator('#marksBtn2').boundingBox(); await page.touchscreen.tap(b.x+b.width/2,b.y+b.height/2); await page.waitForTimeout(350); };
+      await tools(); if(await page.evaluate(()=>document.querySelector('#write').classList.contains('tools-closed'))) throw new Error('could not open Tools for the rev 211 check');
+      await tap(); if(!(await page.evaluate(()=>document.querySelector('#write').classList.contains('tools-closed')))) throw new Error('rev 211: Tools stayed open after tapping the pencil');
       await page.evaluate(()=>{ document.body.classList.add('kbshort'); const t=document.querySelector('#manuscript'); t.setSelectionRange(0,0); });
       const want=['Alpha one is here.','Charlie three is next.','Delta four closes the page.'];
       for(let i=0;i<3;i++){
@@ -622,7 +619,11 @@ const path = require('path');
         await tap(); const got=await sel(); if(got!==want[i]) throw new Error('tap '+(i+1)+' selected '+JSON.stringify(got)+', wanted '+JSON.stringify(want[i]));
         if(!/^Mark \d of 3\./.test(await toastNow())) throw new Error('tap '+(i+1)+' gave no "Mark n of 3" message');
       }
-      await tap(); if((await sel())!==want[2] || !/last mark/i.test(await toastNow())) throw new Error('after the last mark: selection '+JSON.stringify(await sel())+', message '+JSON.stringify(await toastNow()));
+      /* rev 211: tapping a button drops the iPhone keyboard, so the last-mark tap must hand the cursor back (same selection, textarea focused) */
+      await page.evaluate(()=>document.querySelector('#manuscript').blur());
+      await tap(); const kf=await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); return {focus:document.activeElement===t, a:t.selectionStart, b:t.selectionEnd}; });
+      if(!kf.focus || kf.a===kf.b) throw new Error('after the last-mark tap the writing box lost focus/selection (focus '+kf.focus+', '+kf.a+'-'+kf.b+')');
+      if((await sel())!==want[2] || !/last mark/i.test(await toastNow())) throw new Error('after the last mark: selection '+JSON.stringify(await sel())+', message '+JSON.stringify(await toastNow()));
       await tap(); if((await sel())!==want[0]) throw new Error('the tap after "last mark" did not go back to the first mark: '+JSON.stringify(await sel()));
       /* fix as you go: retype the first mark, and the next tap goes to the next one that is left (not back to the first) */
       await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setRangeText('The rewritten opening is new.',t.selectionStart,t.selectionEnd,'end'); t.dispatchEvent(new Event('input',{bubbles:true})); }); await page.waitForTimeout(1200);
