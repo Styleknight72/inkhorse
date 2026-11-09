@@ -654,6 +654,24 @@ const path = require('path');
       if(!/title/.test(seen[0])) throw new Error('a mark in the title was not visited first: '+JSON.stringify(seen));
     } finally { await page.evaluate((m)=>{ BOOK.marks=JSON.parse(m); marksRev++; marksUI(); },keepMarks); await page.fill('#manuscript',keep); await page.waitForTimeout(300); }
   });
+  await step('Highlights in Jump to: Clear all asks first, then clears every highlight and the Next mark count (rev 213)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=213))) return 'SKIP: before rev 213 there was no Clear all';
+    await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
+    const keepMarks=await page.evaluate(()=>JSON.stringify(BOOK.marks||[]));
+    try{
+      await page.fill('#manuscript','Alpha one is here. Bravo two sits here now. Charlie three is next. Delta four closes the page.'); await page.waitForTimeout(500);
+      await page.evaluate(()=>{ BOOK.marks=[{ch:S.cur,t:'Alpha one is here.',w:0},{ch:S.cur,t:'Charlie three is next.',w:9},{ch:S.cur,t:'Delta four closes the page.',w:13}]; marksRev++; marksUI(); });
+      await page.click('#tab-read'); await page.waitForTimeout(500); await page.click('#whereBtn'); await page.waitForTimeout(400);
+      const btn=await page.locator('#hlAll'); if(!(await btn.count())) throw new Error('no Clear all button in the Highlights list');
+      if(!/^Clear all$/.test((await btn.textContent()).trim())) throw new Error('the button should start as "Clear all"');
+      await btn.click(); await page.waitForTimeout(250);
+      if(!/Tap again/.test(await page.textContent('#hlAll'))) throw new Error('the first tap did not ask to tap again');
+      if((await page.evaluate(()=>BOOK.marks.length))!==3) throw new Error('the first tap already cleared marks');
+      await page.click('#hlAll'); await page.waitForTimeout(400);
+      const left=await page.evaluate(()=>({n:BOOK.marks.length, badge:document.querySelector('#marksBtn2').hidden, list:!!document.querySelector('#hlAll')}));
+      if(left.n!==0||!left.badge||left.list) throw new Error('Clear all did not clear everything: '+JSON.stringify(left));
+    } finally { await page.evaluate(()=>{ const g=document.querySelector('#gotoDone'); if(g&&g.offsetParent) g.click(); }); await page.evaluate((m)=>{ BOOK.marks=JSON.parse(m); marksRev++; marksUI(); },keepMarks); await page.click('#tab-write'); await page.waitForTimeout(300); await page.fill('#manuscript',keep); await page.waitForTimeout(300); }
+  });
   await step('Dictate: the live words sit at the bottom of the writing area, not over the first lines (rev 168)', async () => {
     if(!(await page.evaluate(()=>typeof liveWords==='function' && (window.INK_VERSION||{}).rev>=168))) return 'SKIP: before rev 168 the live words sat at the top';
     const r=await page.evaluate(()=>{ liveWords('hearing these words'); const b=dictLive.getBoundingClientRect(), t=document.querySelector('#manuscript').getBoundingClientRect(); liveWords(''); return {bt:b.top,bb:b.bottom,tt:t.top,tb:t.bottom}; });
