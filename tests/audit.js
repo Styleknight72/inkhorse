@@ -501,6 +501,25 @@ const path = require('path');
     if(r.label!=='Fit my screen') throw new Error('the size menu says '+r.label);
     return true;
   });
+  await step('Computer keys: F toggles full screen in Read, Esc closes the Aa panel first then leaves full screen, Home/End go to the chapter\'s ends, keys do nothing while typing (rev 205)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=205))) return 'SKIP: before rev 205';
+    await page.click('#tab-read'); await page.waitForTimeout(300); await page.evaluate(()=>{ document.activeElement&&document.activeElement.blur(); });
+    const imm=()=>page.evaluate(()=>document.body.classList.contains('immersive'));
+    await page.keyboard.press('f'); await page.waitForTimeout(200); if(!(await imm())) throw new Error('F did not go full screen');
+    const toggles=await page.evaluate(()=>{ window.__lt=0; window.__ltk=listenToggle; window.listenToggle=()=>{ window.__lt++; }; return true; });
+    await page.keyboard.press(' '); await page.waitForTimeout(150);
+    const lt=await page.evaluate(()=>{ window.listenToggle=window.__ltk; return window.__lt; }); if(lt!==1) throw new Error('Space in full screen did not play or pause ('+lt+')');
+    await page.evaluate(()=>toggleSheet(true)); await page.keyboard.press('Escape'); await page.waitForTimeout(150);
+    if(!(await page.evaluate(()=>$('#typeSheet').hidden))||!(await imm())) throw new Error('Esc should close the Aa panel first and stay in full screen');
+    await page.keyboard.press('Escape'); await page.waitForTimeout(200); if(await imm()) throw new Error('Esc did not leave full screen');
+    const n=await page.evaluate(()=>pag(S.rch).pages.length);
+    if(n>1){ await page.keyboard.press('End'); await page.waitForTimeout(200); if(await page.evaluate(()=>curIndex())!==n-1) throw new Error('End did not go to the last page');
+      await page.keyboard.press('Home'); await page.waitForTimeout(200); if(await page.evaluate(()=>curIndex())!==0) throw new Error('Home did not go to the first page'); }
+    await page.click('#tab-write'); await page.focus('#manuscript'); await page.keyboard.press('f'); await page.waitForTimeout(150);
+    if(await imm()) throw new Error('typing F in Write went full screen');
+    await page.keyboard.press('Backspace');
+    return true;
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);
