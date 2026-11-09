@@ -600,6 +600,44 @@ const path = require('path');
     await tools(); await page.click('#wToolsDone'); await page.waitForTimeout(300); if(await page.getAttribute('#toolsBtn','aria-expanded')==='true') throw new Error('Done did not close the Tools menu');
     await page.fill('#manuscript',keep); await page.waitForTimeout(300);
   });
+  await step('Next mark in the page bar: one tap per mark with no backing out, a stop after the last mark, never covered, always fits (rev 210)', async () => {
+    if(!(await page.evaluate(()=>!!document.querySelector('#marksBtn2')))) return 'SKIP: before rev 210 Next mark was only in Tools';
+    await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T(); const vp0=page.viewportSize();
+    const keepMarks=await page.evaluate(()=>JSON.stringify(BOOK.marks||[]));
+    const restore=async()=>{ await page.setViewportSize(vp0); await page.evaluate((m)=>{ document.body.classList.remove('kbshort'); BOOK.marks=JSON.parse(m); marksRev++; marksUI(); },keepMarks); await page.fill('#manuscript',keep); await page.waitForTimeout(300); };
+    try{
+      await page.evaluate(()=>{ BOOK.marks=[]; marksRev++; marksUI(); });
+      await page.fill('#manuscript','Alpha one is here. Bravo two sits here now. Charlie three is next. Delta four closes the page.'); await page.waitForTimeout(500);
+      if(!(await page.evaluate(()=>document.querySelector('#marksBtn2').hidden))) throw new Error('the page-bar Next mark shows when there are no marks');
+      await page.evaluate(()=>{ BOOK.marks=[{ch:S.cur,t:'Alpha one is here.',w:0},{ch:S.cur,t:'Charlie three is next.',w:9},{ch:S.cur,t:'Delta four closes the page.',w:13}]; marksRev++; marksUI(); });
+      if((await page.textContent('#marksN2')).trim()!=='3') throw new Error('the page-bar Next mark does not show the count 3');
+      const sel=()=>page.evaluate(()=>{ const t=document.querySelector('#manuscript'); return t.value.slice(t.selectionStart,t.selectionEnd); });
+      const toastNow=()=>page.evaluate(()=>{ const t=document.querySelector('#toast'); return t.hidden?'':t.textContent; });
+      const tap=async()=>{ const b=await page.locator('#marksBtn2').boundingBox(); await page.touchscreen.tap(b.x+b.width/2,b.y+b.height/2); await page.waitForTimeout(350); };
+      await page.evaluate(()=>{ document.body.classList.add('kbshort'); const t=document.querySelector('#manuscript'); t.setSelectionRange(0,0); });
+      const want=['Alpha one is here.','Charlie three is next.','Delta four closes the page.'];
+      for(let i=0;i<3;i++){
+        await page.evaluate(()=>toast('Mark 3 of 3. Retype it and the mark clears.'));   // the message that sits over the page bar must not block the button
+        if(!(await page.evaluate(()=>{ const b=document.querySelector('#marksBtn2').getBoundingClientRect(), e=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2); return !!(e&&e.closest('#marksBtn2')); }))) throw new Error('the message covers the Next mark button');
+        await tap(); const got=await sel(); if(got!==want[i]) throw new Error('tap '+(i+1)+' selected '+JSON.stringify(got)+', wanted '+JSON.stringify(want[i]));
+        if(!/^Mark \d of 3\./.test(await toastNow())) throw new Error('tap '+(i+1)+' gave no "Mark n of 3" message');
+      }
+      await tap(); if((await sel())!==want[2] || !/last mark/i.test(await toastNow())) throw new Error('after the last mark: selection '+JSON.stringify(await sel())+', message '+JSON.stringify(await toastNow()));
+      await tap(); if((await sel())!==want[0]) throw new Error('the tap after "last mark" did not go back to the first mark: '+JSON.stringify(await sel()));
+      /* fix as you go: retype the first mark, and the next tap goes to the next one that is left (not back to the first) */
+      await page.evaluate(()=>{ const t=document.querySelector('#manuscript'); t.setRangeText('The rewritten opening is new.',t.selectionStart,t.selectionEnd,'end'); t.dispatchEvent(new Event('input',{bubbles:true})); }); await page.waitForTimeout(1200);
+      if((await page.textContent('#marksN2')).trim()!=='2') throw new Error('the count did not drop to 2 after a mark was retyped: '+(await page.textContent('#marksN2')));
+      await tap(); if((await sel())!==want[1]) throw new Error('after fixing mark 1 the next tap selected '+JSON.stringify(await sel()));
+      await page.evaluate(()=>document.body.classList.remove('kbshort'));
+      /* it fits on every phone width, and the word count stays on the widest */
+      for(const w of [360,375,390,430]){
+        await page.setViewportSize({width:w,height:vp0.height}); await page.waitForTimeout(450);
+        const r=await page.evaluate(()=>{ const pb=document.querySelector('#pagebar'), b=document.querySelector('#marksBtn2').getBoundingClientRect(), wc=document.querySelector('#wordCount').getBoundingClientRect(); return {over:pb.scrollWidth-pb.clientWidth, right:b.right, left:b.left, vw:innerWidth, wc:wc.width}; });
+        if(r.over>0 || r.right>r.vw || r.left<0) throw new Error('at '+w+' px wide the page bar overflows by '+r.over+'px (button '+Math.round(r.left)+'–'+Math.round(r.right)+')');
+        if(w===430 && r.wc<25) throw new Error('at 430 px the word count was squeezed to '+Math.round(r.wc)+'px');
+      }
+    } finally { await restore(); }
+  });
   await step('Dictate: the live words sit at the bottom of the writing area, not over the first lines (rev 168)', async () => {
     if(!(await page.evaluate(()=>typeof liveWords==='function' && (window.INK_VERSION||{}).rev>=168))) return 'SKIP: before rev 168 the live words sat at the top';
     const r=await page.evaluate(()=>{ liveWords('hearing these words'); const b=dictLive.getBoundingClientRect(), t=document.querySelector('#manuscript').getBoundingClientRect(); liveWords(''); return {bt:b.top,bb:b.bottom,tt:t.top,tb:t.bottom}; });
