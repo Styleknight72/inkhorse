@@ -533,6 +533,28 @@ const path = require('path');
     if(stale.length) throw new Error('the manual picture of '+stale.join(', ')+' is out of date. Now: '+JSON.stringify(Object.fromEntries(stale.map(k=>[k,now[k]]))));
     return true;
   });
+  await step('Computer: tips speak to a mouse; a click on a word in your own book opens it for fixing, with the text cursor; a click in a book added to read does not (rev 207)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=207))) return 'SKIP: before rev 207';
+    const ctx=await browser.newContext({viewport:{width:1400,height:900}}); const pg=await ctx.newPage();
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(1800);
+      if(!(await pg.evaluate(()=>mouseUser()))) return 'SKIP: this test browser does not report a mouse';
+      await pg.evaluate(()=>{ S.tips=true; localStorage.removeItem('inkhorse-fs-hint-shown'); setTab('read'); goTo({ch:rOrder()[0],i:0}); drawView(); }); await pg.waitForTimeout(500);
+      const hint=await pg.evaluate(()=>{ setImmersive(true); const t=document.querySelector('#fsHint').textContent; setImmersive(false); return t; });
+      if(!/Space/.test(hint)||/Double-tap/.test(hint)) throw new Error('the full-screen tip still speaks to a finger: '+hint);
+      await pg.evaluate(()=>{ const t=document.querySelector('#fsHint'); if(t){ t.hidden=true; } }); await pg.waitForTimeout(300);
+      const w=await pg.evaluate(()=>{ const el=[...document.querySelectorAll('#spread .ptext:not(.front) p [data-w]')].find(x=>x.getBoundingClientRect().width>8); const r=el.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2,cur:getComputedStyle(el).cursor}; });
+      if(w.cur!=='text') throw new Error('no text cursor over the words: '+w.cur);
+      await pg.mouse.click(w.x,w.y); await pg.waitForTimeout(500);
+      if(await pg.evaluate(()=>$('#fixBox').hidden)) throw new Error('a click on a word did not open it for fixing');
+      await pg.evaluate(()=>{ try{ fixDone(); }catch(_){ } });
+      await pg.evaluate(async()=>{ await openLibBook('manual',true); setTab('read'); goTo({ch:rOrder()[3],i:1}); drawView(); }); await pg.waitForTimeout(600);
+      const m=await pg.evaluate(()=>{ const el=[...document.querySelectorAll('#spread .ptext p [data-w]')].find(x=>x.getBoundingClientRect().width>8&&x.getBoundingClientRect().left>innerWidth*0.4); const r=el.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2}; });
+      await pg.mouse.click(m.x,m.y); await pg.waitForTimeout(500);
+      if(!(await pg.evaluate(()=>$('#fixBox').hidden))) throw new Error('a click in a book added to read opened it for fixing');
+      return true;
+    } finally { await ctx.close(); }
+  });
   await step('Tools: every Write tool works when tapped (Word count, Next mark, Copy, Paste, Top of chapter, Done) (rev 180)', async () => {
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     await page.fill('#manuscript','One sentence here. The marked sentence sits here. Last one.'); await page.waitForTimeout(400);

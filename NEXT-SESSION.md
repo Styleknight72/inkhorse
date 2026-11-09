@@ -5,7 +5,8 @@ Written November 5, 2026 (just after midnight), at the end of a session. Read CL
 ## Where things stand
 
 - **Live, preview and the artifact are rev 193** since Nov 7, 4:10 pm. Before that they were **rev 192** (Steve: "Let's push the updates", Nov 7, 8:00 am, after testing on his iPhone and iPad). **Release 1.1 = rev 192** (Steve called it stable Nov 7, 4:05 pm, from the Home Screen icon; branch release-1.1). Preview rev 193 is "1.2 candidate".
-- **Rev 206 is LIVE** (Nov 8, evening, standing word): 10 manual pictures retaken + Highlighter bar picture; audit step "Manual pictures match the app" (PICS fingerprints; when it fails, retake the picture and paste the new fingerprint). Retake script idea: /tmp shoot.js used iPhone 14 Pro Max 430×932 @2x, fresh app (sample book), tips off.
+- **Rev 207 is LIVE** (Nov 8, evening, standing word): mouseUser() (hover+fine pointer): computer tips; click a word to fix in own books (endPtr), body.canfix text cursor.
+- **Rev 206 was LIVE** (Nov 8, evening, standing word): 10 manual pictures retaken + Highlighter bar picture; audit step "Manual pictures match the app" (PICS fingerprints; when it fails, retake the picture and paste the new fingerprint). Retake script idea: /tmp shoot.js used iPhone 14 Pro Max 430×932 @2x, fresh app (sample book), tips off.
 - **Rev 205 was LIVE** (Nov 8, evening, standing word): computer keys (Space, F, Esc steps, Home/End; F11 syncs immersive via resize, f11On).
 - **Rev 204 was LIVE** (Nov 8, evening, standing word): computers fill the window in Read (comp in devDims; main.app[data-tab=read] max-width none); "Fit my screen" name.
 - **Rev 203 was LIVE** (Nov 8, ~6:30 pm, standing word): dropped-word repair for natural voices (kokSlip pace check, kokSplitFine, colon pieces, ↺ remakes). Needs Steve's ear on Chapter One.
