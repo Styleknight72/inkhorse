@@ -639,6 +639,21 @@ const path = require('path');
       }
     } finally { await restore(); }
   });
+  await step('Next mark visits every mark, including one inside a chapter title, so the count and the stops agree (rev 212)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=212))) return 'SKIP: before rev 212 a mark in a title was skipped';
+    await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
+    const keepMarks=await page.evaluate(()=>JSON.stringify(BOOK.marks||[]));
+    try{
+      await page.fill('#manuscript','Alpha one is here. Bravo two sits here now. Charlie three is next.'); await page.waitForTimeout(500);
+      const ttl=await page.evaluate(()=>{ const c=CH.get(S.cur); return c.title; });
+      await page.evaluate((ttl)=>{ BOOK.marks=[{ch:S.cur,t:ttl,w:0},{ch:S.cur,t:'Bravo two sits here now.',w:ttl.split(' ').length+4},{ch:S.cur,t:'Charlie three is next.',w:ttl.split(' ').length+9}]; marksRev++; marksUI(); },ttl);
+      const n=Number((await page.textContent('#marksN2')).trim());
+      const seen=[];
+      for(let i=0;i<n;i++){ await page.evaluate(()=>{ document.querySelector('#marksBtn2').click(); }); await page.waitForTimeout(250); seen.push(await page.evaluate(()=>{ const x=document.querySelector('#toast'); return x.hidden?'':x.textContent; })); }
+      if(!seen.every(s=>/^Mark \d of 3/.test(s))) throw new Error('the stops did not agree with the count of 3: '+JSON.stringify(seen));
+      if(!/title/.test(seen[0])) throw new Error('a mark in the title was not visited first: '+JSON.stringify(seen));
+    } finally { await page.evaluate((m)=>{ BOOK.marks=JSON.parse(m); marksRev++; marksUI(); },keepMarks); await page.fill('#manuscript',keep); await page.waitForTimeout(300); }
+  });
   await step('Dictate: the live words sit at the bottom of the writing area, not over the first lines (rev 168)', async () => {
     if(!(await page.evaluate(()=>typeof liveWords==='function' && (window.INK_VERSION||{}).rev>=168))) return 'SKIP: before rev 168 the live words sat at the top';
     const r=await page.evaluate(()=>{ liveWords('hearing these words'); const b=dictLive.getBoundingClientRect(), t=document.querySelector('#manuscript').getBoundingClientRect(); liveWords(''); return {bt:b.top,bb:b.bottom,tt:t.top,tb:t.bottom}; });
