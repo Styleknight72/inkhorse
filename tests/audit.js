@@ -813,6 +813,28 @@ const path = require('path');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
   });
+  await step('Book Hub names its book, and both books that come with Inkhorse have a back cover that opens as the last page (rev 226)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=226))) return 'SKIP: before rev 226 the Book Hub did not name the book and the two books had no back cover';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      for(const [id,title] of [['manual','Inkhorse User manual'],['standard','The Inkhorse Formatting Standard']]){
+        const r=await pg.evaluate(async(id)=>{ S.tips=false; await openLibBook(id,true); setTab('read'); goTo({ch:'__back',i:0}); drawView(); await new Promise(r=>setTimeout(r,700));
+          const face=document.querySelector('#spread .face'); const fr=face&&face.getBoundingClientRect(); const im=new Image(); im.src=imgSrc(RB.coverBack||''); let ok=false; try{ await im.decode(); ok=im.naturalWidth>0&&Math.abs(im.naturalWidth/im.naturalHeight-2/3)<0.01; }catch(_){ }
+          document.querySelector('#whereBtn').click(); await new Promise(r=>setTimeout(r,500));
+          const gb=document.querySelector('#gotoBook'), g=gb.getBoundingClientRect(), hub=document.querySelector('#goto').getBoundingClientRect(), last=[...document.querySelectorAll('#gotoList .grow2')].pop();
+          const out={back:RB.coverBack,last:navOrder().slice(-1)[0],at:S.rch,face:!!fr&&fr.width>100,pic:ok,head:gb.textContent,fits:g.width>20&&g.left>=hub.left&&g.right<=hub.right,row:last.innerText.replace(/\s+/g,' '),art:!!last.querySelector('label')};
+          document.querySelector('#gotoDone').click(); return out; },id);
+        if(!r.back||r.last!=='__back') throw new Error(id+': no back cover after the last page');
+        if(r.at!=='__back'||!r.face) throw new Error(id+': the back cover did not open as a page');
+        if(!r.pic) throw new Error(id+': the back cover picture is missing or not 2:3');
+        if(r.head!==title) throw new Error(id+': the Book Hub heading says "'+r.head+'", not the book’s name');
+        if(!r.fits) throw new Error(id+': the book’s name does not fit inside the Book Hub heading');
+        if(!/Back cover/.test(r.row)||r.art) throw new Error(id+': the Book Hub still offers Add art for the back cover: '+r.row);
+      }
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx.close(); }
+  });
   await step('StyleKnight signs are whole: nothing touches the picture edges, and the lettering is not cut where it meets the horse (rev 222)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=222))) return 'SKIP: before rev 222 the lettering was cut';
     const r=await page.evaluate(async()=>{ const srcs={light:document.querySelector('.lk-light').src,dark:document.querySelector('.lk-dark').src,welcome:IMGURL['fcabc3b3827af3e0e50cf170d72881de'],cover:IMGURL['manual-lockup']};
