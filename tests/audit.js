@@ -782,6 +782,21 @@ const path = require('path');
       const D=await look(); if(/rgba\(0, 0, 0, 0\)|transparent/.test(D.bg)) throw new Error('in the night theme the dark lettering has no light card behind it');
     } finally { await ctx.close(); }
   });
+  await step('StyleKnight signs are whole: nothing touches the picture edges, and the lettering is not cut where it meets the horse (rev 222)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=222))) return 'SKIP: before rev 222 the lettering was cut';
+    const r=await page.evaluate(async()=>{ const srcs={light:document.querySelector('.lk-light').src,dark:document.querySelector('.lk-dark').src,welcome:IMGURL['fcabc3b3827af3e0e50cf170d72881de'],cover:IMGURL['manual-lockup']};
+      const out={}; for(const [k,s] of Object.entries(srcs)){ const im=new Image(); im.src=s; await im.decode(); const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight; const g=c.getContext('2d'); g.drawImage(im,0,0); const d=g.getImageData(0,0,c.width,c.height).data;
+        const bg=[d[(2*c.width+c.width-3)*4],d[(2*c.width+c.width-3)*4+1],d[(2*c.width+c.width-3)*4+2],d[(2*c.width+c.width-3)*4+3]];
+        const ink=(x,y)=>{ const i=(y*c.width+x)*4; return bg[3]<10 ? d[i+3]>40 : Math.abs(d[i]-bg[0])+Math.abs(d[i+1]-bg[1])+Math.abs(d[i+2]-bg[2])>60; };
+        let edge=0; for(let x=0;x<c.width;x++){ if(ink(x,0)||ink(x,c.height-1)) edge++; } for(let y=0;y<c.height;y++){ if(ink(0,y)||ink(c.width-1,y)) edge++; }
+        // the lettering: the first inked column right of the horse must start soft (a letter's curve or serif), not as a cut-off flat wall
+        const cols=[]; for(let x=0;x<c.width;x++){ let n=0; for(let y=0;y<c.height;y++) if(ink(x,y)) n++; cols.push(n); }
+        let x=Math.round(c.width*0.33); while(x<c.width&&cols[x]>0) x++; while(x<c.width&&cols[x]===0) x++;
+        out[k]={edge, first:cols[x], next:Math.max(cols[x+2]||0,1)}; }
+      return out; });
+    const bad=Object.entries(r).filter(([k,v])=>v.edge>0||v.first>v.next*0.9);
+    if(bad.length) throw new Error('signs cut or touching an edge: '+JSON.stringify(Object.fromEntries(bad)));
+  });
   await step('Dictate: the live words sit at the bottom of the writing area, not over the first lines (rev 168)', async () => {
     if(!(await page.evaluate(()=>typeof liveWords==='function' && (window.INK_VERSION||{}).rev>=168))) return 'SKIP: before rev 168 the live words sat at the top';
     const r=await page.evaluate(()=>{ liveWords('hearing these words'); const b=dictLive.getBoundingClientRect(), t=document.querySelector('#manuscript').getBoundingClientRect(); liveWords(''); return {bt:b.top,bb:b.bottom,tt:t.top,tb:t.bottom}; });
