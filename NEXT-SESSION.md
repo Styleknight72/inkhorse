@@ -4,7 +4,7 @@ Read CLAUDE.md first, then this top section. Everything under "Older notes" is h
 
 ## Where we left off (November 8, 2026, ~10:30 pm)
 
-- **Live = preview = artifact = rev 222**: lockups rebuilt from the pre-217 lettering (git 5607b60 app.html) + full new horse; old horse width = 303/326 of its height. Audit step 'StyleKnight signs are whole'.
+- **Preview = rev 223 (awaiting Steve's approval)**: signs' lettering darkened to solid black / light grey (scratchpad sign render, alpha clip((dist-0.06)/0.55)^0.8). **Live = artifact = rev 222**: lockups rebuilt from the pre-217 lettering (git 5607b60 app.html) + full new horse; old horse width = 303/326 of its height. Audit step 'StyleKnight signs are whole'.
 - (earlier) rev 221: lockups (lk-light, lk-dark, manual welcome fcabc3b3…, manual-lockup + tools/manual-lockup.png) rebuilt with 7% margin (tool pad.py, scratchpad); .lockup 130x56 / 96x41.
 - (earlier) rev 220: manual welcome sign fcabc3b3… is now a see-through PNG (BRAND_IMGS → figure.brand; light card only in dark themes).
 - (earlier) rev 219 (Nov 10, 12:30 am): opening screen = horse + motto (#splashMotto), HOLD=4000 ms on open and on return (≥3 s away), tap skips. Offered Steve: first-open-only, a shine sweep, an on/off switch; he chose 4 s + motto.
@@ -33,7 +33,7 @@ Read CLAUDE.md first, then this top section. Everything under "Older notes" is h
   - On hold: PDF/EPUB importer fixes (iPad findings Nov 6); Compare tab quietly changing page size.
   - Agreed next feature (after 1.2): AI bar above the iPhone keyboard (see below).
 - **Reminders for Steve (not code):** replace his DeepInfra key (seen in a screenshot); rename/re-password the "SpectrumSetup-68C6" Wi-Fi.
-- **Working notes:** repo is shallow, so bump revs by hand (next is 223): `python3 tools/bump-version.py "1.2 candidate" 223 <date> preview/next.html`. Audit: `NODE_PATH=/root/jsdeps/node_modules:/opt/npm-tools/node_modules PDFJS_DIR=/root/jsdeps/node_modules/pdfjs-dist/build node tests/audit.js <file>` (takes ~8 min; run it in the background and wait on a file). Go live: cp preview/next.html app.html → audit app.html → CHANGELOG + this file + rebuild Release Notes epub → commit as "StyleKnight & Claude" <styleknight72@gmail.com> → `git push origin HEAD:main` → republish the artifact → curl getinkhorse.com/app.html until `cmp` matches (~5–8 min). Manual pictures retake script: tools/manual-pics/shoot.js.
+- **Working notes:** repo is shallow, so bump revs by hand (next is 224): `python3 tools/bump-version.py "1.2 candidate" 224 <date> preview/next.html`. Audit: `NODE_PATH=/root/jsdeps/node_modules:/opt/npm-tools/node_modules PDFJS_DIR=/root/jsdeps/node_modules/pdfjs-dist/build node tests/audit.js <file>` (takes ~8 min; run it in the background and wait on a file). Go live: cp preview/next.html app.html → audit app.html → CHANGELOG + this file + rebuild Release Notes epub → commit as "StyleKnight & Claude" <styleknight72@gmail.com> → `git push origin HEAD:main` → republish the artifact → curl getinkhorse.com/app.html until `cmp` matches (~5–8 min). Manual pictures retake script: tools/manual-pics/shoot.js.
 
 # Older notes
 
