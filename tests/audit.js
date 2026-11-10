@@ -913,6 +913,51 @@ const path = require('path');
       } finally { await ctx.close(); }
     }
   });
+  await step('F7.4 Book page numbers are never guessed: a big book says "Counting pages…" and then shows the exact number, the page foot always matches the counter, every turn adds one, and a text size used before comes back at once (rev 231)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=231))) return 'SKIP: before rev 231 a big book showed estimated page numbers that kept changing';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      await pg.evaluate(async()=>{ S.tips=false; const words='the quick brown fox jumps over the lazy dog while a patient writer counts every page of a very long book'.split(' ');
+        const para=k=>Array.from({length:70+(k%5)*9},(_,i)=>words[(i*7+k)%words.length]).join(' ')+'.';
+        const chapters=Array.from({length:30},(_,c)=>({title:'Chapter '+(c+1)+': Counting test '+(c+1),text:Array.from({length:26+(c%4)*3},(_,k)=>para(c*31+k)).join('\n')}));
+        const parts=splitParts(chapters).map((p,k)=>({...p,k})); const meta={id:'counttest',ver:'1',title:'Counting test book',author:'Test',coverFront:null,coverBack:null,images:{},chapters:chapters.map(c=>({title:c.title})),words:0,parts:parts.length,added:0,pageMode:false,pages:0,localOnly:true};
+        await idb.set('lib:counttest',parts); LIB=[...LIB,meta]; await openLibBook('counttest',true); setTab('read'); });
+      const snap=()=>pg.evaluate(()=>({cur:document.querySelector('#pgCur').textContent,of:document.querySelector('#pgOf').textContent,folio:[...document.querySelectorAll('#spread .face:not(.gone) .folio')].map(f=>f.textContent)[0]||'',est:bookPageInfo().est,ok:!!bookPageInfo().ok[S.rch]}));
+      const watch=async()=>{ const t0=Date.now(), seen=[]; for(;;){ const s=await snap(); const k=s.cur+'|'+s.of+'|'+s.folio; if(seen[seen.length-1]!==k) seen.push(k); if(!s.est||Date.now()-t0>30000) return {seen,ms:Date.now()-t0,last:s}; await pg.waitForTimeout(10); } };
+      const check=(label,w)=>{ if(w.last.est) throw new Error(label+': still counting after 30 seconds');
+        const nums=[...new Set(w.seen.map(k=>k.split('|')[0]).filter(c=>c!=='Counting pages…'))]; if(nums.length!==1) throw new Error(label+': the page number changed while counting: '+w.seen.join('  →  '));
+        for(const k of w.seen){ const [c,o,f]=k.split('|'); if(/~/.test(k)) throw new Error(label+': an estimated number was shown: '+k); if(c==='Counting pages…'){ if(f) throw new Error(label+': the page foot showed a number while counting: '+k); } else if(f!==c.replace(/,/g,'')) throw new Error(label+': the page foot ('+f+') does not match the counter ('+c+')'); }
+        if(!/^of [\d,]+$/.test(w.last.of)) throw new Error(label+': no exact total at the end: '+w.last.of); return +nums[0].replace(/,/g,''); };
+      await pg.evaluate(()=>{ PCACHE.clear(); CNT.clear(); BPC.k=''; goTo({ch:rOrder()[17],i:1}); drawView(); refreshReader(); });
+      const first=await snap(); if(first.cur!=='Counting pages…'&&first.est) throw new Error('a number was shown before the chapters ahead of it were counted: '+JSON.stringify(first));
+      const n1=check('first count',await watch());
+      const setFs=v=>pg.evaluate(v=>{ const el=document.querySelector('#fs'); el.value=v; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); },v);
+      const fs0=await pg.evaluate(()=>S.fs); await setFs(fs0+4); const n2=check('bigger text',await watch()); if(!(n2>n1)) throw new Error('bigger text did not move the page number up ('+n1+' → '+n2+')');
+      await setFs(fs0); const back=await watch(); const n3=check('back to the first size',back); if(n3!==n1) throw new Error('going back to the first text size gave page '+n3+', not '+n1);
+      if(back.seen.some(k=>/Counting/.test(k))) throw new Error('a text size that was already counted had to be counted again');
+      let prev=null; for(let k=0;k<25;k++){ await pg.waitForFunction(()=>!turning); await pg.waitForTimeout(40); const s=await snap(); const n=+s.cur.replace(/,/g,''); if(String(n)!==s.folio) throw new Error('turn '+k+': page foot '+s.folio+' but counter '+s.cur); if(prev!=null&&n!==prev+1) throw new Error('turning one page went from '+prev+' to '+n); prev=n; await pg.click('#next'); }
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx.close(); }
+  });
+  await step('F6.3 On a contents page, a tap at the edge turns the page (the page number is not a link), and a tap on an entry’s words opens that entry (rev 231)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=231))) return 'SKIP: before rev 231 the page number at the edge of a contents line was a link';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const at=await pg.evaluate(async()=>{ S.tips=false; await openLibBook('manual',true); setTab('read'); for(const id of rOrder()){ const n=pag(id).pages.length; for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); if(document.querySelectorAll('#spread p.toc[data-goto]').length>3) return {id,i}; } } return null; });
+      if(!at) throw new Error('the manual has no contents page with linked entries');
+      const here=async()=>{ await pg.evaluate(t=>{ goTo({ch:t.id,i:t.i}); drawView(); refreshReader(); },at); await pg.waitForTimeout(450); return pg.evaluate(()=>{ const e=[...document.querySelectorAll('#spread p.toc[data-goto]')][3], tn=e.querySelector('.tn').getBoundingClientRect(), tt=e.querySelector('.tt').getBoundingClientRect(), st=document.querySelector('#stage').getBoundingClientRect(); return {goto:+e.dataset.goto,tnx:tn.left+tn.width/2,y:tt.top+tt.height/2,mid:st.left+st.width*0.4,left:st.left+st.width*0.06,cur:+document.querySelector('#pgCur').textContent.replace(/,/g,'')}; }); };
+      const cur=()=>pg.evaluate(()=>+document.querySelector('#pgCur').textContent.replace(/,/g,''));
+      let e=await here(); await pg.touchscreen.tap(e.tnx,e.y); await pg.waitForTimeout(1100); let n=await cur();
+      if(n!==e.cur+1) throw new Error('a tap on the page number at the right edge went from page '+e.cur+' to '+n+'; it should turn one page');
+      e=await here(); await pg.touchscreen.tap(e.left,e.y); await pg.waitForTimeout(1100); n=await cur();
+      if(n!==e.cur-1) throw new Error('a tap at the left edge of a contents line went from page '+e.cur+' to '+n+'; it should turn back one page');
+      e=await here(); await pg.touchscreen.tap(e.mid,e.y); await pg.waitForTimeout(1100); n=await cur();
+      if(n!==e.goto) throw new Error('a tap on the words of an entry for page '+e.goto+' went to page '+n);
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx.close(); }
+  });
   await step('StyleKnight signs are whole: nothing touches the picture edges, and the lettering is not cut where it meets the horse (rev 222)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=222))) return 'SKIP: before rev 222 the lettering was cut';
     const r=await page.evaluate(async()=>{ const srcs={light:document.querySelector('.lk-light').src,dark:document.querySelector('.lk-dark').src,welcome:IMGURL['fcabc3b3827af3e0e50cf170d72881de'],cover:IMGURL['manual-lockup']};
