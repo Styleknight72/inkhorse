@@ -754,6 +754,18 @@ const path = require('path');
       const po=[...opf.matchAll(/itemref idref="([^"]+)"/g)].map(m=>m[1]); if(po[0]!=='title'||po[1]!=='copyright') throw new Error('front matter is not first in the book: '+po.join(' '));
     } finally { await page.evaluate((k)=>{ const o=JSON.parse(k); (window.__t215||[]).forEach(id=>CH.delete(id)); BOOK.order=o.order; BOOK.title=o.title; BOOK.author=o.author; try{ renderAll(); }catch(_){ } },keep); }
   });
+  await step('Opening screen: hidden in a browser tab; in the Home Screen app it shows the horse, then gets out of the way by itself or with one tap, and never blocks the app (rev 218)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=218))) return 'SKIP: before rev 218 there was no opening screen';
+    const st=()=>page.evaluate(()=>{ const s=document.querySelector('#splash'); return {hidden:s.hidden, op:s.style.opacity, img:!!s.querySelector('img'), z:+getComputedStyle(s).zIndex}; });
+    let r=await st(); if(!r.hidden) throw new Error('the opening screen shows in a normal browser tab');
+    if(!r.img) throw new Error('the opening screen has no horse picture');
+    await page.evaluate(()=>inkSplash(400)); r=await st(); if(r.hidden) throw new Error('the opening screen did not show');
+    await page.waitForTimeout(900); r=await st(); if(!r.hidden) throw new Error('the opening screen did not go away by itself');
+    await page.evaluate(()=>inkSplash(0)); await page.waitForTimeout(100);
+    const box=await page.locator('#splash').boundingBox(); await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2); await page.waitForTimeout(450);
+    r=await st(); if(!r.hidden) throw new Error('one tap did not skip the opening screen');
+    const tapOk=await page.evaluate(()=>{ const el=document.elementFromPoint(innerWidth/2,innerHeight/2); return !el.closest('#splash'); }); if(!tapOk) throw new Error('the opening screen still blocks taps after it went away');
+  });
   await step('Dictate: the live words sit at the bottom of the writing area, not over the first lines (rev 168)', async () => {
     if(!(await page.evaluate(()=>typeof liveWords==='function' && (window.INK_VERSION||{}).rev>=168))) return 'SKIP: before rev 168 the live words sat at the top';
     const r=await page.evaluate(()=>{ liveWords('hearing these words'); const b=dictLive.getBoundingClientRect(), t=document.querySelector('#manuscript').getBoundingClientRect(); liveWords(''); return {bt:b.top,bb:b.bottom,tt:t.top,tb:t.bottom}; });
@@ -867,7 +879,7 @@ const path = require('path');
   });
   await step('Jump-to sheet opens', async () => { await page.click('#whereBtn'); await page.waitForTimeout(300); const v=await page.isVisible('#gotoDone'); await page.click('#gotoDone').catch(()=>{}); return v; });
   await step('Colors: every theme applies', async () => { for (const th of ['light','dark','sepia','sky','custom']) { await page.evaluate(t=>{ localStorage.setItem('inkhorse-theme',t); inkApplyTheme(); },th); if((await page.evaluate(()=>document.documentElement.getAttribute('data-theme')))!==th) return th+' failed'; } await page.evaluate(()=>{ localStorage.removeItem('inkhorse-theme'); inkApplyTheme(); }); });
-  await step('Night schedule + warmth apply', async () => { await page.evaluate(()=>{ localStorage.setItem('inkhorse-night','dark'); localStorage.setItem('inkhorse-night-from','00:00'); localStorage.setItem('inkhorse-night-to','23:59'); localStorage.setItem('inkhorse-warmth','40'); inkApplyTheme(); }); const r=await page.evaluate(()=>[document.documentElement.getAttribute('data-theme'),document.documentElement.hasAttribute('data-warm')]); await page.evaluate(()=>{ ['inkhorse-night','inkhorse-night-from','inkhorse-night-to','inkhorse-warmth'].forEach(k=>localStorage.removeItem(k)); inkApplyTheme(); }); return r[0]==='dark'&&r[1]; });
+  await step('Night schedule + warmth apply', async () => { await page.evaluate(()=>{ localStorage.setItem('inkhorse-night','dark'); const hm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'), n=Date.now(); localStorage.setItem('inkhorse-night-from',hm(new Date(n-3600e3))); localStorage.setItem('inkhorse-night-to',hm(new Date(n+3600e3)));   /* rev 218: a window around now, so the check can't fail in the last minute before midnight */ localStorage.setItem('inkhorse-warmth','40'); inkApplyTheme(); }); const r=await page.evaluate(()=>[document.documentElement.getAttribute('data-theme'),document.documentElement.hasAttribute('data-warm')]); await page.evaluate(()=>{ ['inkhorse-night','inkhorse-night-from','inkhorse-night-to','inkhorse-warmth'].forEach(k=>localStorage.removeItem(k)); inkApplyTheme(); }); return r[0]==='dark'&&r[1]; });
   await step('Read aloud: player opens, buttons work', async () => { await page.click('#listenBtn'); await page.waitForTimeout(600); const bar=await page.isVisible('#ttsBar'); for (const id of ['ttsFwd','ttsBack','ttsAgain','ttsPlay']) { const b=await page.$('#'+id); if(b&&await b.isVisible()) await b.click({timeout:2000}); await page.waitForTimeout(150); } await page.evaluate(()=>ttsStop()); return bar; });
   await step('Read aloud: Meilin, the natural voice, is offered and asks before downloading (rev 97)', async () => {
     // This test machine has no internet for the voice itself; Bella's real download and reading are tested separately over the internet.

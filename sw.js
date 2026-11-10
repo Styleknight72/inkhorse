@@ -24,7 +24,8 @@ const CORE = [
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
   './about.html',
-  './horse.png'
+  './horse.png',
+  './icons/splash-horse.png'
 ];
 const SLOW_NETWORK_MS = 4000;
 
