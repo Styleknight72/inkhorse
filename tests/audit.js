@@ -782,6 +782,37 @@ const path = require('path');
       const D=await look(); if(/rgba\(0, 0, 0, 0\)|transparent/.test(D.bg)) throw new Error('in the night theme the dark lettering has no light card behind it');
     } finally { await ctx.close(); }
   });
+  await step('F1.2 F1.3 The Inkhorse Formatting Standard comes with Inkhorse: on the shelf beside the manual, opens with its cover, front matter and every part; Delete offers to put it back, and that works (rev 225)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=225))) return 'SKIP: before rev 225 only the manual came with Inkhorse';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const rows=async()=>pg.evaluate(()=>[...document.querySelectorAll('.bookrow')].map(r=>r.innerText.replace(/\s+/g,' ')));
+      await pg.evaluate(()=>{ S.tips=false; setTab('read'); }); await pg.waitForTimeout(400); const shelf=async()=>{ if(!(await pg.evaluate(()=>{ const r=document.querySelector('.bookrow'); return !!(r&&r.offsetParent); }))){ await pg.evaluate(()=>document.querySelector('#libBtn').click()); } await pg.waitForTimeout(700); }; await shelf();
+      let r=await rows(); const mi=r.findIndex(t=>/User manual/.test(t)), si=r.findIndex(t=>/Formatting Standard/.test(t));
+      if(mi<0||si<0) throw new Error('the shelf does not list both books: '+JSON.stringify(r));
+      if(Math.abs(mi-si)!==1) throw new Error('the Formatting Standard is not next to the manual');
+      if(!/comes with Inkhorse/.test(r[si])) throw new Error('the Formatting Standard is not marked "comes with Inkhorse"');
+      const cov=await pg.evaluate(async()=>{ const row=[...document.querySelectorAll('.bookrow')].find(x=>/Formatting Standard/.test(x.innerText)); const im=row.querySelector('.thumb img'); if(!im) return null; try{ await im.decode(); }catch(_){ } return {w:im.naturalWidth,h:im.naturalHeight}; });
+      if(!cov||!cov.w||Math.abs(cov.w/cov.h-2/3)>0.01) throw new Error('its cover is missing or not 2:3: '+JSON.stringify(cov));
+      const bk=await pg.evaluate(async()=>{ await openLibBook('standard',true); setTab('read'); await new Promise(r=>setTimeout(r,600)); const o=rOrder(); const tx=o.map(id=>RB.ch.get(id).text).join('\n');
+        return {n:o.length,front:o.filter(isFront).length,parts:o.filter(id=>/^Part \d+ · /.test(RB.ch.get(id).title)).length,rules:['F1.1','F2.2','F3.7','F4.1','F5.2','F6.3','F7.4','F8.1','F9.2','F10.1'].filter(x=>!tx.includes(x+' ')),stale:/rev 91|waiting for Steve/.test(tx),pages:document.querySelectorAll('#spread .face').length}; });
+      if(bk.front!==2) throw new Error('its title and copyright pages are not front matter: '+bk.front);
+      if(bk.parts!==11) throw new Error('it should have Parts 1 to 11, found '+bk.parts);
+      if(bk.rules.length) throw new Error('rules missing from the book: '+bk.rules.join(', '));
+      if(bk.stale) throw new Error('the scorecard still carries old preview notes');
+      if(!bk.pages) throw new Error('it opened but drew no page');
+      await shelf();
+      const del=async()=>pg.evaluate(()=>{ const row=[...document.querySelectorAll('.bookrow')].find(x=>/Formatting Standard/.test(x.innerText)); row.querySelector('[data-ldel]').click(); });
+      await del(); await pg.waitForTimeout(300); await del(); await pg.waitForTimeout(900); await shelf();
+      r=await rows(); if(r.some(t=>/Formatting Standard/.test(t))) throw new Error('Delete (tapped twice) did not remove it');
+      if(!r.some(t=>/User manual/.test(t))) throw new Error('deleting the Formatting Standard took the manual with it');
+      if(!(await pg.$('[data-std]'))) throw new Error('no "Put the Formatting Standard back" button after deleting it');
+      await pg.click('[data-std]'); await pg.waitForTimeout(1200);
+      r=await rows(); if(!r.some(t=>/Formatting Standard/.test(t))) throw new Error('Put the Formatting Standard back did not bring it back');
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx.close(); }
+  });
   await step('StyleKnight signs are whole: nothing touches the picture edges, and the lettering is not cut where it meets the horse (rev 222)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=222))) return 'SKIP: before rev 222 the lettering was cut';
     const r=await page.evaluate(async()=>{ const srcs={light:document.querySelector('.lk-light').src,dark:document.querySelector('.lk-dark').src,welcome:IMGURL['fcabc3b3827af3e0e50cf170d72881de'],cover:IMGURL['manual-lockup']};

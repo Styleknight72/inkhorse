@@ -2,7 +2,7 @@
 title: The Inkhorse Formatting Standard
 subtitle: How every book in Inkhorse should look, and how we check it
 author: StyleKnight & Claude
-edition: First edition · October 28, 2026 · scorecard updated for the formatting engine (preview)
+edition: First edition · October 28, 2026 · scorecard updated November 10, 2026
 ---
 
 # Why this standard exists
@@ -150,7 +150,7 @@ F7.1 In print, front matter is numbered in small Roman numerals (i, ii, iii). Ch
 
 F7.2 Blank pages and chapter-opening pages show no page header.
 
-F7.3 In print, the left-hand page header shows the author's name and the right-hand header shows the book title, or the chapter title. Small capitals or italics, smaller than the body text.
+F7.3 In print, the left-hand page header shows the book title or the author's name, and the right-hand header shows the chapter title or the book title. Small capitals or italics, smaller than the body text. A book picks one pairing and keeps it on every page.
 
 F7.4 On screen, Inkhorse shows its own page numbers for the whole book, counted on the screen being used, with "page X of Y."
 
@@ -194,7 +194,7 @@ F9.4 The print interior file holds no cover. The cover is its own file, sized fo
 
 F9.5 Chapters in print may start on right-hand pages, which can leave a blank left-hand page before them. Blank pages carry no number and no header.
 
-These margin and trim figures were checked against Amazon's help pages on October 28, 2026. Check them again before sending a book to print, since the stores change their rules.
+These margin and trim figures were checked against Amazon's help pages on November 10, 2026. Check them again before sending a book to print, since the stores change their rules.
 
 # Part 10 · Books that come in from other files
 
@@ -218,63 +218,64 @@ F10.7 A PDF that is kept as pictures of its pages shows each page exactly as pri
 
 # Part 11 · Where Inkhorse stands today
 
-## F11 · Scorecard at rev 91
+## F11 · Scorecard, November 10, 2026
 
-Meets the standard:
+Meets the standard, and an automatic test checks it before every change goes out:
 
-- F1.2 Covers: one 2:3 size, whole cover always shown.
-- F3.2 and F3.3 Paragraph indent, with no blank lines between paragraphs.
-- F3.4 No indent on the paragraph after a section heading.
-- F3.5 Justified text with hyphenation.
-- F4.1 Curly quotes and apostrophes when a book is shown or exported.
-- F6.6 Tappable contents entries in the manual.
-- F7.4 Whole-book page numbers on screen.
-- F8.2 and F8.3 EPUB export with a working contents list and chapter headings.
-- F9.4 Print PDF without the cover.
-
-Done on the preview page, waiting for Steve's approval (the formatting engine):
-
-- F1.3 and F1.4 Title, copyright and dedication pages recognised as front matter: no chapter label, no paragraph indents, not counted as chapters.
-- F2.2 The chapter title about a third of the way down its first page.
-- F2.3 The book's own label (PART 1, CHAPTER THREE) shown above the title in place of "Chapter N."
-- F2.4 The first paragraph of every chapter not indented.
-- F2.5 Every chapter opens with its first line in small capitals.
+- F1.1, F1.3 and F1.4 Title, copyright and dedication pages are front matter: no chapter label, no paragraph indents, not counted as chapters. A book with its own typed title and copyright pages gets each one once in the EPUB, and neither is listed in the Contents.
+- F1.2 Covers: one 2:3 size, the whole cover always shown.
+- F2.2 The chapter title sits about a third of the way down its first page.
+- F2.3 The book's own label (PART 1, CHAPTER THREE) shows above the title in place of "Chapter N," on the page, in the EPUB and in the print PDF.
+- F2.4 The first paragraph of every chapter is not indented.
+- F2.5 Every chapter opens the same way. A book chooses one of four opening styles: Classic, Ornament, Big number or Drop cap.
+- F2.6 No page header on a chapter's first page.
 - F2.7 A chapter with no heading takes its name from the book's own contents list.
-- F3.7 No widows or orphans: the whole manual has none (the live app had 24).
-- F5.2 Scene breaks set as a centered ornament.
-- F6.2 to F6.8 One contents style for every book, whatever its file type.
-- F10.1 Spaces put back in PDF text that has none.
-- F10.5 Run-on contents pages split into one entry per line.
-- F10.6 A label above a chapter title kept with the title.
-- The "Import check" pop-up removed.
+- F3.5 Justified text with hyphenation on every screen, phones included.
+- F3.7 No widows or orphans on screen. The test checks every page break in the User manual.
+- F4.1 to F4.4 Curly quotes and apostrophes, closed em dashes, en dashes in a range of years, and the one-mark ellipsis, on the page and in the EPUB. A phone number or a web address is never changed.
+- F5.2 and F3.4 A scene break is a centered ornament, and the paragraph after it is not indented, on the page, in the EPUB and in the print PDF.
+- F6 One contents style for every book, whatever file it came from: one entry per line, a dotted line, Inkhorse's own page numbers, every entry a link.
+- F7.4 Whole-book page numbers on screen.
+- F10.5 A run-on contents page is split into one entry per line.
+- F10.6 A label above a chapter title stays with its title.
+
+Meets the standard, checked by eye but not yet by an automatic test:
+
+- F3.2 and F3.3 A small paragraph indent, with no blank lines between paragraphs.
+- F5.3 and F5.4 Pictures are centered and never stretched, with the caption underneath, smaller than the body text.
+- F7.2 and F9.5 In the print PDF, chapters open on a right-hand page, and blank pages carry no number and no header.
+- F7.3 In the print PDF, the left-hand header is the book title and the right-hand header is the chapter title.
+- F8.2 and F8.3 The EPUB has a working contents list and real chapter headings. Every EPUB that Inkhorse itself publishes, this book included, passes EPUBCheck, the checker the bookstores use.
+- F9.1 The print PDF comes in 6 × 9, 5.5 × 8.5 and 5 × 8 inches, and 8.5 × 11.
+- F9.2 and F9.3 The print PDF uses an inside margin of 0.875 inch, enough for a book of any length Amazon prints, and an outside margin of 0.625 inch.
+- F9.4 The print PDF holds no cover.
+- F10.1 Spaces are put back in PDF text that has none.
 
 Not yet:
 
-- F7.1 Roman numerals for front matter in the print PDF.
-- F1.3 front-matter detection for Word and text files (EPUB and PDF are done; PDF in rev 100, preview).
-
-Found by loading this very book into Inkhorse (rev 91), now fixed on the preview page:
-
-- F2.3 and F10.6 A small label above a chapter title, such as "PART 1" or "CHAPTER THREE," makes the EPUB importer lose the chapter title. Many professionally made e-books do this. Inkhorse must keep the label and the title together.
-- F1.3 and F1.4 The title page and copyright page come in as ordinary indented body text and get "CHAPTER 1" and "CHAPTER 2" labels. Front matter needs its own look and no chapter numbers.
-- After importing, a pop-up says "Import check: no dotted lines found." It means nothing to a reader and should not appear.
+- F3.5 in print: the print PDF is justified but does not hyphenate, so a line can show wide gaps.
+- F3.7 in print: the print PDF does not yet stop a single line from sitting alone at the top or bottom of a page.
+- F2.5 in print: the Drop cap style prints, but the small-capitals first line does not.
+- F6.2 in print: a contents title too long for its line is shortened with an ellipsis, not wrapped.
+- F7.1 Roman numerals for the front matter in the print PDF. Front pages carry no number at all today.
+- F8.6 Footnotes. Inkhorse has no footnotes yet.
 
 Still to check against real books:
 
-- F3.9, F10.2, F10.3 and F10.4 on Steve's own imported books: MANtality, Blender for Dummies and the memoir.
+- F3.9, F10.2, F10.3 and F10.4 on long imported books, PDFs most of all. Every PDF is made differently, so a book brought in from a PDF should be read through once.
 
 # How we keep the standard
 
 1. Every formatting change names the rules it touches.
 2. Each rule that can be checked by machine gets an automatic test, like the cover-size and big-book speed tests.
-3. Every change goes to the preview page first and goes live only when Steve approves it on his iPhone.
-4. The scorecard in Part 11 is updated with every release.
+3. Every change goes to a preview page first. It goes live only after the full automatic check passes and Steve Patient, who makes Inkhorse, approves it on his own phone.
+4. The scorecard in Part 11 is kept true: when a rule's standing changes, the scorecard changes with it, and its heading says the date.
 5. This book is updated whenever the standard changes, and its edition line says when. The history of changes to Inkhorse itself is kept in the Inkhorse Release Notes, not in this book or in the User manual.
 
 ## Sources
 
 - The Chicago Manual of Style, 18th edition, chapter 1, "Books and journals."
-- Amazon KDP help: "Trim size" and paperback "Margins and bleed" (kdp.amazon.com), checked October 28, 2026.
+- Amazon KDP help: "Trim size" and paperback "Margins and bleed" (kdp.amazon.com), checked November 10, 2026.
 - Amazon KDP help: eBook manuscript formatting guide for Word (kdp.amazon.com), checked October 28, 2026.
 - Apple Books Asset Guide, "Table of Contents" (help.apple.com/itc/booksassetguide), checked October 28, 2026.
 
