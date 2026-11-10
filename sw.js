@@ -5,7 +5,7 @@
    Pages: tries the internet first (so you always get the newest version),
    and falls back to the saved copy if there's no signal or it's too slow.
    Fonts, icons and pictures: uses the saved copy, refreshes it quietly. */
-const VERSION = 'inkhorse-v3';
+const VERSION = 'inkhorse-v4';   // v4 (rev 217): new StyleKnight horse; a new name makes phones drop the old icons and pictures
 /* Several cores for Meilin (rev 117): the app page is made "cross-origin isolated" by adding two headers here,
    because GitHub Pages can't send them. If Meilin can't work that way on a device, the page leaves a note
    in this cache and the headers stop. */
