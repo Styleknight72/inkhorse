@@ -4,7 +4,8 @@ Read CLAUDE.md first, then this top section. Everything under "Older notes" is h
 
 ## Where we left off (November 8, 2026, ~10:30 pm)
 
-- **Live = preview = artifact = rev 220**: manual welcome sign fcabc3b3… is now a see-through PNG (BRAND_IMGS → figure.brand; light card only in dark themes).
+- **Live = preview = artifact = rev 221**: lockups (lk-light, lk-dark, manual welcome fcabc3b3…, manual-lockup + tools/manual-lockup.png) rebuilt with 7% margin (tool pad.py, scratchpad); .lockup 130x56 / 96x41.
+- (earlier) rev 220: manual welcome sign fcabc3b3… is now a see-through PNG (BRAND_IMGS → figure.brand; light card only in dark themes).
 - (earlier) rev 219 (Nov 10, 12:30 am): opening screen = horse + motto (#splashMotto), HOLD=4000 ms on open and on return (≥3 s away), tap skips. Offered Steve: first-open-only, a shine sweep, an on/off switch; he chose 4 s + motto.
 - (earlier) rev 218 (Nov 9, midnight): opening screen #splash + inkSplash(ms) inline right after #warmth; only when navigator.standalone / display-mode standalone; on load (hides 400–1200 ms after load, safety 6 s) and on return after ≥3 s hidden (900 ms); tap skips; img /icons/splash-horse.png (in sw CORE). Audit step 'Opening screen' (rev 218).
 - (earlier) rev 217 (Nov 9, ~11:45 pm): the new StyleKnight horse (Steve's filled-eye PNG) swapped in everywhere: header lockups, apple-touch (file + inline), icons, maskable, 16 launch screens, card.png, horse.png, shot-*.png, manual cover/lockup/pictures, e-book covers; sw.js VERSION inkhorse-v4. Only the horse was swapped in each picture (tool: horse_box + place, scratchpad). Masters were in the session attachments (filled PNG, cut-out PNG, white JPG); ask Steve for them again if a vector/large print file is needed. Home Screen icon on his iPhone only changes when re-added: backup first.
@@ -31,7 +32,7 @@ Read CLAUDE.md first, then this top section. Everything under "Older notes" is h
   - On hold: PDF/EPUB importer fixes (iPad findings Nov 6); Compare tab quietly changing page size.
   - Agreed next feature (after 1.2): AI bar above the iPhone keyboard (see below).
 - **Reminders for Steve (not code):** replace his DeepInfra key (seen in a screenshot); rename/re-password the "SpectrumSetup-68C6" Wi-Fi.
-- **Working notes:** repo is shallow, so bump revs by hand (next is 221): `python3 tools/bump-version.py "1.2 candidate" 221 <date> preview/next.html`. Audit: `NODE_PATH=/root/jsdeps/node_modules:/opt/npm-tools/node_modules PDFJS_DIR=/root/jsdeps/node_modules/pdfjs-dist/build node tests/audit.js <file>` (takes ~8 min; run it in the background and wait on a file). Go live: cp preview/next.html app.html → audit app.html → CHANGELOG + this file + rebuild Release Notes epub → commit as "StyleKnight & Claude" <styleknight72@gmail.com> → `git push origin HEAD:main` → republish the artifact → curl getinkhorse.com/app.html until `cmp` matches (~5–8 min). Manual pictures retake script: tools/manual-pics/shoot.js.
+- **Working notes:** repo is shallow, so bump revs by hand (next is 222): `python3 tools/bump-version.py "1.2 candidate" 222 <date> preview/next.html`. Audit: `NODE_PATH=/root/jsdeps/node_modules:/opt/npm-tools/node_modules PDFJS_DIR=/root/jsdeps/node_modules/pdfjs-dist/build node tests/audit.js <file>` (takes ~8 min; run it in the background and wait on a file). Go live: cp preview/next.html app.html → audit app.html → CHANGELOG + this file + rebuild Release Notes epub → commit as "StyleKnight & Claude" <styleknight72@gmail.com> → `git push origin HEAD:main` → republish the artifact → curl getinkhorse.com/app.html until `cmp` matches (~5–8 min). Manual pictures retake script: tools/manual-pics/shoot.js.
 
 # Older notes
 
