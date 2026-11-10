@@ -981,12 +981,20 @@ const path = require('path');
     await page.evaluate(()=>ttsStop());
     return hidden && !sel.startsWith('kokoro:') ? true : {hidden,sel};
   });
-  await step('Adding a PDF asks: real book or exact look; Cancel adds nothing (rev 98)', async () => {
+  await step('Adding a PDF asks how to add it, the question stays in view until answered, and Cancel adds nothing (rev 98, 227)', async () => {
     if(!(await page.$('#libAsk'))) return 'SKIP: this version has no PDF question';
     if(!(await page.isVisible('#library'))){ await page.click('#tab-read').catch(()=>{}); await page.click('#libBtn'); await page.waitForTimeout(400); }
     const n0=await page.evaluate(()=>LIB.length);
     await page.setInputFiles('#libIn',{name:'test.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\n%%EOF\n')}); await page.waitForTimeout(300);
-    const txt=await page.textContent('#libAsk'); if(!/Make it a real book/.test(txt)||!/Keep the exact look/.test(txt)) throw new Error('question missing: '+txt.slice(0,80));
+    const txt=await page.textContent('#libAsk'); if(!(/Make it a real book/.test(txt)&&/Keep the exact look/.test(txt))&&!(/Text I can resize and hear/.test(txt)&&/Pages exactly as printed/.test(txt))) throw new Error('question missing: '+txt.slice(0,80));
+    if(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=227)){   // rev 227: the question cannot be missed
+      if(!/not added until you choose/.test(txt)) throw new Error('the question does not say the book waits for an answer');
+      if(!/only for your own reading/.test(txt)||!/original file is not changed/.test(txt)) throw new Error('the question does not say it is for your own reading and leaves the file alone');
+      const seen=await page.evaluate(async()=>{ const body=document.querySelector('#library .drawer-body'), box=document.querySelector('#libAsk'); const vis=()=>{ const b=box.getBoundingClientRect(), d=body.getBoundingClientRect(); return b.top>=d.top-2&&b.top<d.bottom-60; };
+        const first=vis(); body.scrollTop=body.scrollHeight; await new Promise(r=>setTimeout(r,250)); const after=vis(), scrolled=body.scrollTop>0; body.scrollTop=0; return {first,after,scrolled}; });
+      if(!seen.first) throw new Error('the question is not in view when it appears');
+      if(seen.scrolled&&!seen.after) throw new Error('the question scrolls out of view while it is still waiting');
+    }
     await page.click('#libAsk [data-way="no"]'); await page.waitForTimeout(400);
     const n1=await page.evaluate(()=>LIB.length), gone=!(await page.isVisible('#libAsk'));
     await page.click('#libDone').catch(()=>{}); await page.waitForTimeout(300);
