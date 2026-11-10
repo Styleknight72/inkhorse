@@ -2,7 +2,7 @@
 title: The Inkhorse Formatting Standard
 subtitle: How every book in Inkhorse should look, and how we check it
 author: StyleKnight & Claude
-edition: First edition · October 28, 2026 · scorecard updated November 10, 2026
+edition: First edition · October 28, 2026 · scorecard updated November 10, 2026 (evening)
 ---
 
 # Why this standard exists
@@ -249,7 +249,6 @@ Meets the standard, checked by eye but not yet by an automatic test:
 - F9.1 The print PDF comes in 6 × 9, 5.5 × 8.5 and 5 × 8 inches, and 8.5 × 11.
 - F9.2 and F9.3 The print PDF uses an inside margin of 0.875 inch, enough for a book of any length Amazon prints, and an outside margin of 0.625 inch.
 - F9.4 The print PDF holds no cover.
-- F10.1 Spaces are put back in PDF text that has none.
 
 Not yet:
 
@@ -261,6 +260,8 @@ Not yet:
 - F8.6 Footnotes. Inkhorse has no footnotes yet.
 
 Still to check against real books:
+
+- F10.1 Spaces are put back in most PDF text that has none, but not yet in every PDF: one long technical book still shows words run together in its contents, and is being fixed.
 
 - F3.9, F10.2, F10.3 and F10.4 on long imported books, PDFs most of all. Every PDF is made differently, so a book brought in from a PDF should be read through once.
 
