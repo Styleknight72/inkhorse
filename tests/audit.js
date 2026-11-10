@@ -759,6 +759,7 @@ const path = require('path');
     const st=()=>page.evaluate(()=>{ const s=document.querySelector('#splash'); return {hidden:s.hidden, op:s.style.opacity, img:!!s.querySelector('img'), z:+getComputedStyle(s).zIndex}; });
     let r=await st(); if(!r.hidden) throw new Error('the opening screen shows in a normal browser tab');
     if(!r.img) throw new Error('the opening screen has no horse picture');
+    if(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=219) && !/The power to get it done, and then some!/.test(await page.textContent('#splash'))) throw new Error('the opening screen has no motto (rev 219)');
     await page.evaluate(()=>inkSplash(400)); r=await st(); if(r.hidden) throw new Error('the opening screen did not show');
     await page.waitForTimeout(900); r=await st(); if(!r.hidden) throw new Error('the opening screen did not go away by itself');
     await page.evaluate(()=>inkSplash(0)); await page.waitForTimeout(100);
