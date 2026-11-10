@@ -835,6 +835,26 @@ const path = require('path');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
   });
+  await step('F1.4 The credit line is the author’s choice: blank by default, one tap writes “Made with Inkhorse”, it reaches the copyright page, and it can be cleared (rev 228)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=228))) return 'SKIP: before rev 228 there was no Made with Inkhorse button';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const r=await pg.evaluate(async()=>{ const el=document.querySelector('#fmCredit'), btn=document.querySelector('#fmCreditUse'); if(!el||!btn) return {missing:true};
+        const has=()=>frontInfo().copyright.some(l=>/Made with Inkhorse/.test(l));
+        const before=(BOOK.front||{}).credit||'', hint=el.placeholder; btn.click(); await new Promise(r=>setTimeout(r,200));
+        const after=(BOOK.front||{}).credit||'', shown=el.value, inBook=has();
+        el.value=''; el.dispatchEvent(new Event('input',{bubbles:true})); await new Promise(r=>setTimeout(r,100));
+        return {before,hint,after,shown,inBook,still:has(),cleared:(BOOK.front||{}).credit||''}; });
+      if(r.missing) throw new Error('no credit field or button in Book settings');
+      if(r.before) throw new Error('a new book already has a credit line: '+r.before);
+      if(r.after!=='Made with Inkhorse · getinkhorse.com'||r.shown!==r.after) throw new Error('the button did not write the credit line: '+JSON.stringify(r));
+      if(/Inkhorse|StyleKnight/.test(r.hint)) throw new Error('the empty field already suggests a credit: '+r.hint);
+      if(!r.inBook) throw new Error('the credit line did not reach the copyright page');
+      if(r.cleared||r.still) throw new Error('clearing the field did not remove the credit from the book');
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx.close(); }
+  });
   await step('StyleKnight signs are whole: nothing touches the picture edges, and the lettering is not cut where it meets the horse (rev 222)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=222))) return 'SKIP: before rev 222 the lettering was cut';
     const r=await page.evaluate(async()=>{ const srcs={light:document.querySelector('.lk-light').src,dark:document.querySelector('.lk-dark').src,welcome:IMGURL['fcabc3b3827af3e0e50cf170d72881de'],cover:IMGURL['manual-lockup']};
