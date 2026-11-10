@@ -705,6 +705,17 @@ const path = require('path');
       if((await T())!==p214) throw new Error('the writing in Write was changed');
     } finally { await page.click('#tab-write'); await page.waitForTimeout(300); await page.fill('#manuscript',keep); await page.waitForTimeout(300); }
   });
+  await step('F4.1 F4.2 F4.3 edge cases: a quote after a dash closes unless a word follows, a dash attached to a quote still closes up, short year ranges, dates and web addresses left alone (rev 216)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=216))) return 'SKIP: before rev 216 "Wait--" ended with an opening quote';
+    const cases=[['"Wait--"','\u201cWait\u2014\u201d'],['she said--"no"','she said\u2014\u201cno\u201d'],['"Wait\u2014"','\u201cWait\u2014\u201d'],['1980-81','1980\u201381'],['1999-2000s','1999\u20132000s'],['2026-11-09','2026-11-09'],['555-1234','555-1234'],['see http://a.com/x--y now','see http://a.com/x--y now'],['x---y','x---y'],['wait....','wait....']];
+    const got=await page.evaluate(cs=>cs.map(c=>smartQ(c[0])),cases);
+    const bad=cases.map((c,i)=>got[i]===c[1]?null:c[0]+' -> '+got[i]+' (wanted '+c[1]+')').filter(Boolean); if(bad.length) throw new Error(bad.join(' ; '));
+    await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
+    try{ await page.fill('#manuscript','"Wait --" she said, and he ran-- fast. Then more words follow to fill out the line here.'); await page.waitForTimeout(600); await toFirstPage();
+      const txt=await page.evaluate(()=>document.querySelector('#spread .ptext').textContent.replace(/\u2060/g,''));
+      if(txt.indexOf('\u201cWait\u2014\u201d she said')<0 || txt.indexOf('ran\u2014fast')<0) throw new Error('on the page: '+txt.slice(0,160));
+    } finally { await page.click('#tab-write'); await page.waitForTimeout(300); await page.fill('#manuscript',keep); await page.waitForTimeout(300); }
+  });
   await step('F5.2 F3.4 F4.2 F8 EPUB: a scene break is a centered ornament and the paragraph after it has no indent; dashes and ellipsis are set; no importer marker leaks in; the identifier is a valid UUID (rev 214)', async () => {
     if(!(await r214())) return 'SKIP: before rev 214 the e-book wrote *** as an ordinary paragraph';
     if(!(await page.evaluate(()=>typeof JSZip!=='undefined'))) return 'SKIP: zip library not reachable from this test machine';
