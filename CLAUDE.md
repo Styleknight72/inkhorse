@@ -20,6 +20,7 @@ Steve is not a coder. He tests on his iPhone 15 Pro Max and decides what goes li
 - `NEXT-SESSION.md` where the last session stopped and the agreed plan: read it right after this file
 - `app.html` live app · `preview/next.html` next version under test · `preview/app.html` Inkhorse Plus beta (set aside)
 - `docs/FORMATTING-STANDARD.md` the standard; `docs/Inkhorse Formatting Standard.epub` built from it by `tools/epub/build-epub.py` (every e-book must pass EPUBCheck). It also ships inside the app as a built-in book: after changing it, rebuild the e-book and run `node tools/embed-standard.js preview/next.html`, and keep its Part 11 scorecard true
+- `docs/PUBLISHING-STANDARD.md` The Inkhorse Publishing Standard (rules P1–P9, what "ready to publish" means); its e-book and built-in copy are made the same way as the Formatting Standard's. Its Part 10 store facts carry a "checked on" date: re-check them against the stores' own pages before changing that date. Keep its Part 11 scorecard true
 - `CHANGELOG.md` the Release Notes (history of every rev and release); `docs/Inkhorse Release Notes.epub` built from it
 - `tools/epub/doc-cover.html` + `render-cover.js` draw 2:3 covers for these e-books
 - `tests/audit.js` automatic checks · `PHONE-CHECK.md` Steve's iPhone checklist · `RELEASES.md` stable releases

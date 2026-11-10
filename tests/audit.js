@@ -855,6 +855,40 @@ const path = require('path');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
   });
+  await step('The Inkhorse Publishing Standard comes with Inkhorse: third on the shelf after the manual and the Formatting Standard, with front and back covers, front matter, Parts 1 to 11 and its P rules; Delete offers to put it back (rev 229)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=229))) return 'SKIP: before rev 229 there was no Publishing Standard';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const rows=async()=>pg.evaluate(()=>[...document.querySelectorAll('.bookrow')].map(r=>r.innerText.replace(/\s+/g,' ')));
+      const shelf=async()=>{ if(!(await pg.evaluate(()=>{ const r=document.querySelector('.bookrow'); return !!(r&&r.offsetParent); }))){ await pg.evaluate(()=>document.querySelector('#libBtn').click()); } await pg.waitForTimeout(700); };
+      await pg.evaluate(()=>{ S.tips=false; setTab('read'); }); await pg.waitForTimeout(400); await shelf();
+      let r=await rows(); const mi=r.findIndex(t=>/User manual/.test(t)), si=r.findIndex(t=>/Formatting Standard/.test(t)), pi=r.findIndex(t=>/Publishing Standard/.test(t));
+      if(mi<0||si<0||pi<0) throw new Error('the shelf does not list all three books: '+JSON.stringify(r));
+      if(!(si===mi+1&&pi===si+1)) throw new Error('the three books are not together in order (manual, Formatting Standard, Publishing Standard)');
+      if(!/comes with Inkhorse/.test(r[pi])) throw new Error('the Publishing Standard is not marked "comes with Inkhorse"');
+      const bk=await pg.evaluate(async()=>{ await openLibBook('publishing',true); setTab('read'); await new Promise(r=>setTimeout(r,600)); const o=rOrder(); const tx=o.map(id=>RB.ch.get(id).text).join('\n');
+        const pic=async id=>{ const im=new Image(); im.src=imgSrc(id||''); try{ await im.decode(); return im.naturalWidth>0&&Math.abs(im.naturalWidth/im.naturalHeight-2/3)<0.01; }catch(_){ return false; } };
+        return {front:o.filter(isFront).length,parts:o.filter(id=>/^Part \d+ · /.test(RB.ch.get(id).title)).length,rules:['P1.1','P2.1','P3.4','P4.5','P5.1','P6.2','P7.3','P8.2','P9.1'].filter(x=>!tx.includes(x+' ')),
+          score:/What Inkhorse does for you:/.test(tx)&&/What is yours to check:/.test(tx)&&/Not yet:/.test(tx),dated:/checked on November \d+, 2026/.test(tx),nav:[navOrder()[0],navOrder().slice(-1)[0]],fc:await pic(RB.coverFront),bc:await pic(RB.coverBack),pages:document.querySelectorAll('#spread .face').length}; });
+      if(bk.front!==2) throw new Error('its title and copyright pages are not front matter: '+bk.front);
+      if(bk.parts!==11) throw new Error('it should have Parts 1 to 11, found '+bk.parts);
+      if(bk.rules.length) throw new Error('rules missing from the book: '+bk.rules.join(', '));
+      if(!bk.score) throw new Error('the scorecard is missing one of its three lists');
+      if(!bk.dated) throw new Error('the store facts do not say when they were checked');
+      if(bk.nav[0]!=='__front'||bk.nav[1]!=='__back'||!bk.fc||!bk.bc) throw new Error('front or back cover missing or not 2:3: '+JSON.stringify(bk));
+      if(!bk.pages) throw new Error('it opened but drew no page');
+      await shelf();
+      const del=async()=>pg.evaluate(()=>{ const row=[...document.querySelectorAll('.bookrow')].find(x=>/Publishing Standard/.test(x.innerText)); row.querySelector('[data-ldel]').click(); });
+      await del(); await pg.waitForTimeout(300); await del(); await pg.waitForTimeout(900); await shelf();
+      r=await rows(); if(r.some(t=>/Publishing Standard/.test(t))) throw new Error('Delete (tapped twice) did not remove it');
+      if(!r.some(t=>/User manual/.test(t))||!r.some(t=>/Formatting Standard/.test(t))) throw new Error('deleting it took another book with it');
+      if(!(await pg.$('[data-pub]'))) throw new Error('no "Put the Publishing Standard back" button after deleting it');
+      await pg.click('[data-pub]'); await pg.waitForTimeout(1200);
+      r=await rows(); if(!r.some(t=>/Publishing Standard/.test(t))) throw new Error('Put the Publishing Standard back did not bring it back');
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx.close(); }
+  });
   await step('StyleKnight signs are whole: nothing touches the picture edges, and the lettering is not cut where it meets the horse (rev 222)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=222))) return 'SKIP: before rev 222 the lettering was cut';
     const r=await page.evaluate(async()=>{ const srcs={light:document.querySelector('.lk-light').src,dark:document.querySelector('.lk-dark').src,welcome:IMGURL['fcabc3b3827af3e0e50cf170d72881de'],cover:IMGURL['manual-lockup']};

@@ -4,7 +4,7 @@ Read CLAUDE.md first, then this top section. Everything under "Older notes" is h
 
 ## Where we left off (November 8, 2026, ~10:30 pm)
 
-- **Preview = rev 228, waiting for Steve's approval** (228: Use "Made with Inkhorse" button under Credit line, #fmCreditUse, INK_CREDIT). Steve also wants a THIRD built-in book; he has not said which yet: ask him.
+- **Preview = rev 229, waiting for Steve's approval** (229: THIRD built-in book, The Inkhorse Publishing Standard: docs/PUBLISHING-STANDARD.md, const PUBLISHING, S.publishingGone, data-pub; store facts in its Part 10 were checked Nov 10 and must be re-checked when the book is updated. Idea for later: a "Ready to publish?" button that runs a book against P1 to P9. 228: Use "Made with Inkhorse" button, #fmCreditUse.)
 - **rev 227 (in the same preview)** (227: PDF question sticky + reworded, askPdfWay; 226 below)
 - **rev 226 (in the same preview)**: Book Hub heading names the book (#gotoBook); back covers for the two built-in books (const BACKCOV from `node tools/back-covers.js preview/next.html`, template tools/back-cover.html; the manual's back is also drawn live in faceHTML). **Live = artifact = rev 225.**
 - (earlier) rev 225: The Inkhorse Formatting Standard is a built-in book (const STANDARD, BUILTIN=[MANUAL,STANDARD], installBuiltin, S.standardGone, data-std). After editing docs/FORMATTING-STANDARD.md: rebuild its e-book, then `node tools/embed-standard.js preview/next.html`. F11 scorecard rewritten Nov 10 (keep it true). Steve's logo originals are in brand/.
@@ -37,7 +37,7 @@ Read CLAUDE.md first, then this top section. Everything under "Older notes" is h
   - On hold: PDF/EPUB importer fixes (iPad findings Nov 6); Compare tab quietly changing page size.
   - Agreed next feature (after 1.2): AI bar above the iPhone keyboard (see below).
 - **Reminders for Steve (not code):** replace his DeepInfra key (seen in a screenshot); rename/re-password the "SpectrumSetup-68C6" Wi-Fi.
-- **Working notes:** repo is shallow, so bump revs by hand (next is 229): `python3 tools/bump-version.py "1.2 candidate" 229 <date> preview/next.html`. Audit: `NODE_PATH=/root/jsdeps/node_modules:/opt/npm-tools/node_modules PDFJS_DIR=/root/jsdeps/node_modules/pdfjs-dist/build node tests/audit.js <file>` (takes ~8 min; run it in the background and wait on a file). Go live: cp preview/next.html app.html → audit app.html → CHANGELOG + this file + rebuild Release Notes epub → commit as "StyleKnight & Claude" <styleknight72@gmail.com> → `git push origin HEAD:main` → republish the artifact → curl getinkhorse.com/app.html until `cmp` matches (~5–8 min). Manual pictures retake script: tools/manual-pics/shoot.js.
+- **Working notes:** repo is shallow, so bump revs by hand (next is 230): `python3 tools/bump-version.py "1.2 candidate" 230 <date> preview/next.html`. Audit: `NODE_PATH=/root/jsdeps/node_modules:/opt/npm-tools/node_modules PDFJS_DIR=/root/jsdeps/node_modules/pdfjs-dist/build node tests/audit.js <file>` (takes ~8 min; run it in the background and wait on a file). Go live: cp preview/next.html app.html → audit app.html → CHANGELOG + this file + rebuild Release Notes epub → commit as "StyleKnight & Claude" <styleknight72@gmail.com> → `git push origin HEAD:main` → republish the artifact → curl getinkhorse.com/app.html until `cmp` matches (~5–8 min). Manual pictures retake script: tools/manual-pics/shoot.js.
 
 # Older notes
 

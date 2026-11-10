@@ -8,7 +8,7 @@ meta = dict(l.split(': ',1) for l in fm.splitlines())
 E = lambda s: html.escape(s, quote=False)
 def inline(s):
     s = E(s)
-    s = re.sub(r'^(F\d+\.\d+)\b', r'<b class="rid">\1</b>', s)          # rule numbers
+    s = re.sub(r'^([FP]\d+\.\d+)\b', r'<b class="rid">\1</b>', s)          # rule numbers
     s = re.sub(r'“([^”]{1,80})”', r'“\1”', s)
     return s
 # split into chapters at "# "
