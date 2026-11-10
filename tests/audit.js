@@ -432,7 +432,10 @@ const path = require('path');
       if(!/❦/.test(r.ornament.after)) throw new Error('Ornament flourish missing: '+JSON.stringify(r.ornament));
       if(r.bignum.bn!=='4'||r.bignum.ck) throw new Error('Big number should show 4 (from "Chapter Four") and no label: '+JSON.stringify(r.bignum));
       if(r.dropcap.cap!=='left') throw new Error('Drop cap missing: '+JSON.stringify(r.dropcap));
-      if(!(r.ornament.first<r.classic.first&&r.dropcap.first<r.classic.first)) throw new Error('pages were not re-measured for the taller openings: '+JSON.stringify(r));
+      // rev 230: a taller opening must never hold MORE than Classic, and no style may spill past the page. It may hold the same: paragraphs break whole,
+      // so on some page heights the taller opening's extra inch comes out of the empty space at the foot of the page (measured: slack 48px vs 16px at 382px tall).
+      if(!(r.ornament.first<=r.classic.first&&r.dropcap.first<=r.classic.first)) throw new Error('a taller opening holds more than Classic, so pages were not re-measured: '+JSON.stringify(r));
+      for(const cs of ['classic','ornament','bignum','dropcap']) if(r[cs].over) throw new Error(cs+': the first page spills past its foot, so pages were not re-measured: '+JSON.stringify(r));
       for(const k in r) if(r[k].over) throw new Error(k+': the first page overflows');
       const lib=await page.evaluate(async()=>{ FM().chStyle='dropcap'; await openLibBook('manual',true); return chStyle(); });
       if(lib!=='classic') throw new Error('a book added to read took the style: '+lib);
@@ -888,6 +891,27 @@ const path = require('path');
       r=await rows(); if(!r.some(t=>/Publishing Standard/.test(t))) throw new Error('Put the Publishing Standard back did not bring it back');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
+  });
+  await step('Book Hub counter: every line stays inside its box, in one order, the same height on covers and pages, on a big phone and a small one (rev 230)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=230))) return 'SKIP: before rev 230 a long book name pushed the counter past its box';
+    for(const dev of ['iPhone 14 Pro Max','iPhone SE']){
+      const ctx=await browser.newContext({...devices[dev]}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+      try{
+        await pg.goto(page.url()); await pg.waitForTimeout(2500); const hs=[];
+        for(const [id,ch,i] of [['standard','__front',0],['standard',5,1],['publishing','__back',0],['manual',6,3],[null,0,0]]){
+          const r=await pg.evaluate(async({id,ch,i})=>{ S.tips=false; if(id) await openLibBook(id,true); else if(RB) readMine(); setTab('read'); const c=typeof ch==='number'?rOrder()[ch]:ch; goTo({ch:c,i}); drawView(); refreshReader(); await new Promise(r=>setTimeout(r,500));
+            const w=document.querySelector('#whereBtn'), B=w.getBoundingClientRect(), els=[...w.querySelectorAll('.loc .ch,.loc .pg,.prog,.bk,#pageInfo')].filter(e=>e.getBoundingClientRect().width>0);
+            const out=els.filter(e=>{ const r=e.getBoundingClientRect(); return r.left<B.left-0.5||r.right>B.right+0.5||r.top<B.top-0.5||r.bottom>B.bottom+0.5; }).map(e=>e.id||e.className);
+            const tops=['#chLab','.loc .pg','#bookPg','#pageInfo'].map(s=>w.querySelector(s).getBoundingClientRect().top), order=tops.every((t,k)=>k===0||t>=tops[k-1]);
+            return {out,order,h:Math.round(B.height)}; },{id,ch,i});
+          if(r.out.length) throw new Error(dev+' '+(id||'own book')+' '+ch+': past the box: '+r.out.join(', '));
+          if(!r.order) throw new Error(dev+' '+(id||'own book')+' '+ch+': the lines are out of order');
+          hs.push(r.h);
+        }
+        if(Math.max(...hs)-Math.min(...hs)>1) throw new Error(dev+': the counter changes height between covers and pages: '+hs.join(', '));
+        if(errs.length) throw new Error('page error: '+errs[0]);
+      } finally { await ctx.close(); }
+    }
   });
   await step('StyleKnight signs are whole: nothing touches the picture edges, and the lettering is not cut where it meets the horse (rev 222)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=222))) return 'SKIP: before rev 222 the lettering was cut';
