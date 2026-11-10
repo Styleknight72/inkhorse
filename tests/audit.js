@@ -767,6 +767,21 @@ const path = require('path');
     r=await st(); if(!r.hidden) throw new Error('one tap did not skip the opening screen');
     const tapOk=await page.evaluate(()=>{ const el=document.elementFromPoint(innerWidth/2,innerHeight/2); return !el.closest('#splash'); }); if(!tapOk) throw new Error('the opening screen still blocks taps after it went away');
   });
+  await step('Manual welcome picture: the StyleKnight sign sits right on the page with no box in a light theme, and on a light card in the night theme (rev 220)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=220))) return 'SKIP: before rev 220 the sign had a cream box';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage();
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const look=async()=>pg.evaluate(async()=>{ await openLibBook('manual',true); setTab('read'); goTo({ch:rOrder()[0],i:0}); drawView(); await new Promise(r=>setTimeout(r,500));
+        const f=document.querySelector('#spread .fig.brand'); if(!f) return null; const img=f.querySelector('img');
+        return {src:(img.currentSrc||img.src).slice(0,22), bg:getComputedStyle(f.querySelector('.ph')).backgroundColor}; });
+      const L=await look(); if(!L) throw new Error('the welcome picture is not marked as a brand picture');
+      if(!/^data:image\/png|^blob:/.test(L.src)) throw new Error('the welcome picture is not a see-through PNG: '+L.src);
+      if(!/rgba\(0, 0, 0, 0\)|transparent/.test(L.bg)) throw new Error('in a light theme the picture still has a box: '+L.bg);
+      await pg.evaluate(()=>{ localStorage.setItem('inkhorse-theme','dark'); inkApplyTheme(); }); await pg.waitForTimeout(200);
+      const D=await look(); if(/rgba\(0, 0, 0, 0\)|transparent/.test(D.bg)) throw new Error('in the night theme the dark lettering has no light card behind it');
+    } finally { await ctx.close(); }
+  });
   await step('Dictate: the live words sit at the bottom of the writing area, not over the first lines (rev 168)', async () => {
     if(!(await page.evaluate(()=>typeof liveWords==='function' && (window.INK_VERSION||{}).rev>=168))) return 'SKIP: before rev 168 the live words sat at the top';
     const r=await page.evaluate(()=>{ liveWords('hearing these words'); const b=dictLive.getBoundingClientRect(), t=document.querySelector('#manuscript').getBoundingClientRect(); liveWords(''); return {bt:b.top,bb:b.bottom,tt:t.top,tb:t.bottom}; });
