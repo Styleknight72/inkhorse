@@ -23,3 +23,4 @@ Steve is not a coder. He tests on his iPhone 15 Pro Max and decides what goes li
 - `CHANGELOG.md` the Release Notes (history of every rev and release); `docs/Inkhorse Release Notes.epub` built from it
 - `tools/epub/doc-cover.html` + `render-cover.js` draw 2:3 covers for these e-books
 - `tests/audit.js` automatic checks · `PHONE-CHECK.md` Steve's iPhone checklist · `RELEASES.md` stable releases
+- `brand/` Steve's original StyleKnight logo files and the full-size sign (see `brand/README.md`); keep them, never overwrite
