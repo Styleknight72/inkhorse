@@ -94,6 +94,8 @@ F3.8 No empty paragraphs. Space between parts of a chapter comes from a scene br
 
 F3.9 A line ends only where a paragraph ends. A sentence is never broken into separate lines in the middle.
 
+F3.10 The page meets this standard at every text size a reader can choose, from the smallest to the largest. Bigger text puts fewer words on a line, which is where wide gaps come from, so Inkhorse does three things. It breaks long words itself, at the same place on every phone, tablet and computer. It lets a web address break after a slash or before a dot. And where a line's gaps would still be wider than three normal word spaces, it sets that one line with normal spacing, ending a little short of the margin, and never stretches it.
+
 # Part 4 · Punctuation and type
 
 ## F4 · The small marks that make a book look published
@@ -244,6 +246,7 @@ Meets the standard, and an automatic test checks it before every change goes out
 - F2.8 A book's own chapter numbers win: the Introduction and other unnumbered pages get no number of Inkhorse's own.
 - F3.5 Justified text with hyphenation on every screen, phones included.
 - F3.7 No widows or orphans on screen. The test checks every page break in the User manual.
+- F3.10 Every text size from the smallest to the largest: no line stretched past the limit, no word past the margin, nothing cut off. The test reads every page of both standards and the first part of the User manual at four sizes.
 - F4.1 to F4.4 Curly quotes and apostrophes, closed em dashes, en dashes in a range of years, and the one-mark ellipsis, on the page and in the EPUB. A phone number or a web address is never changed.
 - F5.2 and F3.4 A scene break is a centered ornament, and the paragraph after it is not indented, on the page, in the EPUB and in the print PDF.
 - F6 One contents style for every book, whatever file it came from: one entry per line, a dotted line, Inkhorse's own page numbers, every entry a link on its words. F6.2 No contents line runs off the page.

@@ -684,10 +684,10 @@ const path = require('path');
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     try{
       await page.fill('#manuscript',p214); await page.waitForTimeout(600); await toFirstPage();
-      const on=await page.evaluate(()=>{ const p=document.querySelector('#spread .ptext p:not(.sb)'); const cs=getComputedStyle(p); return {ta:cs.textAlign, hy:cs.hyphens||cs.webkitHyphens, just:S.just, w:innerWidth}; });
+      const on=await page.evaluate(()=>{ const p=document.querySelector('#spread .ptext p:not(.sb)'); const cs=getComputedStyle(p); return {ta:cs.textAlign, hy:cs.hyphens||cs.webkitHyphens, own:typeof OWNHY!=='undefined'&&OWNHY&&typeof hyWord==='function'&&hyWord('standard').indexOf('\u00ad')>0, just:S.just, w:innerWidth}; });
       if(!on.just) throw new Error('Justify is not on by default');
       if(on.ta!=='justify') throw new Error('at '+on.w+' px wide, Justify on shows text-align '+on.ta);
-      if(on.hy!=='auto') throw new Error('hyphenation is '+on.hy+', so justified lines can open wide gaps');
+      if(on.own ? on.hy!=='manual' : on.hy!=='auto') throw new Error('hyphenation is '+on.hy+(on.own?' while Inkhorse breaks the words itself, so a device could add breaks of its own':', so justified lines can open wide gaps'));
       await page.evaluate(()=>{ S.just=false; applyType(); relayout(); }); await page.waitForTimeout(700);
       const off=await page.evaluate(()=>getComputedStyle(document.querySelector('#spread .ptext p:not(.sb)')).textAlign);
       if(off!=='left') throw new Error('Justify off still shows '+off);
@@ -937,6 +937,52 @@ const path = require('path');
       await setFs(fs0); const back=await watch(); const n3=check('back to the first size',back); if(n3!==n1) throw new Error('going back to the first text size gave page '+n3+', not '+n1);
       if(back.seen.some(k=>/Counting/.test(k))) throw new Error('a text size that was already counted had to be counted again');
       let prev=null; for(let k=0;k<25;k++){ await pg.waitForFunction(()=>!turning); await pg.waitForTimeout(40); const s=await snap(); const n=+s.cur.replace(/,/g,''); if(String(n)!==s.folio) throw new Error('turn '+k+': page foot '+s.folio+' but counter '+s.cur); if(prev!=null&&n!==prev+1) throw new Error('turning one page went from '+prev+' to '+n); prev=n; await pg.click('#next'); }
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx.close(); }
+  });
+  await step('F3.10 A clean page at every text size: from the smallest to the largest, no justified line is stretched past the limit, no word runs past the margin, nothing is cut off, long words break the same way everywhere, and a web address can break (rev 234)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=234))) return 'SKIP: before rev 234 big text opened wide gaps between words';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(2500); await pg.evaluate(()=>document.fonts.ready);
+      const own=await pg.evaluate(()=>({on:OWNHY, std:hyWord('standard'), ink:hyWord('Inkhorse'), cap:hyWord('Publishing'), last:hyWord('book'), url:urlBr('kobowritinglife.zendesk.com/help'), css:getComputedStyle(M2).hyphens||getComputedStyle(M2).webkitHyphens}));
+      if(!own.on) return 'SKIP: this browser is not set to English, so the browser\'s own hyphenation is in use';
+      if(own.ink!=='Ink­horse') throw new Error('"Inkhorse" should break as Ink-horse, got '+JSON.stringify(own.ink));
+      if(own.std.indexOf('­')<0||own.cap.indexOf('­')<0) throw new Error('a long word (or a capitalized one) is not broken: '+JSON.stringify([own.std,own.cap]));
+      if(own.last!=='book') throw new Error('a short word was broken: '+JSON.stringify(own.last));
+      if(!/zendesk<wbr>\.com\/<wbr>help/.test(own.url)) throw new Error('a web address cannot break after a slash and before a dot: '+own.url);
+      if(own.css!=='manual') throw new Error('the browser may still add hyphens of its own (hyphens: '+own.css+')');
+      const sweep=(book,fs,maxPages)=>pg.evaluate(async({book,fs,maxPages})=>{
+        S.tips=false; S.just=true; S.fs=fs; applyType(); relayout(); await openLibBook(book,true); setTab('read'); await new Promise(r=>setTimeout(r,300));
+        const cv=document.createElement('canvas').getContext('2d'), T=x=>RB.ch.get(x).title;
+        const res={book,fs,pages:0,lines:0,just:0,loose:[],hyEnd:0,ragged:0,past:[],cut:[],shyBody:0,shyElse:0};
+        outer: for(const id of rOrder().filter(x=>!isCover(x))){ const n=pag(id).pages.length;
+          for(let i=0;i<n;i++){ if(res.pages>=maxPages) break outer; goTo({ch:id,i}); drawView(); res.pages++;
+            for(const pt of document.querySelectorAll('#spread .face:not(.gone) .ptext')){ const B=pt.getBoundingClientRect(), k=B.width/pt.offsetWidth;
+              if(!pt.querySelector('img,figure') && pt.scrollHeight>pt.clientHeight+1) res.cut.push(T(id)+' p'+(i+1));
+              res.ragged+=pt.querySelectorAll('br.lz').length;
+              pt.querySelectorAll('h2,p.toc,p.sb').forEach(e=>{ res.shyElse+=(e.textContent.match(/­/g)||[]).length; });
+              if(pt.classList.contains('front')){ res.shyElse+=(pt.textContent.match(/­/g)||[]).length; continue; }
+              for(const p of pt.querySelectorAll('p:not(.toc):not(.sb)')){ res.shyBody+=(p.textContent.match(/­/g)||[]).length;
+                const cs=getComputedStyle(p); cv.font=`${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`; const sp=(cv.measureText('n n').width-cv.measureText('nn').width)*k, lines=[]; let cur=null;
+                for(const s of p.querySelectorAll('span[data-w]')){ const rs=s.getClientRects(); for(let q=0;q<rs.length;q++){ const r=rs[q]; if(!(r.width>0)) continue; if(!cur||Math.abs(r.top-cur.top)>r.height*0.5){ cur={top:r.top,it:[]}; lines.push(cur); } cur.it.push({l:r.left,r:r.right,t:s.textContent,whole:q===rs.length-1}); if(r.right>B.right+1) res.past.push(T(id)+' p'+(i+1)+': '+s.textContent); } }
+                res.lines+=lines.length;
+                if(cs.textAlign==='justify') for(let q=0;q<lines.length-1;q++){ const it=lines[q].it; if(it.length<2) continue; res.just++; let g=0; for(let x=1;x<it.length;x++) g=Math.max(g,it[x].l-it[x-1].r);
+                  if(g>LOOSE*sp*1.08){ if(it[it.length-1].whole) res.loose.push(T(id)+' p'+(i+1)+' ('+(g/sp).toFixed(1)+' spaces): '+it.map(x=>x.t).join(' ')); else res.hyEnd++; } } } } } }
+        return res; },{book,fs,maxPages});
+      const runs=[['publishing',12,999],['publishing',18,999],['publishing',23,999],['publishing',28,999],['standard',12,999],['standard',18,999],['standard',28,999],['manual',12,40],['manual',18,40],['manual',28,60]];
+      const cap={12:0.04,18:0.12,23:0.15,28:0.27};   /* measured Nov 10, 2026: at most 1.6%, 8.0%, 9.3% and 20.7% */
+      for(const [book,fs,mp] of runs){ const r=await sweep(book,fs,mp), at=book+' at size '+fs+': ';
+        if(r.pages<5||r.lines<60) throw new Error(at+'too little was read ('+r.pages+' pages, '+r.lines+' lines)');
+        if(r.cut.length) throw new Error(at+'text is cut off at the bottom of '+r.cut.slice(0,3).join(', '));
+        if(r.past.length) throw new Error(at+'a word runs past the margin: '+r.past.slice(0,3).join(' | '));
+        if(r.loose.length) throw new Error(at+r.loose.length+' line(s) stretched past the limit, e.g. '+r.loose.slice(0,2).join(' | '));
+        if(r.hyEnd>Math.max(2,r.just*0.02)) throw new Error(at+r.hyEnd+' loose lines end inside a broken word and were left stretched');
+        if(!r.shyBody) throw new Error(at+'no long word on these pages was given a break point');
+        if(r.shyElse) throw new Error(at+'a heading, contents line or front page was given hyphen breaks');
+        if(r.ragged>r.just*cap[fs]) throw new Error(at+r.ragged+' of '+r.just+' justified lines had to be set unstretched; more than '+Math.round(cap[fs]*100)+'% means the breaking got worse'); }
+      const numsOk=await pg.evaluate(async()=>{ S.fs=18; applyType(); relayout(); await openLibBook('publishing',true); setTab('read'); await new Promise(r=>setTimeout(r,2500)); const o=rOrder().filter(x=>!isCover(x)); goTo({ch:o[4],i:0}); drawView(); refreshReader(); await new Promise(r=>setTimeout(r,1500)); return {cur:document.querySelector('#pgCur').textContent,folio:(document.querySelector('#spread .face:not(.gone) .folio')||{}).textContent||''}; });
+      if(numsOk.cur!==numsOk.folio) throw new Error('after the size changes the page foot ('+numsOk.folio+') and the counter ('+numsOk.cur+') disagree');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
   });
