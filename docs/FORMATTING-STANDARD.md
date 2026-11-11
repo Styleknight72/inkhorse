@@ -249,6 +249,8 @@ Meets the standard, checked by eye but not yet by an automatic test:
 - F9.1 The print PDF comes in 6 × 9, 5.5 × 8.5 and 5 × 8 inches, and 8.5 × 11.
 - F9.2 and F9.3 The print PDF uses an inside margin of 0.875 inch, enough for a book of any length Amazon prints, and an outside margin of 0.625 inch.
 - F9.4 The print PDF holds no cover.
+- F10.1 Spaces are put back in PDF text that has none, including PDFs whose fonts store two bytes per letter, where the PDF reader itself used to drop them.
+- F10.2 A PDF's running heads (the chapter or part name and page number printed at the top of each page) are left out of the text, and a drop capital printed apart from its word is joined back to it.
 
 Not yet:
 
@@ -261,7 +263,6 @@ Not yet:
 
 Still to check against real books:
 
-- F10.1 Spaces are put back in most PDF text that has none, but not yet in every PDF: one long technical book still shows words run together in its contents, and is being fixed.
 
 - F3.9, F10.2, F10.3 and F10.4 on long imported books, PDFs most of all. Every PDF is made differently, so a book brought in from a PDF should be read through once.
 

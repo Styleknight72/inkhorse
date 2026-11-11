@@ -76,8 +76,11 @@ for pi,pt in enumerate(parts):
     newpage(); bm(f'Part {pi+1}: {pt}'); c.setFont('Helvetica-Bold',40); c.drawString(54,H-160,str(pi+1)); c.setFont('Helvetica-Bold',24); c.drawString(54,H-200,pt); flow([sent() for _ in range(3)],None,H-260)
     for j in range(per[pi]):
         newpage(); t=chs[k]; bm(f'Chapter {k+1}: {t}'); c.setFont('Helvetica-Bold',14); c.drawString(54,H-150,f'Chapter {k+1}'); c.setFont('Helvetica-Bold',22); c.drawString(54,H-180,t)
-        body=[]
+        # a drop capital, printed apart from the rest of its word, as many printed books do
+        first=para(); cap,rest=first[0],first[1:]; c.setFont('Times-Bold',30); c.drawString(54,H-238,cap)
+        lines=wrap(rest,W-108-30); c.setFont('Times-Roman',10.5); c.drawString(84,H-222,lines[0]); c.drawString(84,H-236,lines[1]) if len(lines)>1 else None
+        body=[' '.join(lines[2:])] if len(lines)>2 else []
         for s in range(4): body+=[('h',sent()[:40].rstrip('.'))]+[para() for _ in range(6)]
-        flow(body,(f'PART {pi+1} {pt}',f'CHAPTER {k+1} {t}'),H-220); k+=1
+        flow(body,(f'PART {pi+1} {pt}',f'CHAPTER {k+1} {t}'),H-260); k+=1
 newpage(); bm('Index'); c.setFont('Helvetica-Bold',26); c.drawString(54,H-110,'Index'); flow([', '.join(f'{random.choice(WORDS)} {random.randint(20,400)}' for _ in range(6)) for _ in range(30)],('Blendworks For Learners','Index'),H-150)
 c.save(); print(out,'pages',pg[0])

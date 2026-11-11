@@ -958,7 +958,7 @@ const path = require('path');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
   });
-  await step('F1.3 F2.3 F6 F10.5 A "For Dummies"-style PDF: copyright page, Contents at a Glance and Table of Contents are front pages; chapter numbers are the book\'s own; a section is not mistaken for its chapter; no contents line runs off the page (rev 232)', async () => {
+  await step('F1.3 F2.3 F6 F10.5 A "For Dummies"-style PDF: copyright page, Contents at a Glance and Table of Contents are front pages; chapter numbers are the book\'s own; a section is not mistaken for its chapter; no contents line runs off the page; running heads and split drop capitals are cleaned up (rev 232)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=232))) return 'SKIP: before rev 232';
     if(!PDFJS_DIR) return 'SKIP: set PDFJS_DIR to test PDF import';
     const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']});
@@ -974,7 +974,7 @@ const path = require('path');
         const o=rOrder(), T=x=>RB.ch.get(x).title, find=re=>o.find(x=>re.test(T(x)));
         const front=o.filter(isFront).map(T), intro=find(/^Introduction$/), c1=find(/^Chapter 1:/), c5=find(/^Chapter 5:/);
         const lab=x=>{ goTo({ch:x,i:0}); drawView(); refreshReader(); return {lab:document.querySelector('#chLab').textContent,ck:(document.querySelector('#spread .ck')||{}).textContent||''}; };
-        const out={front,intro:lab(intro),c1:lab(c1),c5no:fmtChapterNo(c5,0),c1text:RB.ch.get(c1).text.split('\n').slice(0,2)};
+        const out={front,intro:lab(intro),c1:lab(c1),c5no:fmtChapterNo(c5,0),c1text:RB.ch.get(c1).text.split('\n').slice(0,2), heads:o.filter(x=>!isFront(x)).map(x=>RB.ch.get(x).text).join('\n').split('\n').filter(l=>/(?:^|\s)(?:CHAPTER \d+ |PART \d+ )[A-Z][a-z]/.test(l)).slice(0,3), cap:RB.ch.get(c1).text.split('\n').slice(0,3)};
         out.toc=[]; out.over=[]; for(const id of o.filter(x=>CONTENTS_HEAD.test(T(x)))){ const n=pag(id).pages.length; for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); const B=document.querySelector('#spread .ptext').getBoundingClientRect();
           document.querySelectorAll('#spread p.toc').forEach(e=>{ const t=e.innerText.replace(/\s+/g,' ').trim(); if([...e.querySelectorAll('.tt,.tn')].some(x=>x.getBoundingClientRect().right>B.right+1)) out.over.push(t); if(/origins/.test(t)) out.toc.push({t,link:!!e.dataset.goch,big:e.classList.contains('t1')}); }); } }
         return out; });
@@ -984,6 +984,8 @@ const path = require('path');
       if(/\bCh \d/.test(r.c1.lab)||!/Chapter 1:/.test(r.c1.lab)||r.c1.ck!=='Chapter 1') throw new Error('Chapter 1 does not carry the book\'s own number: '+JSON.stringify(r.c1));
       if(r.c5no!==5) throw new Error('Chapter 5 is numbered '+r.c5no);
       if(r.c1text.some(l=>/^(chapter 1|discovering the program)$/i.test(l.trim()))) throw new Error('the chapter\'s heading is repeated as text: '+r.c1text.join(' / '));
+      if(r.heads.length) throw new Error('running heads were left in the text: '+r.heads.join(' | '));
+      if(r.cap.some(l=>/^[A-Z]$/.test(l.trim()))) throw new Error('a drop capital was left apart from its word: '+r.cap.join(' / '));
       if(!r.toc.length) throw new Error('the section about origins is missing from the Table of Contents');
       if(r.toc.some(e=>e.link||e.big)) throw new Error('a section that starts with its chapter\'s words was taken for the chapter: '+JSON.stringify(r.toc));
       if(r.over.length) throw new Error('contents lines run off the page: '+r.over.slice(0,3).join(' | '));
