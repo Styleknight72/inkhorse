@@ -183,17 +183,19 @@ Some services take one EPUB and send it to many stores at once, for a share of e
 
 ## P11 · Scorecard, November 10, 2026
 
+An automatic test checks each line of the first list before every change goes out, by opening the real EPUB and print PDF that Inkhorse exports. The two lines marked "no test of its own yet" are the exceptions.
+
 What Inkhorse does for you:
 
-- P2.1 Read aloud reads the whole book to you, and you can fix a word right on the page where you heard it.
-- P1.3 Find searches the chapter you are in, and the Book Hub lists every highlight and note in the whole book so none is left behind.
+- P2.1 Read aloud reads the whole book to you, and you can fix a word right on the page where you heard it. Both features have tests, but no test of its own yet follows a whole book from start to finish.
+- P1.3 Find searches the chapter you are in, and the Book Hub lists every highlight and note in the whole book so none is left behind. No test of its own yet.
 - P3.1 to P3.5 Inkhorse builds the title page, copyright page, dedication and Contents from what you type in Book settings, in the right order, each one once. A book with its own typed front pages keeps them and gets no second copy.
 - P3.6 The credit line is blank unless you fill it in.
 - P4.1 Every cover in Inkhorse is shown at the same tall 2:3 shape, and the whole cover is always shown.
-- P5.1 to P5.6 The EPUB that Inkhorse exports carries the title, author and language, a working contents list, real chapter headings, the cover, and an identifier that stays the same for the same book. An exported book was run through EPUBCheck on November 10, 2026 and passed with no errors or warnings.
+- P5.1 to P5.6 The EPUB that Inkhorse exports carries the title, author and language, a working contents list, real chapter headings, the cover, and an identifier that stays the same for the same book. An exported book is run through EPUBCheck before every change goes out and must pass with no errors and no warnings.
 - P6.1 The print PDF comes in 6 × 9, 5.5 × 8.5 and 5 × 8 inches, and 8.5 × 11.
 - P6.2 The print PDF uses an inside margin of 0.875 inch, wide enough for a book of any length Amazon prints, and an outside margin of 0.625 inch.
-- P6.3 and P6.4 The print PDF has its typeface embedded and holds no cover.
+- P6.3 and P6.4 The print PDF has its typeface built into the file and holds no cover.
 - P6.5 In the print PDF, chapters open on a right-hand page, and blank pages carry no number and no header.
 - P9.1 Save backup file, in the Chapters panel, saves the whole book outside the app.
 

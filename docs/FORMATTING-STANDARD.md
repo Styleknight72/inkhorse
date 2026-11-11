@@ -232,11 +232,15 @@ F10.9 A section is never mistaken for a chapter. A section heading that starts w
 
 ## F11 · Scorecard, November 10, 2026
 
-Meets the standard, and an automatic test checks it before every change goes out. For these print and e-book rules the test opens the real files Inkhorse exports and reads inside them.
+Every rule in this book is on this scorecard, in one of five lists: proven by a test, checked by eye, yours to check, not done yet, or waiting on a decision. A rule counts as met only when a test proves it.
+
+Proven: an automatic test checks it before every change goes out. For the print and e-book rules the test opens the real files Inkhorse exports and reads inside them.
 
 - F1.1, F1.3 and F1.4 Title, copyright and dedication pages are front matter: no chapter label, no paragraph indents, not counted as chapters. A book with its own typed title and copyright pages gets each one once in the EPUB, and neither is listed in the Contents.
 - F1.2 Covers: one 2:3 size, the whole cover always shown.
+- F1.5 The title page, copyright page, dedication and Contents each start on their own page, in that order, in the print PDF and the EPUB.
 - F1.6 A page named Copyright Page, Contents, Table of Contents or Contents at a Glance is a front page at any length, in a book brought in from a PDF. The test uses a made-up "For Dummies"-style PDF.
+- F2.1 Every chapter starts on a new page, on screen, in print and in the EPUB.
 - F2.2 The chapter title sits about a third of the way down its first page.
 - F2.3 The book's own label (PART 1, CHAPTER THREE) shows above the title in place of "Chapter N," on the page, in the EPUB and in the print PDF.
 - F2.4 The first paragraph of every chapter is not indented.
@@ -244,26 +248,36 @@ Meets the standard, and an automatic test checks it before every change goes out
 - F2.6 No page header on a chapter's first page.
 - F2.7 A chapter with no heading takes its name from the book's own contents list.
 - F2.8 A book's own chapter numbers win: the Introduction and other unnumbered pages get no number of Inkhorse's own.
+- F3.1 The body type is a serif book typeface; in print it is 11 point, and the typeface is built into the PDF file.
 - F3.2 and F3.3 A small first-line indent, 1 to 1.5 times the type size, with no blank lines and no empty paragraphs, on the page and in the EPUB.
 - F3.5 Justified text with hyphenation on every screen, phones included.
+- F3.6 Line spacing in print (1.4 times the type size) and in the EPUB (1.5), even from line to line.
 - F3.7 No widows or orphans on screen. The test checks every page break in the User manual.
+- F3.8 and F4.5 Blank lines and double spaces a writer types never reach the book: no empty paragraphs, and one space after a period, on the page and in the EPUB.
+- F3.9, F10.2 and F10.4 A PDF's printed lines are joined back into whole paragraphs, and a hyphen that only split a word at a line end is removed. The test uses a made-up PDF; a real PDF can still surprise, so read an imported book through once.
 - F3.10 Every text size from the smallest to the largest: no line stretched past the limit, no word past the margin, nothing cut off. The test reads every page of both standards and the first part of the User manual at four sizes.
+- F3.10 and F7.4 The formatting holds. The same book shows the same lines on the same pages after the text size is moved to both ends and back, after Justify and the typeface are changed and changed back, after the phone is turned sideways and back, and after Inkhorse is closed and opened again. A recorded layout of a fixed test book fails the test if any change moves a page break.
 - F4.1 to F4.4 Curly quotes and apostrophes, closed em dashes, en dashes in a range of years, and the one-mark ellipsis, on the page and in the EPUB. A phone number or a web address is never changed.
+- F5.1 A section heading is smaller than the chapter title and every section heading is set the same way, on screen, in print and in the EPUB.
 - F5.2 and F3.4 A scene break is a centered ornament, and the paragraph after it is not indented, on the page, in the EPUB and in the print PDF.
 - F5.3 and F5.4 Pictures are never stretched, are centered unless the writer places them at a side, and carry the caption underneath in smaller type. The test reads the User manual's pictures at three text sizes.
-- F6 One contents style for every book, whatever file it came from: one entry per line, a dotted line, Inkhorse's own page numbers, every entry a link on its words. F6.2 No contents line runs off the page.
+- F6.1 The Contents that Inkhorse makes for your book is titled "Contents," lists every chapter once in order, and in print gives the page each chapter really starts on.
+- F6.2 to F6.5, F6.7 and F6.8 One contents style for every book, whatever file it came from: one entry per line, a dotted line to Inkhorse's own page number at the right edge, chapter entries set apart from section entries, nothing else on the page, and no page numbers left over from the paper book. No contents line runs off the page.
 - F6.6 On a contents page, a tap on an entry's words opens it, and a tap at the edge, where the page number sits, turns the page.
 - F7.4 and F7.5 Whole-book page numbers on screen, never guessed: "Counting pages…" and a blank foot until the number is exact, then every turn adds one.
 - F7.2 and F9.5 In the print PDF, every chapter opens on a right-hand page, and a blank page carries no number and no header.
 - F7.3 In the print PDF, the left-hand header is the book title and the right-hand header is the title of the chapter the page belongs to.
+- F8.1 The EPUB carries no page numbers and no page headers in its text.
 - F8.2 and F8.3 The EPUB has a working contents list and a real Heading 1 on every chapter, and an e-book exported by Inkhorse passes EPUBCheck, the checker the bookstores use, with no errors and no warnings.
+- F8.4, F8.5 and F8.7 In the EPUB the cover is marked as the cover and is not inside a chapter, paragraphs are real paragraphs with no line breaks, tabs or space indents, and a picture is a real image that shrinks to fit the screen.
 - F9.1 The print PDF comes in 6 × 9, 5.5 × 8.5, 5 × 8 and 8.5 × 11 inches, and every page is exactly that size.
 - F9.2 and F9.3 The print PDF's inside margin is 0.875 inch, enough for a book of any length Amazon prints, and its outside margin is 0.625 inch, on every page.
 - F9.4 The print PDF holds no cover.
-- F10.1 A PDF that stores no spaces between its words comes in with every space put back.
+- F10.1 and F4.7 A PDF that stores no spaces between its words comes in with every space put back, and no words run together.
 - F10.3 Running heads from the printed pages are left out of an imported PDF's text.
 - F10.5 A run-on contents page is split into one entry per line.
 - F10.6 A label above a chapter title stays with its title.
+- F10.7 A PDF kept as pictures of its pages shows its first page as the cover and one picture for each page after it, with the type settings that cannot apply switched off.
 - F10.8 A drop capital printed apart from its word is joined back to it.
 - F10.9 A section is never mistaken for a chapter, and the Introduction's own sections stay inside it.
 
@@ -271,19 +285,25 @@ Meets the standard, checked by eye but not yet by an automatic test:
 
 - F10.1 for PDFs whose fonts store two bytes per letter, where the PDF reader itself used to drop the spaces: fixed and checked on a real book, but there is no made-up test PDF of that kind yet.
 
-Not yet:
+Yours to check:
+
+- F8.8 Check the finished e-book in Apple Books and in Kindle Previewer before selling it. Inkhorse cannot do this for you.
+
+Not done yet. Inkhorse does not meet these rules today:
 
 - F3.5 in print: the print PDF is justified but does not hyphenate, so a line can show wide gaps.
 - F3.7 in print: the print PDF does not yet stop a single line from sitting alone at the top or bottom of a page.
 - F2.5 in print: the Drop cap style prints, but the small-capitals first line does not.
 - F6.2 in print: a contents title too long for its line is shortened with an ellipsis, not wrapped.
-- F7.1 Roman numerals for the front matter in the print PDF. Front pages carry no number at all today.
+- F7.1 Roman numerals for the front matter in the print PDF. Front pages carry no number at all today, and chapter one does not start again at 1.
 - F8.6 Footnotes. Inkhorse has no footnotes yet.
+- F4.6 Italics. Inkhorse cannot set a word in italics yet, on the page or in any export. It never underlines.
+- F5.5 Lists, letters and quoted passages. Inkhorse has no way yet to set a passage off from the body text.
 
-Still to check against real books:
+Waiting on a decision:
 
-
-- F3.9, F10.2, F10.3 and F10.4 on long imported books, PDFs most of all. Every PDF is made differently, so a book brought in from a PDF should be read through once.
+- F3.6 on screen. The rule says line spacing of about 1.3 to 1.5 times the type size. Inkhorse's standard spacing on screen, called Normal in Aa, is 1.55. Either Normal becomes 1.5, which moves the lines on every page, or the rule says 1.55 for screens.
+- F6.1 in a book brought in from another file. A book that calls its own contents page "Table of Contents" keeps that heading. Either Inkhorse shows every contents page as "Contents," or the rule says an imported book keeps its own heading.
 
 # How we keep the standard
 
