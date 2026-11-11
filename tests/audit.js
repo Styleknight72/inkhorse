@@ -35,7 +35,8 @@ const path = require('path');
   const errs=[], res=[];
   page.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
   page.on('console', m => { if (m.type()==='error' && !/ERR_TUNNEL|ERR_|favicon|net::|Failed to load resource/.test(m.text())) errs.push('CONSOLE ' + m.text()); });
-  const step = async (name, fn) => { try { const v = await fn(); /* rev 163: a returned message that isn't SKIP is a failure (before, it counted as a pass, so a dozen checks could never fail) */ const bad = v === false || (typeof v === 'string' && !/^(SKIP|OK)/.test(v)); res.push([bad?'FAIL':(typeof v==='string'&&v.startsWith('SKIP')?'SKIP':'PASS'), name, bad?(v===false?'returned false':v.slice(0,300)):(v===undefined||v===true?'':JSON.stringify(v).slice(0,90))]); } catch (e) { res.push(['FAIL', name, e.message.slice(0,600)]); } };
+  const ONLY=process.env.AUDIT_ONLY?new RegExp(process.env.AUDIT_ONLY):null;   // rev 235: AUDIT_ONLY='F9|F7.3' runs just the steps whose names match (for working on one test; a push still needs the full run)
+  const step = async (name, fn) => { if(ONLY&&!ONLY.test(name)) return; try { const v = await fn(); /* rev 163: a returned message that isn't SKIP is a failure (before, it counted as a pass, so a dozen checks could never fail) */ const bad = v === false || (typeof v === 'string' && !/^(SKIP|OK)/.test(v)); res.push([bad?'FAIL':(typeof v==='string'&&v.startsWith('SKIP')?'SKIP':'PASS'), name, bad?(v===false?'returned false':v.slice(0,300)):(v===undefined||v===true?'':JSON.stringify(v).slice(0,90))]); } catch (e) { res.push(['FAIL', name, e.message.slice(0,600)]); } };
   const T = () => page.inputValue('#manuscript');
   const tools = async () => { if (await page.getAttribute('#toolsBtn','aria-expanded') !== 'true') await page.click('#toolsBtn',{timeout:3000}); await page.waitForTimeout(150); };
   await page.goto('file://' + file); await page.waitForTimeout(2500);
@@ -1059,6 +1060,155 @@ const path = require('path');
   await step('F6.2 F10.5 No contents line runs off the page in an imported PDF\'s contents pages (rev 232)', async () => {
     const r=await dummiesLike(); if(typeof r==='string') return r;
     if(r.over.length) throw new Error('contents lines run off the page: '+r.over.slice(0,3).join(' | '));
+  });
+  // rev 235: tests that open the real export files. One made-up book ("The Test Harbor") is built once in its own browser tab, exported as a print PDF
+  // in all four sizes and as an EPUB, and each rule below checks its own part. Needs jspdf (npm) and PDFJS_DIR; EPUBCheck runs when EPUBCHECK_JAR is set.
+  let labP=null;
+  const exportLab=()=>labP||(labP=(async()=>{
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=235))) return 'SKIP: before rev 235 the last page of a chapter carried the next chapter\'s name in its print header';
+    if(!PDFJS_DIR) return 'SKIP: set PDFJS_DIR to read inside the print PDF';
+    let JSPDF_FILE=null; try{ JSPDF_FILE=require.resolve('jspdf/dist/jspdf.umd.min.js'); }catch(_){ return 'SKIP: jspdf is not installed for the test (npm i jspdf@2.5.1)'; }
+    if(!JSZIP_FILE) return 'SKIP: jszip is not installed for the test';
+    const fs=require('fs'), P=require('path'); let pdfjs; { const w=console.warn, l=console.log; console.warn=console.log=()=>{}; try{ pdfjs=require(P.join(PDFJS_DIR,'..','legacy','build','pdf.js')); } finally { console.warn=w; console.log=l; } }
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max'],acceptDownloads:true});
+    await ctx.route(/jspdf[^/]*\.js$/, r=>r.fulfill({body:fs.readFileSync(JSPDF_FILE),contentType:'application/javascript'}));
+    await ctx.route(/jszip(\.min)?\.js$/, r=>r.fulfill({body:fs.readFileSync(JSZIP_FILE),contentType:'application/javascript'}));
+    const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const lab={title:'The Test Harbor',author:'Ada Tester',chapters:['Alpha Harbor','Beta Ridge','Gamma Field'],pdf:{}};
+      lab.ids=await pg.evaluate(L=>{ S.tips=false; const W='the harbor lights were steady that evening and nobody on the long pier spoke about the weather or the boats'.split(' ');
+        const para=k=>Array.from({length:60+(k%4)*12},(_,i)=>W[(i*5+k)%W.length]).join(' ')+'.';
+        BOOK.title=L.title; BOOK.author=L.author;
+        return L.chapters.map((t,c)=>addChapter(t,Array.from({length:44},(_,k)=>para(c*17+k)).join('\n'),BOOK.order.length)); },lab);
+      lab.order=await pg.evaluate(()=>BOOK.order.map(id=>CH.get(id).title));
+      /* on screen (F3.2, F3.3): the second page of a chapter, where every paragraph is an ordinary one */
+      lab.screen=await pg.evaluate(async id=>{ setTab('read'); await new Promise(r=>setTimeout(r,400)); const all=[]; for(let i=1;i<=6;i++){ goTo({ch:id,i}); drawView(); await new Promise(r=>setTimeout(r,60));
+        const pt=document.querySelector('#spread .face:not(.gone) .ptext'), ps=[...pt.querySelectorAll('p:not(.toc):not(.sb)')], k=pt.getBoundingClientRect().width/pt.offsetWidth;
+        ps.forEach((p,n)=>{ const cs=getComputedStyle(p), r=p.getBoundingClientRect(), s=p.querySelector('span[data-w]'); all.push({pg:i,n,cont:p.classList.contains('cont'),fs:parseFloat(cs.fontSize),lh:parseFloat(cs.lineHeight),ind:parseFloat(cs.textIndent),mt:parseFloat(cs.marginTop),mb:parseFloat(cs.marginBottom),top:r.top/k,bottom:r.bottom/k,first:s?(s.getBoundingClientRect().left-r.left)/k:0,empty:!p.textContent.trim()}); }); } return all; },lab.ids[0]);
+      for(const size of ['6x9','5.5x8.5','5x8','8.5x11']){
+        await pg.evaluate(v=>{ document.querySelector('#pdfSize').value=v; },size);
+        const [d]=await Promise.all([pg.waitForEvent('download',{timeout:90000}), pg.evaluate(()=>document.querySelector('#expPdf').click())]);
+        const doc=await pdfjs.getDocument({data:new Uint8Array(fs.readFileSync(await d.path())),disableFontFace:true}).promise, pages=[];
+        for(let n=1;n<=doc.numPages;n++){ const p=await doc.getPage(n), v=p.getViewport({scale:1}), tc=await p.getTextContent(), ops=await p.getOperatorList();
+          pages.push({n,w:v.width,h:v.height,imgs:ops.fnArray.filter(f=>f===pdfjs.OPS.paintImageXObject||f===pdfjs.OPS.paintJpegXObject||f===pdfjs.OPS.paintInlineImageXObject).length,
+            it:tc.items.filter(i=>i.str.trim()).map(i=>({s:i.str,x:i.transform[4],r:i.transform[4]+i.width,y:i.transform[5],h:i.height}))}); }
+        /* which chapter each page belongs to: a chapter opens with its title set large; a page with no words ends the run */
+        let cur=null; for(const p of pages){ const t=p.it.find(i=>i.h>=15 && lab.chapters.includes(i.s.trim())); if(t){ cur=t.s.trim(); p.opener=cur; } else if(!p.it.length) cur=null; p.ch=cur;
+          const sq=a=>a.map(i=>i.s).join('').replace(/\s+/g,''); p.head=sq(p.it.filter(i=>i.y>p.h-0.8*72+2)); p.foot=sq(p.it.filter(i=>i.y<0.8*72-2)); p.body=p.it.filter(i=>i.y<=p.h-0.8*72+2 && i.y>=0.8*72-2); }
+        lab.pdf[size]=pages; }
+      const [e]=await Promise.all([pg.waitForEvent('download',{timeout:30000}), pg.evaluate(()=>document.querySelector('#expEpub').click())]);
+      lab.epubPath=P.join(require('os').tmpdir(),'inkhorse-audit-'+process.pid+'.epub'); fs.copyFileSync(await e.path(),lab.epubPath);
+      const z=await require('jszip').loadAsync(fs.readFileSync(lab.epubPath)); lab.epub={}; for(const f of Object.keys(z.files)) if(/\.(xhtml|opf|ncx|css)$/.test(f)) lab.epub[f]=await z.file(f).async('string');
+      if(errs.length) throw new Error('page error: '+errs[0]);
+      return lab;
+    } finally { await ctx.close(); }
+  })());
+  const IN=72, SIZES={'6x9':[6,9],'5.5x8.5':[5.5,8.5],'5x8':[5,8],'8.5x11':[8.5,11]};
+  await step('F3.2 F3.3 Paragraphs on the page: a small first-line indent (1 to 1.5 times the type size), no blank line between paragraphs, and no empty paragraphs; the e-book says the same (rev 235)', async () => {
+    const L=await exportLab(); if(typeof L==='string') return L;
+    const ps=L.screen; if(ps.filter(p=>!p.cont).length<3) throw new Error('only '+ps.filter(p=>!p.cont).length+' new paragraphs on the test pages');
+    if(ps.some(p=>p.empty)) throw new Error('an empty paragraph is on the page');
+    for(let k=0;k<ps.length;k++){ const p=ps[k];
+      if(p.mt!==0||p.mb!==0) throw new Error('a paragraph has space above or below it ('+p.mt+', '+p.mb+' px) as well as an indent');
+      if(!p.cont){ const r=p.first/p.fs; if(!(r>=1&&r<=1.5)) throw new Error('the first-line indent is '+r.toFixed(2)+' times the type size; it should be 1 to 1.5'); }
+      if(k&&p.pg===ps[k-1].pg&&Math.abs(p.top-ps[k-1].bottom)>1.5) throw new Error('there is a gap of '+(p.top-ps[k-1].bottom).toFixed(1)+' px between two paragraphs'); }
+    const css=Object.entries(L.epub).filter(([f])=>/\.css$/.test(f)).map(([,s])=>s).join('\n'), m=/(?:^|[\s,}])p\s*\{([^}]*)\}/.exec(css);
+    if(!m) throw new Error('the e-book has no paragraph style'); const ti=/text-indent:\s*([\d.]+)em/.exec(m[1]), mg=/margin:\s*0(?:[;\s}]|$)/.test(m[1]);
+    if(!ti||+ti[1]<1||+ti[1]>1.5) throw new Error('the e-book paragraph indent is '+(ti?ti[1]+'em':'missing')+'; it should be 1 to 1.5 em'); if(!mg) throw new Error('the e-book puts space between paragraphs as well as an indent: '+m[1]);
+  });
+  await step('F9.1 Print PDF: every page is exactly the size chosen, in all four sizes (6 × 9, 5.5 × 8.5, 5 × 8, 8.5 × 11 in) (rev 235)', async () => {
+    const L=await exportLab(); if(typeof L==='string') return L;
+    for(const [size,[wi,hi]] of Object.entries(SIZES)){ const pages=L.pdf[size]; if(!pages||pages.length<8) throw new Error(size+': only '+(pages?pages.length:0)+' pages');
+      const bad=pages.find(p=>Math.abs(p.w-wi*IN)>0.01||Math.abs(p.h-hi*IN)>0.01); if(bad) throw new Error(size+': page '+bad.n+' is '+(bad.w/IN).toFixed(3)+' × '+(bad.h/IN).toFixed(3)+' in'); }
+  });
+  await step('F9.2 F9.3 Print PDF: the inside margin is 0.875 in and the outside margin 0.625 in on every page, in all four sizes, and justified lines reach both margins (rev 235)', async () => {
+    const L=await exportLab(); if(typeof L==='string') return L;
+    for(const size of Object.keys(SIZES)){ let full=0;
+      for(const p of L.pdf[size]){ if(!p.body.length) continue; const odd=p.n%2===1, lm=(odd?0.875:0.625)*IN, rm=p.w-(odd?0.625:0.875)*IN, x=Math.min(...p.body.map(i=>i.x)), r=Math.max(...p.body.map(i=>i.r));
+        if(x<lm-0.6) throw new Error(size+' page '+p.n+': text starts '+(x/IN).toFixed(3)+' in from the left edge; the margin is '+(lm/IN).toFixed(3));
+        if(r>rm+0.6) throw new Error(size+' page '+p.n+': text ends '+((p.w-r)/IN).toFixed(3)+' in from the right edge; the margin is '+((p.w-rm)/IN).toFixed(3));
+        if(p.ch&&!p.opener&&p.body.length>40){ full++; if(x>lm+0.6||r<rm-1.5) throw new Error(size+' page '+p.n+': a full page of text does not reach both margins ('+(x/IN).toFixed(3)+' in and '+((p.w-r)/IN).toFixed(3)+' in)'); } }
+      if(!full) throw new Error(size+': no full page of text was found to measure'); }
+  });
+  await step('F9.4 F1.3 Print PDF: no cover and no picture in the file; page 1 is the title page, with no page number and no header (rev 235)', async () => {
+    const L=await exportLab(); if(typeof L==='string') return L;
+    for(const size of Object.keys(SIZES)){ const pages=L.pdf[size], im=pages.find(p=>p.imgs); if(im) throw new Error(size+': page '+im.n+' holds a picture, in a book that has none');
+      const p1=pages[0], t=p1.it.map(i=>i.s).join(' '); if(!t.includes(L.title)||!t.includes(L.author)) throw new Error(size+': page 1 is not the title page: '+t.slice(0,80));
+      if(p1.head||p1.foot) throw new Error(size+': the title page carries a header or a page number ('+(p1.head||p1.foot)+')'); }
+  });
+  await step('F7.2 F9.5 F2.6 Print PDF: every chapter opens on a right-hand page with no header; a blank page carries no number and no header (rev 235)', async () => {
+    const L=await exportLab(); if(typeof L==='string') return L;
+    for(const size of Object.keys(SIZES)){ const pages=L.pdf[size], op=pages.filter(p=>p.opener);
+      if(op.map(p=>p.opener).join('|')!==L.chapters.join('|')) throw new Error(size+': chapter openings found: '+op.map(p=>p.opener).join(', '));
+      for(const p of op){ if(p.n%2===0) throw new Error(size+': "'+p.opener+'" opens on page '+p.n+', a left-hand page'); if(p.head) throw new Error(size+': the first page of "'+p.opener+'" has a header ('+p.head+')');
+        if(p.foot!==String(p.n)) throw new Error(size+': the first page of "'+p.opener+'" shows page number "'+p.foot+'", not '+p.n); }
+      const blanks=pages.filter(p=>!p.body.length); if(!blanks.length) throw new Error(size+': the test book made no blank page to check');
+      const b=blanks.find(p=>p.head||p.foot); if(b) throw new Error(size+': blank page '+b.n+' carries "'+(b.head||b.foot)+'"'); }
+  });
+  await step('F7.3 Print PDF: the left-hand header is the book title and the right-hand header is the title of the chapter that page belongs to, on every page of every chapter (rev 235)', async () => {
+    const L=await exportLab(); if(typeof L==='string') return L; const sq=s=>s.toUpperCase().replace(/\s+/g,'');
+    for(const size of Object.keys(SIZES)){ let left=0, right=0;
+      for(const p of L.pdf[size]){ if(!p.ch||p.opener) continue; const want=sq(p.n%2===0?L.title:p.ch);
+        if(p.head!==want) throw new Error(size+' page '+p.n+' (in "'+p.ch+'", a '+(p.n%2===0?'left':'right')+'-hand page): the header reads "'+p.head+'", not "'+want+'"');
+        if(p.foot!==String(p.n)) throw new Error(size+' page '+p.n+': the page number reads "'+p.foot+'"'); p.n%2===0?left++:right++; }
+      if(!left||!right) throw new Error(size+': the test book has no '+(left?'right':'left')+'-hand page with a header to check'); }
+  });
+  await step('F8.2 F8.3 EPUB: the contents list links to every chapter, each link opens a real file, and every chapter starts with a real heading that carries its title (rev 235)', async () => {
+    const L=await exportLab(); if(typeof L==='string') return L;
+    const nav=L.epub['OEBPS/nav.xhtml']; if(!nav) throw new Error('the e-book has no contents file (nav.xhtml)');
+    const links=[...nav.replace(/<head>[\s\S]*?<\/head>/,'').matchAll(/<a\s[^>]*href="([^"#]+)(?:#[^"]*)?"[^>]*>([\s\S]*?)<\/a>/g)].map(m=>({href:m[1],text:m[2].replace(/<[^>]+>/g,'').trim()}));
+    for(const t of L.chapters){ const a=links.find(l=>l.text.includes(t)); if(!a) throw new Error('the contents list has no entry for "'+t+'": '+links.map(l=>l.text).join(', '));
+      const file=L.epub['OEBPS/'+a.href]; if(!file) throw new Error('the contents entry for "'+t+'" points at '+a.href+', which is not in the e-book');
+      const h=/<h1[^>]*>([\s\S]*?)<\/h1>/.exec(file.replace(/<head>[\s\S]*?<\/head>/,'')); if(!h||!h[1].replace(/<[^>]+>/g,' ').includes(t)) throw new Error('"'+t+'" does not start with a Heading 1 that carries its title: '+(h?h[1]:'no h1').slice(0,80)); }
+    const opf=L.epub['OEBPS/content.opf']||''; if(!/properties="[^"]*\bnav\b/.test(opf)) throw new Error('the e-book does not tell readers which file is the contents list');
+  });
+  await step('F8 EPUBCheck: the e-book Inkhorse exports passes the bookstores\' own checker with no errors and no warnings (rev 235)', async () => {
+    const L=await exportLab(); if(typeof L==='string') return L;
+    const jar=process.env.EPUBCHECK_JAR||''; if(!jar||!require('fs').existsSync(jar)) return 'SKIP: set EPUBCHECK_JAR to the epubcheck.jar file to run the bookstores\' checker';
+    const r=require('child_process').spawnSync('java',['-jar',jar,L.epubPath],{encoding:'utf8',timeout:120000}), out=((r.stdout||'')+(r.stderr||'')).split('\n').filter(l=>/^(ERROR|WARNING|FATAL)/.test(l));
+    if(r.error) return 'SKIP: java could not be started ('+r.error.message+')';
+    if(r.status!==0||out.length) throw new Error('EPUBCheck: '+(out.slice(0,3).join(' | ')||('exit code '+r.status)));
+  });
+  await step('F5.3 F5.4 Pictures: never stretched or squashed, centered unless the writer placed them at a side, inside the page, with the caption directly underneath in smaller type (rev 235)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=235))) return 'SKIP: before rev 235';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      for(const fs_ of [14,18,26]){ const r=await pg.evaluate(async fs_=>{ S.tips=false; S.fs=fs_; applyType(); relayout(); await openLibBook('manual',true); setTab('read'); await new Promise(r=>setTimeout(r,300));
+          const out={figs:0,bad:[]}, T=x=>RB.ch.get(x).title;
+          outer: for(const id of rOrder().filter(x=>!isCover(x))){ const n=pag(id).pages.length; for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); const figs=[...document.querySelectorAll('#spread .face:not(.gone) .ptext .fig')]; if(!figs.length) continue;
+              await Promise.all(figs.map(f=>{ const im=f.querySelector('img'); return im&&!im.complete?new Promise(r=>{ im.onload=im.onerror=r; setTimeout(r,1500); }):0; }));
+              for(const f of figs){ const pt=f.closest('.ptext'), B=pt.getBoundingClientRect(), k=B.width/pt.offsetWidth, im=f.querySelector('img'), cap=f.querySelector('figcaption'), where=T(id)+' p'+(i+1); if(!im||!im.naturalWidth) continue; out.figs++;
+                const R=im.getBoundingClientRect(), fit=getComputedStyle(im).objectFit, nat=im.naturalWidth/im.naturalHeight, shown=R.width/R.height;
+                if(fit!=='contain'&&Math.abs(shown/nat-1)>0.03) out.bad.push(where+': a picture '+im.naturalWidth+'×'+im.naturalHeight+' is shown '+Math.round(R.width/k)+'×'+Math.round(R.height/k)+' ('+(fit==='cover'?'part of it is cut off':'stretched')+')');
+                if(R.left<B.left-1||R.right>B.right+1||R.top<B.top-1||R.bottom>B.bottom+1) out.bad.push(where+': a picture reaches outside the text area');
+                const side=/\b(al-left|al-right|wrap-left|wrap-right)\b/.test(f.className), fr=f.getBoundingClientRect(); if(!side&&Math.abs((fr.left+fr.right)/2-(B.left+B.right)/2)>2*k) out.bad.push(where+': a picture is '+Math.round(Math.abs((fr.left+fr.right)/2-(B.left+B.right)/2)/k)+' px off centre');
+                if(cap&&cap.textContent.trim()){ const C=cap.getBoundingClientRect(); if(C.top<R.bottom-2*k) out.bad.push(where+': the caption is not under its picture'); if(C.bottom>B.bottom+1) out.bad.push(where+': the caption is cut off at the bottom of the page');
+                  if(!(parseFloat(getComputedStyle(cap).fontSize)<parseFloat(getComputedStyle(pt).fontSize))) out.bad.push(where+': the caption is not smaller than the body text'); } }
+              if(out.figs>=14) break outer; } }
+          return out; },fs_);
+        if(r.figs<6) throw new Error('at text size '+fs_+' only '+r.figs+' pictures were found in the manual');
+        if(r.bad.length) throw new Error('at text size '+fs_+': '+r.bad.slice(0,3).join(' | ')+(r.bad.length>3?' (and '+(r.bad.length-3)+' more)':'')); }
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx.close(); }
+  });
+  await step('F10.1 A PDF that stores no spaces between its words comes in with every space put back, and no words run together (rev 235)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=232))) return 'SKIP: before rev 232';
+    if(!PDFJS_DIR) return 'SKIP: set PDFJS_DIR to test PDF import';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']});
+    await ctx.route(/pdf\.js\/3\.11\.174\/pdf\.min\.js/, r=>r.fulfill({path:require('path').join(PDFJS_DIR,'pdf.min.js'),contentType:'application/javascript'}));
+    await ctx.route(/pdf\.js\/3\.11\.174\/pdf\.worker\.min\.js/, r=>r.fulfill({path:require('path').join(PDFJS_DIR,'pdf.worker.min.js'),contentType:'application/javascript'}));
+    const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      await pg.evaluate(()=>{ S.tips=false; setTab('read'); document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(500);
+      await pg.setInputFiles('#libIn',require('path').join(__dirname,'fixtures','no-spaces.pdf')); await pg.waitForTimeout(800); await pg.click('#libAsk [data-way="text"]');
+      await pg.waitForFunction(()=>/Added|couldn|Could/.test(document.querySelector('#libNote').textContent),null,{timeout:60000});
+      const tx=await pg.evaluate(async()=>{ const b=LIB.find(b=>/no-spaces/.test(b.title)); if(!b) return null; await openLibBook(b.id,true); return rOrder().filter(x=>!isCover(x)).map(x=>RB.ch.get(x).title+'\n'+RB.ch.get(x).text).join('\n'); });
+      if(tx==null) throw new Error('the test PDF was not added: '+await pg.textContent('#libNote'));
+      for(const s of ['The quick brown fox walked along the harbor wall before the morning boats came in from the bay.','A patient writer counts every page, checks every line, and leaves nothing for the reader to trip over.']) if(!tx.replace(/\s+/g,' ').includes(s)) throw new Error('a sentence did not come in whole with its spaces: '+tx.replace(/\s+/g,' ').slice(0,160));
+      const run=tx.match(/[A-Za-z]{17,}/); if(run) throw new Error('words run together: '+run[0]);
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx.close(); }
   });
   await step('StyleKnight signs are whole: nothing touches the picture edges, and the lettering is not cut where it meets the horse (rev 222)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=222))) return 'SKIP: before rev 222 the lettering was cut';
