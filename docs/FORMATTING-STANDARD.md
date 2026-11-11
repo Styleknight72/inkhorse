@@ -132,7 +132,7 @@ F5.5 Lists, letters and quoted passages are set off from the body text by indent
 
 ## F6 · Contents
 
-F6.1 The contents page is titled "Contents."
+F6.1 The contents page Inkhorse makes for your own book is titled "Contents." A book brought in from another file keeps its own heading, such as "Table of Contents," because Inkhorse never changes the words of someone else's book.
 
 F6.2 One entry per line. A long title wraps onto a second line under itself; it never runs into the next entry.
 
@@ -303,7 +303,6 @@ Not done yet. Inkhorse does not meet these rules today:
 Waiting on a decision:
 
 - F3.6 on screen. The rule says line spacing of about 1.3 to 1.5 times the type size. Inkhorse's standard spacing on screen, called Normal in Aa, is 1.55. Either Normal becomes 1.5, which moves the lines on every page, or the rule says 1.55 for screens.
-- F6.1 in a book brought in from another file. A book that calls its own contents page "Table of Contents" keeps that heading. Either Inkhorse shows every contents page as "Contents," or the rule says an imported book keeps its own heading.
 
 # How we keep the standard
 

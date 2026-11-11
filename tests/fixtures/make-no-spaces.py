@@ -10,6 +10,9 @@ PARAS=['The quick brown fox walked along the harbor wall before the morning boat
  'A patient writer counts every page, checks every line, and leaves nothing for the reader to trip over.',
  'When the last boat was tied up, the keeper closed the gate and walked home under the yellow lamps.',
  'The lighthouse keeper remem-|bered every storm that had ever crossed the bay in winter.']
+# page 2 has its own sentences, so a test can tell whether the words of page 1 really came in (until rev 236 page 1 of every PDF was dropped)
+PARAS2=['On the second page the ferry was late and the market had already closed for the day.',
+ 'The harbor master wrote the tide down in a green book that nobody else was allowed to read.']
 c=canvas.Canvas(out,pagesize=(W,H)); font,sz='Times-Roman',11
 for pageno in range(2):
     y=H-90; c.setFont('Times-Bold',16)
@@ -18,7 +21,7 @@ for pageno in range(2):
         for wd in 'Harbor Notes'.split(): c.drawString(x,y,wd); x+=c.stringWidth(wd,'Times-Bold',16)+5
         y-=40
     c.setFont(font,sz)
-    for p in (PARAS if pageno==0 else PARAS[::-1]):
+    for p in (PARAS if pageno==0 else PARAS2):
         x=72+18
         for wd in p.split():
             # "remem-|bered": the printed line ends after "remem-" (a hyphen that only splits the word at the line end, rule F10.4)

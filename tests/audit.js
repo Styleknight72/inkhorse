@@ -1410,6 +1410,43 @@ const path = require('path');
       for(const t of Object.keys(want.pages)){ const a=want.pages[t], b=got.pages[t]||[]; if(a.length!==b.length) throw new Error('"'+t+'" went from '+a.length+' pages to '+b.length+'. Pages have moved. If that is meant, say so in the Release Notes and re-record with LOCK_UPDATE=1.'); const k=a.findIndex((x,i)=>x!==b[i]); if(k>=0) throw new Error('"'+t+'" page '+(k+1)+' no longer starts or breaks its lines where it did ('+a[k]+' → '+b[k]+'). Pages have moved. If that is meant, say so in the Release Notes and re-record with LOCK_UPDATE=1.'); }
     } finally { await ctx.close(); }
   });
+  await step('F10.1 F4.7 The first page of a PDF keeps its words: a PDF that opens with a page of text comes in with that page first, then the next, and nothing missing (rev 237)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=237))) return 'SKIP: before rev 237 the words of every PDF\'s first page were dropped';
+    const tx=await noSpacesText(); if(/^SKIP/.test(tx)) return tx; const flat=tx.replace(/\s+/g,' ');
+    const a=flat.indexOf('Harbor Notes'), b=flat.indexOf('The quick brown fox walked along the harbor wall'), c=flat.indexOf('On the second page the ferry was late'), d=flat.indexOf('The harbor master wrote the tide down in a green book');
+    if(a<0||b<0) throw new Error('the words of the first page are missing: '+flat.slice(0,120)); if(c<0||d<0) throw new Error('the words of the second page are missing');
+    if(!(a<b&&b<c&&c<d)) throw new Error('the pages came in out of order');
+  });
+  await step('F5.2 F4.7 F10.6 An e-book made by another publisher comes in whole: every sentence, its chapter labels and titles, its title and copyright pages, its cover and pictures; a scene break drawn as a rule is kept; lines of verse stay separate lines; a footnote mark is set apart from the word; and its pages obey the standard (rev 237)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=237))) return 'SKIP: before rev 237';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); if(JSZIP_FILE) await ctx.route(/jszip(\.min)?\.js$/, r=>r.fulfill({body:require('fs').readFileSync(JSZIP_FILE),contentType:'application/javascript'}));
+    const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{ await pg.goto(page.url()); await pg.waitForTimeout(2500); if(!(await pg.evaluate(()=>typeof JSZip!=='undefined'))) return 'SKIP: zip library not reachable from this test machine';
+      await pg.evaluate(()=>{ S.tips=false; setTab('read'); document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(400);
+      await pg.setInputFiles('#libIn',require('path').join(__dirname,'fixtures','import','foreign.epub'));
+      await pg.waitForFunction(()=>/Added|couldn|Could/.test(document.querySelector('#libNote').textContent),null,{timeout:60000});
+      const r=await pg.evaluate(async()=>{ const bk=LIB.filter(x=>!['manual','standard','publishing'].includes(x.id)).pop(); if(!bk) return null; await openLibBook(bk.id,true); S.fs=18; S.just=true; applyType(); relayout(); setTab('read'); await new Promise(r=>setTimeout(r,400));
+        const ids=rOrder().filter(x=>!isCover(x)), T=id=>RB.ch.get(id).title, all=ids.map(id=>RB.ch.get(id).text).join('\n'), out={titles:ids.map(T),front:ids.filter(isFront).length,cover:!!RB.coverFront,author:RB.author,book:RB.title,text:all,cut:[],past:[],left:[],sb:0,figs:0,ck:[]};
+        for(const id of ids){ const n=pag(id).pages.length; for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); const pt=document.querySelector('#spread .face:not(.gone) .ptext'); if(!pt) continue; const B=pt.getBoundingClientRect(), w=T(id).slice(0,20)+' p'+(i+1);
+            if(!pt.querySelector('img,figure')&&pt.scrollHeight>pt.clientHeight+1) out.cut.push(w); pt.querySelectorAll('span[data-w]').forEach(s=>{ for(const q of s.getClientRects()) if(q.right>B.right+1) out.past.push(w); });
+            const tx=pt.textContent; const m=tx.match(/%%\w*|\[\[|__IMG|<\/?[a-z]+[ >]|&(?:amp|nbsp|#\d+);| {2,}/); if(m) out.left.push(w+': '+m[0]); out.sb+=pt.querySelectorAll('p.sb').length; out.figs+=pt.querySelectorAll('.fig').length; if(i===0){ const ck=pt.querySelector('.ck'); if(ck) out.ck.push(ck.textContent); } } }
+        return out; });
+      if(!r) throw new Error('the e-book was not added: '+await pg.textContent('#libNote'));
+      const flat=r.text.replace(/\s+/g,' '), lines=r.text.split('\n').map(l=>l.trim());
+      for(const s of ['The copper kettle sang on the stove while Marta counted the tide tables.','Nobody had told the ferryman that the bridge was already open.','By morning the tide had left nothing but a single green bottle on the sand.','Keep the lamp trimmed and the door unlatched.','The harbor, drawn from memory','A made-up title.']) if(!flat.includes(s)) throw new Error('words went missing: "'+s+'"');
+      if(r.book!=='Harbor Stories'||r.author!=='Ada Tester') throw new Error('the book came in as "'+r.book+'" by "'+r.author+'"');
+      if(['CHAPTER ONE · The Copper Kettle','CHAPTER TWO · A Long Way Round','CHAPTER THREE · What the Tide Left'].some(t=>!r.titles.includes(t))) throw new Error('chapter labels and titles came in as '+r.titles.join(' | '));
+      if(r.ck.join('|')!=='CHAPTER ONE|CHAPTER TWO|CHAPTER THREE') throw new Error('the labels above the chapter titles read '+r.ck.join(' | '));
+      if(r.front!==2||!r.cover) throw new Error('front pages found: '+r.front+'; cover: '+r.cover);
+      if(r.sb!==3) throw new Error('the book has 3 scene breaks drawn as a rule; '+r.sb+' reached the page');
+      for(const l of ['The gulls came in low,','the nets came in full,','and the lamp stayed lit.']) if(!lines.includes(l)) throw new Error('lines of verse were run together: '+(lines.find(x=>/gulls came in low/.test(x))||''));
+      if(/out\.1/.test(flat)||!/never lent it out\. \[1\]/.test(flat)) throw new Error('a footnote mark is stuck to the word before it: '+(/.{0,20}lent it out.{0,8}/.exec(flat)||[''])[0]);
+      for(const l of ['bread and salt','lamp oil','two coils of rope']) if(!lines.includes(l)) throw new Error('a list item did not come in on its own line: '+l);
+      if(r.figs!==3) throw new Error('the book has a picture in each of 3 chapters; '+r.figs+' are shown');
+      if(r.cut.length) throw new Error('text is cut off at the bottom of '+r.cut[0]); if(r.past.length) throw new Error('a word runs past the margin on '+r.past[0]); if(r.left.length) throw new Error('leftover markup on the page: '+r.left[0]);
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx.close(); }
+  });
   await step('The scorecard is honest: every rule in the Formatting Standard is on its scorecard, and every rule listed there as proven is named by a test in this file (rev 236)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=236))) return 'SKIP: before rev 236';
     const fs=require('fs'), P=require('path'), md=fs.readFileSync(P.join(__dirname,'..','docs','FORMATTING-STANDARD.md'),'utf8'), me=fs.readFileSync(__filename,'utf8');
@@ -1605,12 +1642,16 @@ const path = require('path');
     await page.click('#libAsk [data-way="text"]');
     await page.waitForFunction(()=>/^Added|couldn/.test(document.querySelector('#libNote').textContent),null,{timeout:60000});
     const r=await page.evaluate(async()=>{ const m=LIB[0]; const out={pageMode:m.pageMode,titles:m.chapters.map(c=>c.title)}; await openLibBook(m.id,true);
-      out.front=RB.ch.get(RB.order[0]).text.split('\n'); out.isFront=isFront(RB.order[0]); out.label=RB.order.slice(1).map(id=>fmtSplitTitle(RB.ch.get(id).title).label); out.paras=RB.order.slice(1).map(id=>RB.ch.get(id).text.split('\n').length); out.nums=RB.order.some(id=>/^\s*\d{1,3}\s*$/m.test(RB.ch.get(id).text));
+      /* rev 237: the title page ("A Test Book") keeps its words and is the first front page; the Contents is the next one. Before rev 237 the title page's words were dropped. */
+      const ci=RB.order.findIndex(id=>RB.ch.get(id).text.split('\n')[1]==='Contents'), co=RB.order[Math.max(0,ci)]; out.ci=ci; out.first=RB.ch.get(RB.order[0]).text.split('\n'); out.firstFront=isFront(RB.order[0]);
+      out.front=RB.ch.get(co).text.split('\n'); out.isFront=isFront(co); out.label=RB.order.slice(ci+1).map(id=>fmtSplitTitle(RB.ch.get(id).title).label); out.paras=RB.order.slice(ci+1).map(id=>RB.ch.get(id).text.split('\n').length); out.nums=RB.order.some(id=>/^\s*\d{1,3}\s*$/m.test(RB.ch.get(id).text));
       leaveLibraryBook(); return out; });
     await page.evaluate(async()=>{ const id=LIB[0].id; LIB=LIB.slice(1); saveLibIndex(); try{ await idb.del('lib:'+id); }catch(_){ } renderShelf(); });
     await page.click('#libDone').catch(()=>{}); await page.waitForTimeout(300);
     const ok=!r.pageMode && JSON.stringify(r.titles.slice(-3))===JSON.stringify(titles) && r.front.length===5 && r.front[0]==='%%front' && r.front[1]==='Contents' && r.isFront && JSON.stringify(r.label)==='["Chapter One","Chapter Two","Chapter Three"]' && r.paras.every(n=>n===12) && !r.nums;
-    if(!ok) throw new Error(JSON.stringify(r).slice(0,400)); return true;
+    if(!ok) throw new Error(JSON.stringify(r).slice(0,400));
+    if((await page.evaluate(()=>(window.INK_VERSION||{}).rev>=237)) && !(r.ci===1 && r.firstFront && JSON.stringify(r.first)==='["%%front","A Test Book"]')) throw new Error('the title page did not come in as its own front page with its words: '+JSON.stringify({ci:r.ci,first:r.first,firstFront:r.firstFront}));
+    return true;
   });
   await step('F2.3 a title written "Chapter One: Point of Origin" shows its own label above the title (rev 100)', async () => page.evaluate(() => {
     const t=[['Chapter One: Point of Origin','Chapter One','Point of Origin'],['Chapter Seven: The Road Back — Florida, 1991','Chapter Seven','The Road Back — Florida, 1991'],['PART 1 · The Bridge','PART 1','The Bridge'],['Part Two - Home','Part Two','Home'],['Memory','','Memory']];
