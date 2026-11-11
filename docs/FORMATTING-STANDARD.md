@@ -50,6 +50,8 @@ F1.4 The copyright page sits on the back of the title page in print, set smaller
 
 F1.5 Each front-matter page starts on a new page.
 
+F1.6 A page named Copyright, Copyright Page, Contents, Table of Contents or Contents at a Glance is a front page, however long it is. A long copyright page or a long contents page is never counted as a chapter, and it never takes a chapter number.
+
 # Part 2 · Chapter openings
 
 ## F2 · How a chapter begins
@@ -67,6 +69,8 @@ F2.5 The first paragraph may open with a drop cap, a large first letter, or with
 F2.6 No page header on a chapter's first page. The page number may appear at the bottom.
 
 F2.7 Chapter titles are all set the same way in a book: the same font, size, spacing and capitalization.
+
+F2.8 When a book numbers its own chapters ("Chapter 1," "Chapter 2"), Inkhorse uses the book's numbers. A page the book leaves unnumbered, such as an Introduction, a Part page or an Index, gets no number of Inkhorse's own, so the book never shows two different numbers for the same chapter.
 
 # Part 3 · Body text
 
@@ -136,7 +140,7 @@ F6.4 Chapter entries and section entries look different: sections sit indented u
 
 F6.5 The page numbers are the book's own numbers on the screen it is being read on. Page numbers printed in a paper book belong to the paper book and are left off.
 
-F6.6 Every entry is a link. Tapping a title or its number opens that page.
+F6.6 Every entry is a link. Tapping the words of an entry opens that page. The page number at the right-hand end is not a link, because it sits where a thumb taps to turn the page.
 
 F6.7 Nothing else on the contents page: no repeated page headers, no leftover print page numbers, no running text.
 
@@ -153,6 +157,8 @@ F7.2 Blank pages and chapter-opening pages show no page header.
 F7.3 In print, the left-hand page header shows the book title or the author's name, and the right-hand header shows the chapter title or the book title. Small capitals or italics, smaller than the body text. A book picks one pairing and keeps it on every page.
 
 F7.4 On screen, Inkhorse shows its own page numbers for the whole book, counted on the screen being used, with "page X of Y."
+
+F7.5 A page number is never a guess. While Inkhorse is still counting a long book, it says "Counting pages…" and leaves the foot of the page blank. When the exact number is known, it appears and stays, and every page turn adds exactly one.
 
 # Part 8 · E-books
 
@@ -216,6 +222,10 @@ F10.6 Chapters are found from the book's own headings or bookmarks, so every cha
 
 F10.7 A PDF that is kept as pictures of its pages shows each page exactly as printed. Its text cannot be reformatted. For the full Inkhorse standard, add the book as an EPUB or Word file instead.
 
+F10.8 A drop capital that a PDF prints apart from its word ("I" above "n the world of 3D…") is joined back to its word, so the chapter reads "In the world of 3D…"
+
+F10.9 A section is never mistaken for a chapter. A section heading that starts with the same words as its chapter's title, or an Introduction's own sections (About This Book, Where to Go from Here), stays a section: it sits inside its chapter and is not given a chapter opening.
+
 # Part 11 · Where Inkhorse stands today
 
 ## F11 · Scorecard, November 10, 2026
@@ -224,20 +234,26 @@ Meets the standard, and an automatic test checks it before every change goes out
 
 - F1.1, F1.3 and F1.4 Title, copyright and dedication pages are front matter: no chapter label, no paragraph indents, not counted as chapters. A book with its own typed title and copyright pages gets each one once in the EPUB, and neither is listed in the Contents.
 - F1.2 Covers: one 2:3 size, the whole cover always shown.
+- F1.6 A page named Copyright Page, Contents, Table of Contents or Contents at a Glance is a front page at any length, in a book brought in from a PDF. The test uses a made-up "For Dummies"-style PDF.
 - F2.2 The chapter title sits about a third of the way down its first page.
 - F2.3 The book's own label (PART 1, CHAPTER THREE) shows above the title in place of "Chapter N," on the page, in the EPUB and in the print PDF.
 - F2.4 The first paragraph of every chapter is not indented.
 - F2.5 Every chapter opens the same way. A book chooses one of four opening styles: Classic, Ornament, Big number or Drop cap.
 - F2.6 No page header on a chapter's first page.
 - F2.7 A chapter with no heading takes its name from the book's own contents list.
+- F2.8 A book's own chapter numbers win: the Introduction and other unnumbered pages get no number of Inkhorse's own.
 - F3.5 Justified text with hyphenation on every screen, phones included.
 - F3.7 No widows or orphans on screen. The test checks every page break in the User manual.
 - F4.1 to F4.4 Curly quotes and apostrophes, closed em dashes, en dashes in a range of years, and the one-mark ellipsis, on the page and in the EPUB. A phone number or a web address is never changed.
 - F5.2 and F3.4 A scene break is a centered ornament, and the paragraph after it is not indented, on the page, in the EPUB and in the print PDF.
-- F6 One contents style for every book, whatever file it came from: one entry per line, a dotted line, Inkhorse's own page numbers, every entry a link.
-- F7.4 Whole-book page numbers on screen.
+- F6 One contents style for every book, whatever file it came from: one entry per line, a dotted line, Inkhorse's own page numbers, every entry a link on its words. F6.2 No contents line runs off the page.
+- F6.6 On a contents page, a tap on an entry's words opens it, and a tap at the edge, where the page number sits, turns the page.
+- F7.4 and F7.5 Whole-book page numbers on screen, never guessed: "Counting pages…" and a blank foot until the number is exact, then every turn adds one.
+- F10.3 Running heads from the printed pages are left out of an imported PDF's text.
 - F10.5 A run-on contents page is split into one entry per line.
 - F10.6 A label above a chapter title stays with its title.
+- F10.8 A drop capital printed apart from its word is joined back to it.
+- F10.9 A section is never mistaken for a chapter, and the Introduction's own sections stay inside it.
 
 Meets the standard, checked by eye but not yet by an automatic test:
 
@@ -250,7 +266,6 @@ Meets the standard, checked by eye but not yet by an automatic test:
 - F9.2 and F9.3 The print PDF uses an inside margin of 0.875 inch, enough for a book of any length Amazon prints, and an outside margin of 0.625 inch.
 - F9.4 The print PDF holds no cover.
 - F10.1 Spaces are put back in PDF text that has none, including PDFs whose fonts store two bytes per letter, where the PDF reader itself used to drop them.
-- F10.2 A PDF's running heads (the chapter or part name and page number printed at the top of each page) are left out of the text, and a drop capital printed apart from its word is joined back to it.
 
 Not yet:
 
