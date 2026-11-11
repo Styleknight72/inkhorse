@@ -2107,6 +2107,62 @@ const path = require('path');
     const gone=await page.evaluate(async bid=>!LIB.some(x=>x.id===bid) && !(await idb.get('lib:'+bid)),bid);
     await page.click('#libDone').catch(()=>{}); return gone || (()=>{ throw new Error('book still there'); })();
   });
+  await step('User manual: the Word manuscript is in standard submission format, and a title page that came in from a file is the only title page (rev 240)', async () => {
+    let JSPDF_FILE=null; try{ JSPDF_FILE=require.resolve('jspdf/dist/jspdf.umd.min.js'); }catch(_){ return 'SKIP: jspdf is not installed for the test (npm i jspdf@2.5.1)'; }
+    if(!JSZIP_FILE) return 'SKIP: jszip is not installed for the test';
+    const fs=require('fs'), JSZip=require('jszip');
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max'],acceptDownloads:true});
+    await ctx.route(/jspdf[^/]*\.js$/, r=>r.fulfill({body:fs.readFileSync(JSPDF_FILE),contentType:'application/javascript'}));
+    await ctx.route(/jszip(\.min)?\.js$/, r=>r.fulfill({body:fs.readFileSync(JSZIP_FILE),contentType:'application/javascript'}));
+    const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const kind=await pg.evaluate(()=>{ S.tips=false; BOOK.order.slice().forEach(id=>{ CH.delete(id); deleted.add(id); }); BOOK.order=[]; BOOK.sample=false;
+        BOOK.title='The Harbor Book'; BOOK.author='Ada Tester'; const W='the harbor lights were steady that evening and nobody on the long pier spoke'.split(' ');
+        const para=k=>Array.from({length:90},(_,i)=>W[(i*5+k)%W.length]).join(' ')+'.';
+        /* the shape a text or Word file comes in as (rev 238): an untitled front page that opens with the book title */
+        for(const [t,x] of [['','%%front\nThe Harbor Book\nby Ada Tester'],['','%%front\nCopyright © 2024 Ada Tester\nAll rights reserved.'],['',para(1)],['Second Wind',para(2)]]){ const id=addChapter(t,x); dirty.add(id); }
+        const f=FM(); f.subtitle=''; f.dedication=''; S.cur=BOOK.order[0]; touchIndex(); PCACHE.clear(); loadEditor(); renderChapterUI(); renderDrawer();
+        return [frontKind(BOOK.order[0]), chListName(BOOK.order[0])]; });
+      if(kind[0]!=='title'||kind[1]!=='Title page') throw new Error('the imported title page is not known as the title page: '+kind.join(' / '));
+      const dl=async sel=>{ const [d]=await Promise.all([pg.waitForEvent('download',{timeout:90000}), pg.evaluate(s=>document.querySelector(s).click(),sel)]); return fs.readFileSync(await d.path()); };
+      const z=await JSZip.loadAsync(await dl('#expDocx')), doc=await z.file('word/document.xml').async('string'), hf=z.file('word/header1.xml'), hdr=hf?await hf.async('string'):'';
+      const lines=doc.replace(/<\/w:p>/g,'\n').replace(/<[^>]+>/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
+      if(!/Tester \/ THE HARBOR BOOK \//.test(hdr)||!/ PAGE /.test(hdr)) throw new Error('no running header "Surname / TITLE / page number": '+hdr.replace(/<[^>]+>/g,'').slice(0,80));
+      if(!/<w:headerReference w:type="default" r:id="rId2"\/>/.test(doc)||!/<w:titlePg\/>/.test(doc)) throw new Error('the header is not on every page after the title page');
+      if(!lines.some(l=>/^About [\d,]+ words$/.test(l))) throw new Error('no word count on the title page');
+      if(lines.filter(l=>l==='The Harbor Book').length!==1) throw new Error('the title appears '+lines.filter(l=>l==='The Harbor Book').length+' times in the Word file');
+      const heads=[...doc.matchAll(/<w:pStyle w:val="Heading1"\/><\/w:pPr><w:r><w:t[^>]*>([^<]*)</g)].map(m=>m[1]);
+      if(JSON.stringify(heads)!==JSON.stringify(['Chapter 1','Second Wind'])) throw new Error('chapter headings in the Word file: '+JSON.stringify(heads)+' (front pages must not be chapters; the first chapter is Chapter 1)');
+      const ep=await JSZip.loadAsync(await dl('#expEpub')); let tp=0; for(const f of Object.keys(ep.files).filter(f=>/\.xhtml$/.test(f)&&!/nav/.test(f))){ const t=(await ep.file(f).async('string')).replace(/<head>[\s\S]*?<\/head>/,'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(); if(/^The Harbor Book( by Ada Tester)?$/.test(t)) tp++; }
+      if(tp!==1) throw new Error('the EPUB has '+tp+' title pages');
+      if(errs.length) throw new Error('page error: '+errs[0]);
+      return true;
+    } finally { await ctx.close(); }
+  });
+  await step('User manual: Spelling shows only inside Claude, lists each mistake with its fix, and changes nothing until you tap (rev 240)', async () => {
+    const ctx0=await browser.newContext({...devices['iPhone 14 Pro Max']}); const p0=await ctx0.newPage(); await p0.goto(page.url()); await p0.waitForTimeout(2000);
+    const hid=await p0.evaluate(()=>document.querySelector('#spellBtn').hidden); await ctx0.close(); if(!hid) throw new Error('the Spelling button shows outside Claude');
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']});
+    /* a stand-in for Claude: the check's answer is fixed, so this tests what Inkhorse does with it (Claude itself is not reachable from the test machine) */
+    await ctx.addInitScript(()=>{ window.__asked=[]; const sample={json:async p=>{ window.__asked.push(p); return [{word:'recieve',fix:'receive'},{word:'teh',fix:'the'},{word:'Ellery',fix:'Ellary'}]; }};
+      let own=null; Object.defineProperty(window,'claude',{configurable:true,get(){ return {use:async k=>k==='sample'?sample:(own?own.use(k):null)}; },set(v){ own=v; }}); });   /* Inkhorse's own picture keeper still answers for everything but the check */
+    const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(2200);
+      const r=await pg.evaluate(async()=>{ S.tips=false; BOOK.order.slice().forEach(id=>{ CH.delete(id); deleted.add(id); }); BOOK.order=[]; const id=addChapter('One','I will recieve teh letter. Then I recieve another.'); S.cur=id; touchIndex(); loadEditor();
+        const ta=document.querySelector('#manuscript'), v0=ta.value, shown=!document.querySelector('#spellBtn').hidden; document.querySelector('#spellBtn').click(); await new Promise(r=>setTimeout(r,500));
+        const rows=[...document.querySelectorAll('#assistBody .fix')].map(e=>e.textContent.replace(/\s+/g,' ')), same=ta.value===v0; const fx=document.querySelector('#assistBody [data-fix="0"]'); if(!fx) return {shown,rows,same};
+        fx.click(); await new Promise(r=>setTimeout(r,200)); const v1=ta.value; document.querySelector('#assistBody [data-skip="0"]').click(); await new Promise(r=>setTimeout(r,200));
+        return {shown,rows,same,v1,v2:ta.value,told:/names of people/.test(window.__asked[0]||'')}; });
+      if(!r.shown) throw new Error('no Spelling button inside Claude');
+      if(r.rows.length!==2||!/recieve.*receive.*2×/.test(r.rows[0])||!r.same) throw new Error('the list is wrong or words changed before a tap: '+JSON.stringify(r));
+      if(r.v1!=='I will receive teh letter. Then I receive another.'||r.v2!==r.v1) throw new Error('Fix/Skip did the wrong thing: '+r.v2);
+      if(!r.told) throw new Error('the check is not told to leave names alone');
+      if(errs.length) throw new Error('page error: '+errs[0]);
+      return true;
+    } finally { await ctx.close(); }
+  });
   await step('Compare tab measures pages', async () => { await page.click('#tab-compare'); await page.waitForTimeout(1500); return /words/.test(await page.textContent('#headline')); });
   await step('Chapters panel lists export and backup', async () => { await page.click('#tab-write'); await page.click('#chBtn'); await page.waitForTimeout(300); const t=await page.evaluate(()=>document.body.innerText); return ['EPUB','Print PDF','Word manuscript','Save backup file','Restore from file'].every(w=>t.includes(w)); });
   await step('P9.1 Save backup file downloads a file', async () => { const [d]=await Promise.all([page.waitForEvent('download',{timeout:6000}), page.click('#fbkSave')]); const fn=await d.suggestedFilename(), r202=await page.evaluate(()=>(window.INK_VERSION||{}).rev>=202);

@@ -1,0 +1,16 @@
+const {chromium,say,mk,book,para,toastText,vis,toolsOpen}=require('./common.js');
+(async()=>{ const b=await chromium.launch();
+ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One',para(1,50)]]);
+ await pg.evaluate(()=>setTools(true)); await pg.click('#focusBtn'); await pg.waitForTimeout(3000);
+ await pg.evaluate(()=>{ document.querySelector('#manuscript').focus(); }); await pg.keyboard.type(' more words',{delay:5}); await pg.waitForTimeout(400);
+ const during=await pg.evaluate(()=>{ const h=document.querySelector('#focusHud'); return {show:h.classList.contains('show'),op:getComputedStyle(h).opacity}; });
+ await pg.waitForTimeout(2000);
+ const r=await pg.evaluate(()=>{ const h=document.querySelector('#focusHud'), d=document.querySelector('#focusExit'), hr=h.getBoundingClientRect(), dr=d.getBoundingClientRect(); return {show:h.classList.contains('show'),op:getComputedStyle(h).opacity,vis:getComputedStyle(h).visibility,top:Math.round(hr.top),text:h.textContent.trim().slice(0,60),done:{w:dr.width,top:Math.round(dr.top),disp:getComputedStyle(d).display,text:d.textContent.trim()}}; });
+ await pg.click('#focusExit'); await pg.waitForTimeout(300); const back=await pg.evaluate(()=>!focusOn&&!document.body.classList.contains('focusw')&&!!document.querySelector('nav.tabs').getBoundingClientRect().width);
+ say(r.show&&r.vis==='visible'&&r.top<140&&/\d/.test(r.text)?'OK':'FAULT','BP-47b','in Focus the word count appears at the top when you pause: '+JSON.stringify({during,...r}));
+ say(r.done.w>0&&r.done.text==='Done'&&back?'OK':'FAULT','BP-47c','Done comes back: '+JSON.stringify(r.done)+' back '+back);
+ const rw=await pg.evaluate(async()=>{ const txt=Array.from({length:12},(_,k)=>'Paragraph number '+k+' '+'word '.repeat(70)).join('\n'); BOOK.order.slice().forEach(id=>{ CH.delete(id); }); BOOK.order=[]; const id=addChapter('One',txt); S.cur=id; S.rch=id; loadEditor(); renderChapterUI(); setTab('read'); await new Promise(r=>setTimeout(r,400));
+   const out=[]; for(const i of [2,3,5]){ goTo({ch:id,i}); drawView(); refreshReader(); const pt=document.querySelector('#spread .face:not(.gone) .ptext'); const TX=e=>e.textContent.replace(/[\u00ad\u2060]/g,''); const firstP=[...pt.querySelectorAll('p')][0]; const firstNum=firstP?(/number (\d+)/.exec(TX(firstP))||[])[1]:null; const firstNew=[...pt.querySelectorAll('p')].find(p=>/Paragraph number \d+/.test(p.textContent)); const want=firstNew?(/Paragraph number (\d+)/.exec(firstNew.textContent)||[])[1]:null; const firstAny=(/Paragraph number (\d+)/.exec(pt.textContent)||[])[1];
+     document.querySelector('#tab-write').click(); await new Promise(r=>setTimeout(r,500)); const ta=document.querySelector('#manuscript'), line=ta.value.slice(0,ta.selectionStart).split('\n').length-1; out.push({firstParagraphOnPage:firstNum,page:i+1,pageStartsInParagraph:(pt.querySelector('p')||{}).className||'',firstNumberedOnPage:want,cursorParagraph:line}); setTab('read'); await new Promise(r=>setTimeout(r,200)); } return out; });
+ console.log(JSON.stringify(rw));
+ await b.close(); })();
