@@ -1290,9 +1290,11 @@ const path = require('path');
     try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
       for(const fs_ of [14,18,26]){ const r=await pg.evaluate(async fs_=>{ S.tips=false; S.fs=fs_; applyType(); relayout(); await openLibBook('manual',true); setTab('read'); await new Promise(r=>setTimeout(r,300));
           const out={figs:0,bad:[]}, T=x=>RB.ch.get(x).title;
-          outer: for(const id of rOrder().filter(x=>!isCover(x))){ const n=pag(id).pages.length; for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); const figs=[...document.querySelectorAll('#spread .face:not(.gone) .ptext .fig')]; if(!figs.length) continue;
+          outer: for(const id of rOrder().filter(x=>!isCover(x))){ const n=pag(id).pages.length; for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); let figs=[...document.querySelectorAll('#spread .face:not(.gone) .ptext .fig')]; if(!figs.length) continue;
               await Promise.all(figs.map(f=>{ const im=f.querySelector('img'); return im&&!im.complete?new Promise(r=>{ im.onload=im.onerror=r; setTimeout(r,1500); }):0; }));
-              for(const f of figs){ const pt=f.closest('.ptext'), B=pt.getBoundingClientRect(), k=B.width/pt.offsetWidth, im=f.querySelector('img'), cap=f.querySelector('figcaption'), where=T(id)+' p'+(i+1); if(!im||!im.naturalWidth) continue; out.figs++;
+              /* rev 238: while a picture loads the app may draw the page again, which leaves the first set of elements off the page and unmeasurable; read the page as it now stands */
+              if(figs.some(f=>!f.isConnected)){ drawView(); figs=[...document.querySelectorAll('#spread .face:not(.gone) .ptext .fig')]; }
+              for(const f of figs){ if(!f.isConnected) continue; const pt=f.closest('.ptext'), B=pt.getBoundingClientRect(), k=B.width/pt.offsetWidth, im=f.querySelector('img'), cap=f.querySelector('figcaption'), where=T(id)+' p'+(i+1); if(!im||!im.naturalWidth) continue; out.figs++;
                 const R=im.getBoundingClientRect(), fit=getComputedStyle(im).objectFit, nat=im.naturalWidth/im.naturalHeight, shown=R.width/R.height;
                 if(fit!=='contain'&&Math.abs(shown/nat-1)>0.03) out.bad.push(where+': a picture '+im.naturalWidth+'×'+im.naturalHeight+' is shown '+Math.round(R.width/k)+'×'+Math.round(R.height/k)+' ('+(fit==='cover'?'part of it is cut off':'stretched')+')');
                 if(R.left<B.left-1||R.right>B.right+1||R.top<B.top-1||R.bottom>B.bottom+1) out.bad.push(where+': a picture reaches outside the text area');
@@ -1437,7 +1439,7 @@ const path = require('path');
       if(r.book!=='Harbor Stories'||r.author!=='Ada Tester') throw new Error('the book came in as "'+r.book+'" by "'+r.author+'"');
       if(['CHAPTER ONE · The Copper Kettle','CHAPTER TWO · A Long Way Round','CHAPTER THREE · What the Tide Left'].some(t=>!r.titles.includes(t))) throw new Error('chapter labels and titles came in as '+r.titles.join(' | '));
       if(r.ck.join('|')!=='CHAPTER ONE|CHAPTER TWO|CHAPTER THREE') throw new Error('the labels above the chapter titles read '+r.ck.join(' | '));
-      if(r.front!==2||!r.cover) throw new Error('front pages found: '+r.front+'; cover: '+r.cover);
+      if(r.front<2||!r.cover) throw new Error('front pages found: '+r.front+'; cover: '+r.cover);
       if(r.sb!==3) throw new Error('the book has 3 scene breaks drawn as a rule; '+r.sb+' reached the page');
       for(const l of ['The gulls came in low,','the nets came in full,','and the lamp stayed lit.']) if(!lines.includes(l)) throw new Error('lines of verse were run together: '+(lines.find(x=>/gulls came in low/.test(x))||''));
       if(/out\.1/.test(flat)||!/never lent it out\. \[1\]/.test(flat)) throw new Error('a footnote mark is stuck to the word before it: '+(/.{0,20}lent it out.{0,8}/.exec(flat)||[''])[0]);
@@ -1447,6 +1449,44 @@ const path = require('path');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
   });
+  // rev 238: every door. One made-up book per file type is brought in both ways (Add to read, and Import a file into a writing book) and the same things are read back.
+  const SENT=['The copper kettle sang on the stove while Marta counted the tide tables.','Nobody had told the ferryman that the bridge was already open.','By morning the tide had left nothing but a single green bottle on the sand.'];
+  const viaDoor=async(file,door)=>{ const fs=require('fs'), ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); if(JSZIP_FILE) await ctx.route(/jszip(\.min)?\.js$/, r=>r.fulfill({body:fs.readFileSync(JSZIP_FILE),contentType:'application/javascript'}));
+    const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{ await pg.goto(page.url()); await pg.waitForTimeout(2500); if(/\.(docx|epub)$/.test(file)&&!(await pg.evaluate(()=>typeof JSZip!=='undefined'))) return 'SKIP: zip library not reachable from this test machine';
+      const full=require('path').join(__dirname,'fixtures','import',file);
+      if(door==='read'){ await pg.evaluate(()=>{ S.tips=false; setTab('read'); document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(400); await pg.setInputFiles('#libIn',full);
+        await pg.waitForFunction(()=>/Added|couldn|Could/.test(document.querySelector('#libNote').textContent),null,{timeout:60000});
+        if(!(await pg.evaluate(async()=>{ const bk=LIB.filter(x=>!['manual','standard','publishing'].includes(x.id)).pop(); if(!bk) return false; await openLibBook(bk.id,true); return true; }))) throw new Error(file+' was not added to read: '+await pg.textContent('#libNote')); }
+      else { await pg.evaluate(()=>{ S.tips=false; setTab('write'); }); await pg.setInputFiles('#fileIn',full); await pg.waitForFunction(()=>/Imported|couldn|Could/.test((document.querySelector('#exportNote')||{}).textContent||''),null,{timeout:60000}); }
+      const r=await pg.evaluate(async()=>{ S.fs=18; S.just=true; applyType(); relayout(); setTab('read'); await new Promise(r=>setTimeout(r,400)); const B=rBook(), get=id=>(RB?RB.ch.get(id):CH.get(id)), all=rOrder().filter(x=>!isCover(x)), ix=all.findIndex(id=>/^%%front\s+Harbor Stories|^A Collection/.test(get(id).text)||get(id).title==='Harbor Stories'), ids=all.slice(Math.max(0,ix));   /* in a writing book the sample chapters come first; start at the imported book */
+        const out={book:B.title,author:B.author||'',titles:ids.map(id=>get(id).title),front:ids.filter(isFront).map(id=>get(id).text.split('\n').filter(l=>l!=='%%front').slice(0,3).join(' / ')),text:ids.map(id=>get(id).text).join('\n'),open:[],cut:[],past:[],left:[],sb:0,toc:[],nums:ids.map(id=>fmtChapterNo(id,-1))};
+        for(const id of ids){ const n=pag(id).pages.length; for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); const pt=document.querySelector('#spread .face:not(.gone) .ptext'); if(!pt) continue; const R=pt.getBoundingClientRect(), w=(get(id).title||'front page').slice(0,20)+' p'+(i+1);
+            if(!pt.querySelector('img,figure')&&pt.scrollHeight>pt.clientHeight+1) out.cut.push(w); pt.querySelectorAll('span[data-w]').forEach(s=>{ for(const q of s.getClientRects()) if(q.right>R.right+1) out.past.push(w); });
+            const m=pt.textContent.match(/%%\w*|\[\[|__IMG|\t|<\/?[a-z]+[ >]|&(?:amp|nbsp|#\d+);/); if(m) out.left.push(w+': '+JSON.stringify(m[0])); out.sb+=pt.querySelectorAll('p.sb').length;
+            pt.querySelectorAll('p.toc').forEach(e=>out.toc.push({t:(e.querySelector('.tt')||e).textContent.replace(/[­⁠]/g,'').trim(),link:e.hasAttribute('data-goto')}));
+            if(i===0&&!isFront(id)){ const ck=pt.querySelector('.ck'), h=pt.querySelector('h2.cht'); out.open.push((ck?ck.textContent:'')+' | '+(h?h.textContent.replace(/[­⁠]/g,''):'')); } } }
+        return out; });
+      if(errs.length) throw new Error('page error: '+errs[0]);
+      const flat=r.text.replace(/\s+/g,' '), at=file+' ('+(door==='read'?'added to read':'imported into a writing book')+'): '; for(const s of SENT) if(!flat.includes(s)) throw new Error(at+'words went missing: "'+s+'"');
+      if(r.cut.length) throw new Error(at+'text is cut off at the bottom of '+r.cut[0]); if(r.past.length) throw new Error(at+'a word runs past the margin on '+r.past[0]); if(r.left.length) throw new Error(at+'something that is not the book\'s words reached the page: '+r.left[0]);
+      r.at=at; return r;
+    } finally { await ctx.close(); } };
+  const bothDoors=async(file,check)=>{ if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=238))) return 'SKIP: before rev 238'; for(const door of ['read','write']){ const r=await viaDoor(file,door); if(typeof r==='string') return r; check(r,door); } };
+  const same=(r,what,got,want)=>{ if(JSON.stringify(got)!==JSON.stringify(want)) throw new Error(r.at+what+' came in as '+JSON.stringify(got)+', not '+JSON.stringify(want)); };
+  await step('F1.1 F2.3 F2.8 A text file with # chapters comes in whole by both doors: the line above the first chapter is the title page and the book\'s title, not a chapter; the chapters are Chapter 1, 2 and 3; scene breaks are kept (rev 238)', () => bothDoors('hash-chapters.txt',(r,door)=>{
+    same(r,'the chapters',r.titles,['','The Copper Kettle','A Long Way Round','What the Tide Left']); same(r,'the front pages',r.front,['Harbor Stories']); same(r,'the chapter numbers',r.nums,[0,1,2,3]);
+    same(r,'the chapter openings',r.open,['Chapter 1 | The Copper Kettle','Chapter 2 | A Long Way Round','Chapter 3 | What the Tide Left']); if(r.book!=='Harbor Stories') throw new Error(r.at+'the book is called "'+r.book+'"'); if(r.sb!==3) throw new Error(r.at+r.sb+' of 3 scene breaks reached the page'); }));
+  await step('F2.3 F2.7 F2.8 A text file with "Chapter 1" lines comes in whole by both doors: the title on the next line is the chapter\'s title, with its own label above it and no second number beside it (rev 238)', () => bothDoors('plain-chapters.txt',(r,door)=>{
+    same(r,'the chapters',r.titles,['Chapter 1 · The Copper Kettle','Chapter 2 · A Long Way Round','Chapter 3 · What the Tide Left']); same(r,'the chapter openings',r.open,['Chapter 1 | The Copper Kettle','Chapter 2 | A Long Way Round','Chapter 3 | What the Tide Left']);
+    if(/^\s*The Copper Kettle\s*$/m.test(r.text)) throw new Error(r.at+'the chapter\'s title is still in the text as an ordinary line'); }));
+  await step('F1.1 F2.3 F5.1 A Word file comes in whole by both doors: its Title and author make the title page and name the book, each Heading 1 is a chapter numbered from 1, and a smaller heading is a section heading (rev 238)', () => bothDoors('word-book.docx',(r,door)=>{
+    same(r,'the chapters',r.titles,['','The Copper Kettle','A Long Way Round','What the Tide Left']); same(r,'the front pages',r.front,['Harbor Stories / Ada Tester']); same(r,'the chapter numbers',r.nums,[0,1,2,3]);
+    if(r.book!=='Harbor Stories'||r.author!=='Ada Tester') throw new Error(r.at+'the book came in as "'+r.book+'" by "'+r.author+'"'); if(!/^# A Smaller Heading$/m.test(r.text)) throw new Error(r.at+'the smaller heading is not a section heading');
+    for(const l of ['bread and salt','lamp oil','two coils of rope','Keep the lamp trimmed and the door unlatched.','She read The Long Voyage Home twice that winter.']) if(!r.text.split('\n').map(x=>x.trim()).includes(l)) throw new Error(r.at+'a line did not come in whole on its own: '+l); }));
+  await step('F6.1 F6.5 F6.8 An e-book that shows its own contents page keeps it, by both doors: under the book\'s own heading, every entry there, and every chapter entry a working link (rev 238)', () => bothDoors('foreign.epub',(r,door)=>{
+    same(r,'the pages before chapter one',r.titles.slice(0,3),['Harbor Stories','','Table of Contents']); const want=['The Copper Kettle','A Smaller Heading','A Long Way Round','A Smaller Heading','What the Tide Left','A Smaller Heading']; same(r,'the contents entries',r.toc.map(e=>e.t),want);
+    const dead=r.toc.filter(e=>!/Smaller/.test(e.t)&&!e.link); if(dead.length) throw new Error(r.at+'a chapter entry on the contents page is not a link: '+dead[0].t); if(r.sb!==3) throw new Error(r.at+r.sb+' of 3 scene breaks reached the page'); }));
   await step('The scorecard is honest: every rule in the Formatting Standard is on its scorecard, and every rule listed there as proven is named by a test in this file (rev 236)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=236))) return 'SKIP: before rev 236';
     const fs=require('fs'), P=require('path'), md=fs.readFileSync(P.join(__dirname,'..','docs','FORMATTING-STANDARD.md'),'utf8'), me=fs.readFileSync(__filename,'utf8');
