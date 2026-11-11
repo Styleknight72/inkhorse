@@ -2,7 +2,14 @@
 
 Read CLAUDE.md first, then this top section. Everything under "Older notes" is history kept for reference.
 
-## Where we left off (November 10, 2026, ~11:30 pm)
+## Where we left off (November 11, 2026, ~12:20 am)
+
+- **DEADLINE (Steve, Nov 11, 12:20 am: "You have 2 months"): Inkhorse ready by JANUARY 11, 2027.** "Ready" = a book tool people would pay for, trusted the way Vellum is: any book in, a good book out, automatically, every rule proven. The plan given to him, in order, each step on the preview with tests, nothing new outside it:
+  1. **By about Nov 25: Release 1.2 (stable).** Remaining door faults (title/author lines mistaken for chapters in text and Word files; "Chapter 1" + title on the next line; the e-book's own contents page); italics kept from every imported book and available when writing; the User manual proven section by section (a test per claim); Publishing Standard P1.3 and P2.1 tests; Steve's pass on iPhone and iPad; a few quiet days; he calls it stable; record in RELEASES.md and freeze `release-1.2`.
+  2. **By about Dec 16:** lists and quoted passages (F5.5), footnotes as links (F8.6), the two-byte-font PDF test.
+  3. **By about Jan 4:** print PDF matches the screen: hyphenation (reuse `hyWord`), no lone lines, small-capitals first line, contents titles wrap, Roman numerals on front pages (F7.1).
+  4. **Jan 4 to 11:** freeze, full check, Steve's final pass, release.
+  Tell him plainly at each step where we are against these dates, and say early if a step is slipping.
 
 - **STEVE'S STANDING RULES (Nov 10, said several times, firmly): STABILIZE. No new features and no new formatting rules until every existing rule is proven. A rule goes in a standard only with a passing test in the same change. All three built-in books (User manual, Formatting Standard, Publishing Standard) must do what they say. Formatting must hold while reading and writing, days later, and at every text size. Do not end messages by pushing the next thing to build. When an update will move where his pages break, tell him plainly before it goes live.**
 - **Preview = rev 237 (with 236), preview only, waiting for Steve's "approved"; live = artifact = rev 235.** Next rev number is 238.
