@@ -15,6 +15,7 @@ Steve is not a coder. He tests on his iPhone 15 Pro Max and decides what goes li
 - **Stabilize before adding.** Nothing gets built that the standards don't already require, and nothing new starts while something existing is unproven. Target: ready by January 11, 2027 (plan in `NEXT-SESSION.md`). If the date and the standard ever collide, ask Steve; never lower the standard quietly.
 - **Formatting holds** while reading and writing, days later, after an update, and at every text size. An update that moves where a reader's pages break is said to Steve plainly before it goes live.
 - **The writer's words are never lost:** not on closing, not in two tabs, not on delete (Undo and a backup first), not when the device is full (say "NOT saved").
+- **Look at the finished pages before Steve does.** A test that the right instructions are in a file is not enough. Before asking Steve to check any export (PDF, EPUB, Word), turn it into real pages here (LibreOffice `soffice --headless --convert-to pdf`, then look at the page images) and check them as a reader would: title, header, indents, headings at page bottoms. His phone check confirms the work; it must not be where the faults are found. (Nov 11, 2026: three Word faults reached him that a look would have caught.)
 - **No hooks.** Don't end messages pushing the next thing to build or nudging Steve to stay. Say what's done, what isn't, and what's true. He will see the project through.
 
 ## The rules that never bend
