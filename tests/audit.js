@@ -2131,6 +2131,7 @@ const path = require('path');
       if(!/Tester \/ THE HARBOR BOOK \//.test(hdr)||!/ PAGE /.test(hdr)) throw new Error('no running header "Surname / TITLE / page number": '+hdr.replace(/<[^>]+>/g,'').slice(0,80));
       if(!/<w:headerReference w:type="default" r:id="rId2"\/>/.test(doc)||!/<w:titlePg\/>/.test(doc)) throw new Error('the header is not on every page after the title page');
       if(!lines.some(l=>/^About [\d,]+ words$/.test(l))) throw new Error('no word count on the title page');
+      { const st=await z.file('word/styles.xml').async('string'); if(!/styleId="Heading2">[^]*?<w:keepNext\/>[^]*?<\/w:style>/.test(st.slice(st.indexOf('styleId="Heading2"')-30,st.indexOf('styleId="Heading2"')+400))) throw new Error('a section heading in the Word file can be left alone at the bottom of a page'); }
       if(!/<w:pStyle w:val="FirstPara"\/><\/w:pPr><w:r><w:t[^>]*>All rights reserved\./.test(doc)) throw new Error('a copyright-page line is indented like a paragraph');
       if(lines.filter(l=>l==='The Harbor Book').length!==1) throw new Error('the title appears '+lines.filter(l=>l==='The Harbor Book').length+' times in the Word file');
       const heads=[...doc.matchAll(/<w:pStyle w:val="Heading1"\/><\/w:pPr><w:r><w:t[^>]*>([^<]*)</g)].map(m=>m[1]);
