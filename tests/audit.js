@@ -1470,6 +1470,56 @@ const path = require('path');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
   });
+  await step('F4.6 Italics: *words* and _words_ show in italics on the page and stay italic in the e-book, the print PDF and the Word manuscript; italics in e-books and Word files brought in are kept; punctuation outside the marks stays upright; a lone *, snake_case and \* stay as typed; no built-in book changes (rev 243)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=243))) return 'SKIP: before rev 243';
+    if(!PDFJS_DIR) return 'SKIP: set PDFJS_DIR'; let JSPDF_FILE=null; try{ JSPDF_FILE=require.resolve('jspdf/dist/jspdf.umd.min.js'); }catch(_){ return 'SKIP: jspdf is not installed for the test'; }
+    if(!JSZIP_FILE) return 'SKIP: jszip is not installed for the test';
+    const fs=require('fs'), P=require('path'), JSZip=require('jszip'); let pdfjs; { const w=console.warn, l=console.log; console.warn=console.log=()=>{}; try{ pdfjs=require(P.join(PDFJS_DIR,'..','legacy','build','pdf.js')); } finally { console.warn=w; console.log=l; } }
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max'],acceptDownloads:true});
+    await ctx.route(/jspdf[^/]*\.js$/, r=>r.fulfill({body:fs.readFileSync(JSPDF_FILE),contentType:'application/javascript'}));
+    await ctx.route(/jszip(\.min)?\.js$/, r=>r.fulfill({body:fs.readFileSync(JSZIP_FILE),contentType:'application/javascript'}));
+    const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const TXT='She said *never* again, and "*Look,*" he said. (*aside*) and [*note*].\nShe read *The Long Voyage Home* twice, then _once more_.\nIt was 5 * 3 = 15, snake_case stays, an *unclosed mark stays, and \\*stars\\* stay plain.';
+      const r=await pg.evaluate(async T=>{ S.tips=false; BOOK.order.slice().forEach(id=>{ CH.delete(id); deleted.add(id); }); BOOK.order=[]; BOOK.sample=false; BOOK.title='Italic Test'; BOOK.author='Ada Tester';
+        const id=addChapter('One',T); dirty.add(id); S.cur=id; touchIndex(); PCACHE.clear(); loadEditor(); setTab('read'); relayout(); goTo({ch:id,i:0}); drawView();
+        const pt=document.querySelector('#spread .face:not(.gone) .ptext'), its=[...pt.querySelectorAll('i')].map(e=>e.textContent.replace(/[­⁠]/g,'')), txt=pt.textContent.replace(/[­⁠]/g,'');
+        const same=(()=>{ const a=pag(id).pages.length; M.innerHTML=''; return a; })();
+        /* the built-in books: not one word of theirs turns italic */
+        let built=0; for(const B of [MANUAL,STANDARD,PUBLISHING]) for(const c of B.chapters) for(const l of String(c.text||'').split('\n')) if(emph(l.trim().split(/\s+/).filter(Boolean)).some(w=>w.i)) built++;
+        /* what an importer does with the book's own * and _ and with italics inside a word */
+        const imp=[emIn(emEsc('5 * 3 and a_b')+' Ulysses, and unbelievable'), emIn(' spaced word')];
+        return {its,txt,built,imp}; },TXT);
+      if(JSON.stringify(r.its)!==JSON.stringify(['never','Look,','aside','note','The','Long','Voyage','Home','once','more'])) throw new Error('italic words on the page: '+JSON.stringify(r.its));
+      for(const s of ['“Look,” he said.','(aside) and [note].','5 * 3 = 15','snake_case','*unclosed','*stars*']) if(!r.txt.includes(s)) throw new Error('the page does not read "'+s+'": '+r.txt.slice(0,200));
+      if(/\*never|never\*|_once/.test(r.txt)) throw new Error('italic marks show on the page');
+      if(r.built) throw new Error(r.built+' lines of the built-in books would turn italic');
+      if(r.imp[0]!=='5 \\* 3 and a\\_b *Ulysses*, and unbelievable') throw new Error('an importer turns "5 * 3 and a_b <i>Ulysses</i>, un<i>believ</i>able" into: '+r.imp[0]);
+      if(r.imp[1]!==' *spaced* word') throw new Error('spaces inside imported italics: '+JSON.stringify(r.imp[1]));
+      const dl=async sel=>{ const [d]=await Promise.all([pg.waitForEvent('download',{timeout:90000}), pg.evaluate(s=>document.querySelector(s).click(),sel)]); return fs.readFileSync(await d.path()); };
+      { const z=await JSZip.loadAsync(await dl('#expEpub')), f=Object.keys(z.files).find(f=>/ch1\.xhtml$/.test(f)), x=await z.file(f).async('string');
+        for(const s of ['<em>never</em>','“<em>Look,</em>” he said','(<em>aside</em>)','<em>The Long Voyage Home</em> twice','<em>once more</em>.','*unclosed','*stars*']) if(!x.includes(s)) throw new Error('the e-book does not have '+s);
+        if(/\*never|_once|\\\*/.test(x)) throw new Error('italic marks or escapes reached the e-book'); }
+      { const z=await JSZip.loadAsync(await dl('#expDocx')), x=await z.file('word/document.xml').async('string'), its=[...x.matchAll(/<w:r><w:rPr><w:i\/><\/w:rPr><w:t[^>]*>([^<]*)</g)].map(m=>m[1]);
+        if(JSON.stringify(its)!==JSON.stringify(['never','Look,','aside','note','The Long Voyage Home','once more'])) throw new Error('italic runs in the Word manuscript: '+JSON.stringify(its));
+        if(/<w:u /.test(x)) throw new Error('the Word manuscript underlines'); }
+      { const doc=await pdfjs.getDocument({data:new Uint8Array(await dl('#expPdf')),disableFontFace:true}).promise; let body=null, ital=new Set(), all=[];
+        for(let n=1;n<=doc.numPages;n++){ const tc=await (await doc.getPage(n)).getTextContent(); for(const i of tc.items){ all.push(i); } }
+        const fontOf=w=>(all.find(i=>i.str.includes(w))||{}).fontName, fr=fontOf('twice'), fi=fontOf('Voyage'), fl=fontOf('stars');
+        if(!fi||fi===fr) throw new Error('the print PDF does not set "The Long Voyage Home" in italics'); if(fl!==fr) throw new Error('the plain *stars* are not upright in print');
+        if(all.some(i=>/\*never|_once/.test(i.str))) throw new Error('italic marks reached the print PDF'); }
+      /* doors in: an e-book and a Word file with italics */
+      for(const f of [['import','foreign.epub'],['import','word-book.docx']]){ const before=await pg.evaluate(()=>LIB.map(x=>x.id));
+        await pg.evaluate(()=>{ setTab('read'); document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(400);
+        await pg.setInputFiles('#libIn',P.join(__dirname,'fixtures',...f)); await pg.waitForFunction(b=>LIB.some(x=>!b.includes(x.id))||/couldn|Could/.test(document.querySelector('#libNote').textContent),before,{timeout:60000});
+        const got=await pg.evaluate(async b=>{ const bk=LIB.find(x=>!b.includes(x.id)); if(!bk) return null; await openLibBook(bk.id,true); setTab('read'); relayout();
+          for(const id of rOrder()){ if(isCover(id)) continue; const P2=pag(id); for(let i=0;i<P2.pages.length;i++){ goTo({ch:id,i}); drawView(); const pt=document.querySelector('#spread .face:not(.gone) .ptext'); const it=pt&&[...pt.querySelectorAll('i')].map(e=>e.textContent.replace(/[­⁠]/g,'')).join(' '); if(it&&/Voyage/.test(it)) return {it,txt:pt.textContent}; } } return {it:''}; },before);
+        if(!got||!/The Long Voyage Home/.test(got.it)) throw new Error(f[1]+': its italic title The Long Voyage Home did not come in as italics ('+(got&&got.it)+')');
+        if(/\*The Long|Home\*/.test(got.txt)) throw new Error(f[1]+': italic marks show on the page'); }
+      if(errs.length) throw new Error('page error: '+errs[0]);
+      return true;
+    } finally { await ctx.close(); }
+  });
   /* rev 242: the model books. Four books (one written in Inkhorse, one each brought in from an e-book, a Word file and a PDF) have every page
      drawn on screen and, for the book written in Inkhorse, made as a print PDF, a Word manuscript and an EPUB. Each page is compared with the
      recorded one, which a person has looked at and approved. MODEL_UPDATE=1 records them again (and writes the pictures to
@@ -1650,7 +1700,7 @@ const path = require('path');
   await step('F1.1 F2.3 F5.1 A Word file comes in whole by both doors: its Title and author make the title page and name the book, each Heading 1 is a chapter numbered from 1, and a smaller heading is a section heading (rev 238)', () => bothDoors('word-book.docx',(r,door)=>{
     same(r,'the chapters',r.titles,['','The Copper Kettle','A Long Way Round','What the Tide Left']); same(r,'the front pages',r.front,['Harbor Stories / Ada Tester']); same(r,'the chapter numbers',r.nums,[0,1,2,3]);
     if(r.book!=='Harbor Stories'||r.author!=='Ada Tester') throw new Error(r.at+'the book came in as "'+r.book+'" by "'+r.author+'"'); if(!/^# A Smaller Heading$/m.test(r.text)) throw new Error(r.at+'the smaller heading is not a section heading');
-    for(const l of ['bread and salt','lamp oil','two coils of rope','Keep the lamp trimmed and the door unlatched.','She read The Long Voyage Home twice that winter.']) if(!r.text.split('\n').map(x=>x.trim()).includes(l)) throw new Error(r.at+'a line did not come in whole on its own: '+l); }));
+    for(const l of ['bread and salt','lamp oil','two coils of rope','Keep the lamp trimmed and the door unlatched.','She read *The Long Voyage Home* twice that winter.']) if(!r.text.split('\n').map(x=>x.trim()).includes(l)) throw new Error(r.at+'a line did not come in whole on its own: '+l); }));   /* rev 243: the italic title keeps its italics (F4.6), written with marks */
   await step('F6.1 F6.5 F6.8 An e-book that shows its own contents page keeps it, by both doors: under the book\'s own heading, every entry there, and every chapter entry a working link (rev 238)', () => bothDoors('foreign.epub',(r,door)=>{
     same(r,'the pages before chapter one',r.titles.slice(0,3),['Harbor Stories','','Table of Contents']); const want=['The Copper Kettle','A Smaller Heading','A Long Way Round','A Smaller Heading','What the Tide Left','A Smaller Heading']; same(r,'the contents entries',r.toc.map(e=>e.t),want);
     const dead=r.toc.filter(e=>!/Smaller/.test(e.t)&&!e.link); if(dead.length) throw new Error(r.at+'a chapter entry on the contents page is not a link: '+dead[0].t); if(r.sb!==3) throw new Error(r.at+r.sb+' of 3 scene breaks reached the page'); }));

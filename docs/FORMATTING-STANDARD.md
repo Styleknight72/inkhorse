@@ -110,7 +110,7 @@ F4.4 An ellipsis is three dots treated as one mark: …
 
 F4.5 One space after a period, never two.
 
-F4.6 Italics for emphasis and for titles of books, films and ships. Never underline, and never use all capitals for emphasis.
+F4.6 Italics for emphasis and for titles of books, films and ships. Never underline, and never use all capitals for emphasis. In Inkhorse a writer marks italics the common Markdown way, with a star or an underscore on each side: *never*. Punctuation outside the marks stays upright, as in any well-set book. Italics in an e-book or Word file brought in are kept.
 
 F4.7 Every word keeps its spaces. Two words run together, such as "Discoveringparents," are a fault (see F9).
 
@@ -230,7 +230,7 @@ F10.9 A section is never mistaken for a chapter. A section heading that starts w
 
 # Part 11 · Where Inkhorse stands today
 
-## F11 · Scorecard, November 11, 2026
+## F11 · Scorecard, November 12, 2026
 
 Every rule in this book is on this scorecard, in one of five lists: proven by a test, checked by eye, yours to check, not done yet, or waiting on a decision. A rule counts as met only when a test proves it.
 
@@ -238,6 +238,7 @@ Proven: an automatic test checks it before every change goes out. For the print 
 
 - F1.1, F1.3 and F1.4 Title, copyright and dedication pages are front matter: no chapter label, no paragraph indents, not counted as chapters. A book with its own typed title and copyright pages gets each one once in the EPUB, and neither is listed in the Contents.
 - F1.2 Covers: one 2:3 size, the whole cover always shown.
+- F4.6 Italics: *words* and _words_ are italic on screen, in the e-book, the print PDF and the Word manuscript (never underlined); e-books and Word files brought in keep their italics; punctuation outside the marks stays upright; a lone star, snake_case and an escaped \* stay as typed; none of the built-in books changes.
 - F2.8 Even chapter numbering in a book you write: the memoir model book's unnumbered second chapter shows as "Chapter Two" on screen, in the print PDF, its Contents, the EPUB and the Word manuscript.
 - F6.3 The page numbers of a contents page are in the text's own colour.
 - F1.3 on screen: the title pages of the three model books brought in to read (an e-book, a Word file and a PDF) are centred.
@@ -299,7 +300,7 @@ Yours to check:
 Not done yet. Inkhorse does not meet these rules today:
 
 - F8.6 Footnotes. Inkhorse has no footnotes yet.
-- F4.6 Italics. Inkhorse cannot set a word in italics yet, on the page or in any export. It never underlines.
+- F4.6 Italics in a book brought in from a PDF. A PDF's italic words come in upright for now.
 - F5.5 Lists, letters and quoted passages. Inkhorse has no way yet to set a passage off from the body text.
 
 Waiting on a decision: none.
