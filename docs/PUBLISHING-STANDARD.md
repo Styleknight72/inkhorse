@@ -181,7 +181,7 @@ Some services take one EPUB and send it to many stores at once, for a share of e
 
 # Part 11 · Where Inkhorse stands today
 
-## P11 · Scorecard, November 10, 2026
+## P11 · Scorecard, November 11, 2026
 
 An automatic test checks each line of the first list before every change goes out, by opening the real EPUB and print PDF that Inkhorse exports. The two lines marked "no test of its own yet" are the exceptions.
 
@@ -212,7 +212,7 @@ What is yours to check:
 Not yet:
 
 - P4.5 Inkhorse does not make the wide paperback cover with a spine. Amazon's own cover tools can.
-- P6.7 The print PDF does not yet meet every rule of the Formatting Standard. It does not hyphenate, it does not stop a single line from sitting alone at the top or bottom of a page, and front pages carry no Roman numerals. Part 11 of The Inkhorse Formatting Standard has the full list. Read a print proof with care.
+- P6.7 The print PDF meets the Formatting Standard's print rules, except the ones Inkhorse does not do anywhere yet: italics, footnotes, and lists or quoted passages. Part 11 of The Inkhorse Formatting Standard has the full list. Read a print proof with care.
 - P1.3 and P1.5 Find works one chapter at a time. Inkhorse cannot yet search the whole book at once.
 - P7.1 Inkhorse has no place to write and keep the store description.
 - A single “Ready to publish?” check that runs a book against this standard and shows a tick or a note for every rule. This book comes first; the check is meant to follow.

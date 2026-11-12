@@ -2,7 +2,7 @@
 title: The Inkhorse Formatting Standard
 subtitle: How every book in Inkhorse should look, and how we check it
 author: StyleKnight & Claude
-edition: First edition · October 28, 2026 · scorecard updated November 10, 2026 (evening)
+edition: First edition · October 28, 2026 · scorecard updated November 11, 2026 (evening)
 ---
 
 # Why this standard exists
@@ -86,7 +86,7 @@ F3.4 The first paragraph after a chapter title, a section heading or a scene bre
 
 F3.5 Lines are justified, meaning both edges are straight, with hyphenation turned on so the spaces between words stay even. A paragraph should never show wide rivers of white space.
 
-F3.6 Line spacing is comfortable and even: about 1.3 to 1.5 times the type size.
+F3.6 Line spacing is comfortable and even. In print, about 1.3 to 1.5 times the type size. On a screen, at least 1.5 times, because a little more room between lines is easier to read on a phone (the web's accessibility guidelines, WCAG, ask for at least 1.5). Inkhorse's standard spacing on screen, Normal in Aa, is 1.55. A reader may choose tighter or looser spacing in Aa; that is the reader's choice, not the book's.
 
 F3.7 No widows or orphans. A single line of a paragraph should not sit alone at the top or the bottom of a page.
 
@@ -230,7 +230,7 @@ F10.9 A section is never mistaken for a chapter. A section heading that starts w
 
 # Part 11 · Where Inkhorse stands today
 
-## F11 · Scorecard, November 10, 2026
+## F11 · Scorecard, November 11, 2026
 
 Every rule in this book is on this scorecard, in one of five lists: proven by a test, checked by eye, yours to check, not done yet, or waiting on a decision. A rule counts as met only when a test proves it.
 
@@ -251,7 +251,7 @@ Proven: an automatic test checks it before every change goes out. For the print 
 - F3.1 The body type is a serif book typeface; in print it is 11 point, and the typeface is built into the PDF file.
 - F3.2 and F3.3 A small first-line indent, 1 to 1.5 times the type size, with no blank lines and no empty paragraphs, on the page and in the EPUB.
 - F3.5 Justified text with hyphenation on every screen, phones included.
-- F3.6 Line spacing in print (1.4 times the type size) and in the EPUB (1.5), even from line to line.
+- F3.6 Line spacing in print (1.4 times the type size) and in the EPUB (1.5), even from line to line, and on screen at Normal (1.55), the same on every line of a page.
 - F3.7 No widows or orphans on screen. The test checks every page break in the User manual.
 - F3.8 and F4.5 Blank lines and double spaces a writer types never reach the book: no empty paragraphs, and one space after a period, on the page and in the EPUB.
 - F3.9, F10.2 and F10.4 A PDF's printed lines are joined back into whole paragraphs, and a hyphen that only split a word at a line end is removed. The test uses a made-up PDF; a real PDF can still surprise, so read an imported book through once.
@@ -270,6 +270,10 @@ Proven: an automatic test checks it before every change goes out. For the print 
 - F8.1 The EPUB carries no page numbers and no page headers in its text.
 - F8.2 and F8.3 The EPUB has a working contents list and a real Heading 1 on every chapter, and an e-book exported by Inkhorse passes EPUBCheck, the checker the bookstores use, with no errors and no warnings.
 - F8.4, F8.5 and F8.7 In the EPUB the cover is marked as the cover and is not inside a chapter, paragraphs are real paragraphs with no line breaks, tabs or space indents, and a picture is a real image that shrinks to fit the screen.
+- F3.5 and F3.7 in print: the print PDF breaks words at line ends with the same hyphenation patterns as the screen, so its justified lines stay even (no gap wider than about three word spaces in the test book), and a paragraph never leaves its first line alone at the bottom of a page or its last line alone at the top. Every body line is in the same 11-point type.
+- F2.5 in print: every chapter opens with its first line in small capitals, as on screen.
+- F6.2 in print: a contents title too long for its line wraps onto a second line under itself, with its page number on its last line.
+- F7.1 In the print PDF, front matter is numbered in small Roman numerals (the contents page shows its number; the title, copyright, dedication and blank pages carry none), and chapter one starts again at 1. The Contents gives each chapter that number.
 - F9.1 The print PDF comes in 6 × 9, 5.5 × 8.5, 5 × 8 and 8.5 × 11 inches, and every page is exactly that size.
 - F9.2 and F9.3 The print PDF's inside margin is 0.875 inch, enough for a book of any length Amazon prints, and its outside margin is 0.625 inch, on every page.
 - F9.4 The print PDF holds no cover.
@@ -291,18 +295,11 @@ Yours to check:
 
 Not done yet. Inkhorse does not meet these rules today:
 
-- F3.5 in print: the print PDF is justified but does not hyphenate, so a line can show wide gaps.
-- F3.7 in print: the print PDF does not yet stop a single line from sitting alone at the top or bottom of a page.
-- F2.5 in print: the Drop cap style prints, but the small-capitals first line does not.
-- F6.2 in print: a contents title too long for its line is shortened with an ellipsis, not wrapped.
-- F7.1 Roman numerals for the front matter in the print PDF. Front pages carry no number at all today, and chapter one does not start again at 1.
 - F8.6 Footnotes. Inkhorse has no footnotes yet.
 - F4.6 Italics. Inkhorse cannot set a word in italics yet, on the page or in any export. It never underlines.
 - F5.5 Lists, letters and quoted passages. Inkhorse has no way yet to set a passage off from the body text.
 
-Waiting on a decision:
-
-- F3.6 on screen. The rule says line spacing of about 1.3 to 1.5 times the type size. Inkhorse's standard spacing on screen, called Normal in Aa, is 1.55. Either Normal becomes 1.5, which moves the lines on every page, or the rule says 1.55 for screens.
+Waiting on a decision: none.
 
 # How we keep the standard
 

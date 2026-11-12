@@ -800,8 +800,9 @@ const path = require('path');
       const cov=await pg.evaluate(async()=>{ const row=[...document.querySelectorAll('.bookrow')].find(x=>/Formatting Standard/.test(x.innerText)); const im=row.querySelector('.thumb img'); if(!im) return null; try{ await im.decode(); }catch(_){ } return {w:im.naturalWidth,h:im.naturalHeight}; });
       if(!cov||!cov.w||Math.abs(cov.w/cov.h-2/3)>0.01) throw new Error('its cover is missing or not 2:3: '+JSON.stringify(cov));
       const bk=await pg.evaluate(async()=>{ await openLibBook('standard',true); setTab('read'); await new Promise(r=>setTimeout(r,600)); const o=rOrder(); const tx=o.map(id=>RB.ch.get(id).text).join('\n');
-        return {n:o.length,front:o.filter(isFront).length,parts:o.filter(id=>/^Part \d+ · /.test(RB.ch.get(id).title)).length,rules:['F1.1','F2.2','F3.7','F4.1','F5.2','F6.3','F7.4','F8.1','F9.2','F10.1'].filter(x=>!tx.includes(x+' ')),stale:/rev 91|waiting for Steve/.test(tx),pages:document.querySelectorAll('#spread .face').length}; });
-      if(bk.front!==2) throw new Error('its title and copyright pages are not front matter: '+bk.front);
+        return {n:o.length,front:o.filter(isFront).length,fk:o.filter(isFront).map(id=>RB.ch.get(id).title).join(' / '),parts:o.filter(id=>/^Part \d+ · /.test(RB.ch.get(id).title)).length,rules:['F1.1','F2.2','F3.7','F4.1','F5.2','F6.3','F7.4','F8.1','F9.2','F10.1'].filter(x=>!tx.includes(x+' ')),stale:/rev 91|waiting for Steve/.test(tx),pages:document.querySelectorAll('#spread .face').length}; });
+      /* rev 241: since rev 237 a book keeps its own contents page (F6.1), shown in Inkhorse's contents style, so the front matter is title, copyright, contents */
+      if(!/^The Inkhorse (Formatting|Publishing) Standard \/ Copyright \/ Contents$/.test(bk.fk)) throw new Error('its front matter should be title, copyright and contents pages: '+bk.fk);
       if(bk.parts!==11) throw new Error('it should have Parts 1 to 11, found '+bk.parts);
       if(bk.rules.length) throw new Error('rules missing from the book: '+bk.rules.join(', '));
       if(bk.stale) throw new Error('the scorecard still carries old preview notes');
@@ -873,9 +874,10 @@ const path = require('path');
       if(!/comes with Inkhorse/.test(r[pi])) throw new Error('the Publishing Standard is not marked "comes with Inkhorse"');
       const bk=await pg.evaluate(async()=>{ await openLibBook('publishing',true); setTab('read'); await new Promise(r=>setTimeout(r,600)); const o=rOrder(); const tx=o.map(id=>RB.ch.get(id).text).join('\n');
         const pic=async id=>{ const im=new Image(); im.src=imgSrc(id||''); try{ await im.decode(); return im.naturalWidth>0&&Math.abs(im.naturalWidth/im.naturalHeight-2/3)<0.01; }catch(_){ return false; } };
-        return {front:o.filter(isFront).length,parts:o.filter(id=>/^Part \d+ · /.test(RB.ch.get(id).title)).length,rules:['P1.1','P2.1','P3.4','P4.5','P5.1','P6.2','P7.3','P8.2','P9.1'].filter(x=>!tx.includes(x+' ')),
+        return {front:o.filter(isFront).length,fk:o.filter(isFront).map(id=>RB.ch.get(id).title).join(' / '),parts:o.filter(id=>/^Part \d+ · /.test(RB.ch.get(id).title)).length,rules:['P1.1','P2.1','P3.4','P4.5','P5.1','P6.2','P7.3','P8.2','P9.1'].filter(x=>!tx.includes(x+' ')),
           score:/What Inkhorse does for you:/.test(tx)&&/What is yours to check:/.test(tx)&&/Not yet:/.test(tx),dated:/checked on November \d+, 2026/.test(tx),nav:[navOrder()[0],navOrder().slice(-1)[0]],fc:await pic(RB.coverFront),bc:await pic(RB.coverBack),pages:document.querySelectorAll('#spread .face').length}; });
-      if(bk.front!==2) throw new Error('its title and copyright pages are not front matter: '+bk.front);
+      /* rev 241: since rev 237 a book keeps its own contents page (F6.1), shown in Inkhorse's contents style, so the front matter is title, copyright, contents */
+      if(!/^The Inkhorse (Formatting|Publishing) Standard \/ Copyright \/ Contents$/.test(bk.fk)) throw new Error('its front matter should be title, copyright and contents pages: '+bk.fk);
       if(bk.parts!==11) throw new Error('it should have Parts 1 to 11, found '+bk.parts);
       if(bk.rules.length) throw new Error('rules missing from the book: '+bk.rules.join(', '));
       if(!bk.score) throw new Error('the scorecard is missing one of its three lists');
@@ -1081,6 +1083,9 @@ const path = require('path');
   // rev 235: tests that open the real export files. One made-up book ("The Test Harbor") is built once in its own browser tab, exported as a print PDF
   // in all four sizes and as an EPUB, and each rule below checks its own part. Needs jspdf (npm) and PDFJS_DIR; EPUBCheck runs when EPUBCHECK_JAR is set.
   let labP=null;
+  /* rev 241 (F7.1): the number printed at the foot of print page n: small Roman numerals before chapter one, then 1 again at chapter one */
+  const romanN=n=>{ let o=''; for(const [v,s] of [[100,'c'],[90,'xc'],[50,'l'],[40,'xl'],[10,'x'],[9,'ix'],[5,'v'],[4,'iv'],[1,'i']]) while(n>=v){ o+=s; n-=v; } return o; };
+  const folioOf=(pages,n)=>{ const b=(pages.find(p=>p.foot==='1')||{n:1}).n; return n>=b?String(n-b+1):romanN(n); };   // page 1 = chapter one, whichever chapter that is
   const exportLab=()=>labP||(labP=(async()=>{
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=236))) return 'SKIP: before rev 236';
     if(!PDFJS_DIR) return 'SKIP: set PDFJS_DIR to read inside the print PDF';
@@ -1179,16 +1184,76 @@ const path = require('path');
     for(const size of Object.keys(SIZES)){ const pages=L.pdf[size], op=pages.filter(p=>p.opener);
       if(op.map(p=>p.opener).join('|')!==L.chapters.join('|')) throw new Error(size+': chapter openings found: '+op.map(p=>p.opener).join(', '));
       for(const p of op){ if(p.n%2===0) throw new Error(size+': "'+p.opener+'" opens on page '+p.n+', a left-hand page'); if(p.head) throw new Error(size+': the first page of "'+p.opener+'" has a header ('+p.head+')');
-        if(p.foot!==String(p.n)) throw new Error(size+': the first page of "'+p.opener+'" shows page number "'+p.foot+'", not '+p.n); }
+        if(p.foot!==folioOf(pages,p.n)) throw new Error(size+': the first page of "'+p.opener+'" shows page number "'+p.foot+'", not '+folioOf(pages,p.n)); }
       const blanks=pages.filter(p=>!p.body.length); if(!blanks.length) throw new Error(size+': the test book made no blank page to check');
       const b=blanks.find(p=>p.head||p.foot); if(b) throw new Error(size+': blank page '+b.n+' carries "'+(b.head||b.foot)+'"'); }
+  });
+  await step('F7.1 Print PDF: front matter is numbered in small Roman numerals (the title, copyright and blank pages carry none), and chapter one starts again at 1 (rev 241)', async () => {
+    const L=await exportLab(); if(typeof L==='string') return L;
+    for(const size of Object.keys(SIZES)){ const pages=L.pdf[size], first=pages.find(p=>p.foot==='1');
+      if(!first) throw new Error(size+': no page is numbered 1');
+      if(first.n%2===0||first.head||!first.it.some(i=>i.h>=15)) throw new Error(size+': page 1 (print page '+first.n+') is not a chapter opening on a right-hand page');
+      if(pages.some(p=>p.n>first.n&&p.foot&&p.foot!==String(p.n-first.n+1))) throw new Error(size+': the Arabic numbers do not run on from 1');
+      const before=pages.filter(p=>p.n<first.n&&p.foot); const bad=before.find(p=>!/^[ivxlc]+$/.test(p.foot)||p.foot!==romanN(p.n)); if(bad) throw new Error(size+': front page '+bad.n+' is numbered "'+bad.foot+'"'); }
+    const pg=L.rich.pdf, k=pg.find(p=>p.it.some(i=>i.h>=14&&i.s.trim()==='Contents')); if(!k||!/^[ivx]+$/.test(k.foot)) throw new Error('the Contents page is not numbered in Roman numerals: "'+(k&&k.foot)+'"');
+    const t1=pg[0]; if(t1.foot) throw new Error('the title page carries a number');
+  });
+  await step('F3.1 F3.5 F3.7 Print PDF: every body line is in the same 11-point type, words are hyphenated at line ends so justified lines stay even, and no paragraph leaves a single line alone at the top or bottom of a page (rev 241)', async () => {
+    const L=await exportLab(); if(typeof L==='string') return L; const IN=72; let hy=0, widest=0, wAt='';
+    for(const size of Object.keys(SIZES)) for(const p of L.pdf[size]){ if(!p.ch||p.opener||!p.body.length) continue;
+      const odd=p.n%2===1, lm=(odd?0.875:0.625)*IN, rm=p.w-(odd?0.625:0.875)*IN;
+      const rows=[]; [...p.body].sort((a,b)=>b.y-a.y||a.x-b.x).forEach(i=>{ const z=rows[rows.length-1]; if(z&&Math.abs(z.y-i.y)<1) z.it.push(i); else rows.push({y:i.y,it:[i]}); });
+      rows.forEach(rw=>{ rw.x=Math.min(...rw.it.map(i=>i.x)); rw.r=Math.max(...rw.it.map(i=>i.r)); rw.ind=rw.x-lm>14&&rw.x-lm<22; rw.full=rw.r>=rm-1.5; rw.t=rw.it.map(i=>i.s).join(' ');
+        if(/[a-z]-$/.test(rw.it[rw.it.length-1].s)) hy++;
+        if(rw.full&&rw.it.length>=5){ const its=[...rw.it].sort((a,b)=>a.x-b.x); for(let j=1;j<its.length;j++){ const g=its[j].x-its[j-1].r; if(g>widest){ widest=g; wAt=size+' page '+p.n; } } } });
+      { const sm=p.body.find(i=>i.h<10.4); if(sm) throw new Error(size+' page '+p.n+': body text printed in smaller type ('+sm.h.toFixed(1)+' pt): "'+sm.s.slice(0,40)+'"'); }
+      const top=rows[0], bot=rows[rows.length-1];
+      if(rows.length>1&&!top.ind&&!top.full&&rows[1].ind) throw new Error(size+' page '+p.n+': a paragraph’s last line sits alone at the top: "'+top.t.slice(0,60)+'"');
+      if(rows.length>1&&bot.ind&&bot.full) throw new Error(size+' page '+p.n+': a paragraph’s first line sits alone at the bottom: "'+bot.t.slice(0,60)+'"'); }
+    if(!hy) throw new Error('no word was hyphenated at a line end in any print size');
+    if(widest>11*0.25*3.2) throw new Error('a justified line has a gap of '+(widest/2.75).toFixed(1)+' word spaces ('+wAt+')');
+    return 'OK: '+hy+' hyphenated line ends, widest gap '+(widest/2.75).toFixed(1)+' spaces';
+  });
+  await step('F6.2 F2.5 Print PDF: a long Contents title wraps under itself with its page number on its last line, and every chapter opens with its first line in small capitals (rev 241)', async () => {
+    if(!PDFJS_DIR) return 'SKIP: set PDFJS_DIR to read inside the print PDF';
+    let JSPDF_FILE=null; try{ JSPDF_FILE=require.resolve('jspdf/dist/jspdf.umd.min.js'); }catch(_){ return 'SKIP: jspdf is not installed for the test (npm i jspdf@2.5.1)'; }
+    const fs=require('fs'), P=require('path'); let pdfjs; { const w=console.warn, l=console.log; console.warn=console.log=()=>{}; try{ pdfjs=require(P.join(PDFJS_DIR,'..','legacy','build','pdf.js')); } finally { console.warn=w; console.log=l; } }
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max'],acceptDownloads:true});
+    await ctx.route(/jspdf[^/]*\.js$/, r=>r.fulfill({body:fs.readFileSync(JSPDF_FILE),contentType:'application/javascript'}));
+    const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const LONG='The Remarkable and Entirely True Account of the Night the Harbor Lights Went Out';
+      await pg.evaluate(L=>{ S.tips=false; BOOK.order.slice().forEach(id=>{ CH.delete(id); deleted.add(id); }); BOOK.order=[]; BOOK.sample=false; BOOK.title='The Test Harbor'; BOOK.author='Ada Tester';
+        const W='the harbor lights were steady that evening and nobody on the long pier spoke'.split(' '), para=k=>Array.from({length:70},(_,i)=>W[(i*3+k)%W.length]).join(' ')+'.';
+        ['Short One',L,'Third'].forEach((t,c)=>{ const id=addChapter(t,Array.from({length:8},(_,k)=>(k===0?'Steady harbor ':'')+para(c+k)).join('\n')); dirty.add(id); });
+        FM().toc=true; S.cur=BOOK.order[0]; touchIndex(); PCACHE.clear(); loadEditor(); renderChapterUI(); renderDrawer(); },LONG);
+      const [d]=await Promise.all([pg.waitForEvent('download',{timeout:90000}), pg.evaluate(()=>document.querySelector('#expPdf').click())]);
+      const doc=await pdfjs.getDocument({data:new Uint8Array(fs.readFileSync(await d.path())),disableFontFace:true}).promise, pages=[];
+      for(let n=1;n<=doc.numPages;n++){ const tc=await (await doc.getPage(n)).getTextContent(); pages.push(tc.items.filter(i=>i.str.trim()).map(i=>({s:i.str,x:i.transform[4],y:i.transform[5],h:i.height}))); }
+      const k=pages.find(it=>it.some(i=>i.h>=14&&i.s.trim()==='Contents')); if(!k) throw new Error('no Contents page');
+      if(k.some(i=>/…/.test(i.s))) throw new Error('a Contents title was cut short with an ellipsis');
+      const tl=k.filter(i=>/Remarkable|Harbor Lights|Went Out/.test(i.s)).sort((a,b)=>b.y-a.y); if(tl.length<2||Math.abs(tl[0].y-tl[tl.length-1].y)<5) throw new Error('the long title does not wrap onto a second line: '+tl.map(i=>i.s).join(' | '));
+      if(Math.abs(tl[0].x-tl[tl.length-1].x)>1) throw new Error('the second line of the long title is not under the first');
+      const lastY=tl[tl.length-1].y, num=k.find(i=>/^\d+$/.test(i.s.trim())&&Math.abs(i.y-lastY)<1); if(!num) throw new Error('the long title’s page number is not on its last line');
+      const third=k.find(i=>/^Third/.test(i.s.trim())); if(!third||third.y>=lastY-5) throw new Error('the entry after the long title runs into it');
+      /* small capitals: on each chapter's first page, the first body line is set in capitals of two sizes */
+      const openers=pages.filter(it=>it.some(i=>i.h>=15&&['Short One','Third'].includes(i.s.trim())));
+      if(openers.length!==2) throw new Error('chapter openings found: '+openers.length);
+      for(const it of openers){ const body=it.filter(i=>i.h<13&&i.h>5&&i.y<it.find(x=>x.h>=15).y-10).sort((a,b)=>b.y-a.y), y0=body[0].y, first=body.filter(i=>Math.abs(i.y-y0)<1.5);
+        const txt=first.map(i=>i.s).join(''); if(/[a-z]/.test(txt)) throw new Error('the first line has small letters, not small capitals: '+txt.slice(0,50));
+        if(!/STEADY/.test(txt.replace(/\s+/g,''))) throw new Error('the first line is not the chapter’s first words: '+txt.slice(0,50));
+        const hs=[...new Set(first.map(i=>Math.round(i.h*10)/10))]; if(hs.length<2) throw new Error('the first line is in one size of capitals, not small capitals');
+        const second=body.filter(i=>Math.abs(i.y-body.find(x=>x.y<y0-1).y)<1.5).map(i=>i.s).join(''); if(!/[a-z]/.test(second)) throw new Error('the second line is in capitals too'); }
+      if(errs.length) throw new Error('page error: '+errs[0]);
+      return true;
+    } finally { await ctx.close(); }
   });
   await step('F7.3 Print PDF: the left-hand header is the book title and the right-hand header is the title of the chapter that page belongs to, on every page of every chapter (rev 235)', async () => {
     const L=await exportLab(); if(typeof L==='string') return L; const sq=s=>s.toUpperCase().replace(/\s+/g,'');
     for(const size of Object.keys(SIZES)){ let left=0, right=0;
       for(const p of L.pdf[size]){ if(!p.ch||p.opener) continue; const want=sq(p.n%2===0?L.title:p.ch);
         if(p.head!==want) throw new Error(size+' page '+p.n+' (in "'+p.ch+'", a '+(p.n%2===0?'left':'right')+'-hand page): the header reads "'+p.head+'", not "'+want+'"');
-        if(p.foot!==String(p.n)) throw new Error(size+' page '+p.n+': the page number reads "'+p.foot+'"'); p.n%2===0?left++:right++; }
+        if(p.foot!==folioOf(L.pdf[size],p.n)) throw new Error(size+' page '+p.n+': the page number reads "'+p.foot+'", not '+folioOf(L.pdf[size],p.n)); p.n%2===0?left++:right++; }
       if(!left||!right) throw new Error(size+': the test book has no '+(left?'right':'left')+'-hand page with a header to check'); }
   });
   await step('F8.2 F8.3 P5.3 EPUB: the contents list links to every chapter, each link opens a real file, and every chapter starts with a real heading that carries its title (rev 235)', async () => {
@@ -1280,7 +1345,7 @@ const path = require('path');
     const L=await exportLab(); if(typeof L==='string') return L; const want=[...L.chapters,'Delta Shore'], pg=L.rich.pdf, k=pg.find(p=>p.it.some(i=>i.h>=14&&i.s.trim()==='Contents'));
     if(!k) throw new Error('print: no page titled Contents'); let last=-1;
     for(const t of want){ const row=k.it.find(i=>i.s.trim().startsWith(t)); if(!row) throw new Error('print Contents has no line for "'+t+'": '+k.text.slice(0,160));
-      const num=k.it.filter(i=>Math.abs(i.y-row.y)<2&&/^\d+$/.test(i.s.trim())).map(i=>+i.s.trim())[0], real=pg.find(p=>p.opener===t).n;
+      const num=k.it.filter(i=>Math.abs(i.y-row.y+(row.wrapDy||0))<200&&i.y<=row.y+1&&/^\d+$/.test(i.s.trim())).sort((a,b)=>b.y-a.y).map(i=>+i.s.trim())[0], real=+folioOf(pg,pg.find(p=>p.opener===t).n);
       if(num!==real) throw new Error('print Contents says "'+t+'" is on page '+num+'; it opens on page '+real); if(k.it.indexOf(row)<last) throw new Error('print Contents is out of order at "'+t+'"'); last=k.it.indexOf(row); }
     const nav=strip(L.rich.epub['OEBPS/nav.xhtml']); if(!/<h1[^>]*>Contents<\/h1>/.test(nav)) throw new Error('the EPUB contents list is not titled Contents');
     const names=[...nav.matchAll(/<a\s[^>]*>([\s\S]*?)<\/a>/g)].map(m=>m[1].replace(/<[^>]+>/g,'').trim()); let at=-1; for(const t of want){ const i=names.findIndex(n=>n.includes(t)); if(i<0||i<at) throw new Error('EPUB Contents is missing "'+t+'" or lists it out of order: '+names.join(', ')); at=i; if(names.filter(n=>n.includes(t)).length!==1) throw new Error('EPUB Contents lists "'+t+'" more than once'); }
