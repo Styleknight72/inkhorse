@@ -44,7 +44,7 @@ F1.1 A book runs in this order. Any part can be left out, but the order never ch
 
 F1.2 The cover is a single picture in the standard 2:3 book shape. Every cover in the Library shows at the same 2:3 size, whole, never cut off.
 
-F1.3 The title page carries no page number and no page header.
+F1.3 The title page carries no page number and no page header, and its lines are centred, also in a book brought in to read.
 
 F1.4 The copyright page sits on the back of the title page in print, set smaller than the body text.
 
@@ -88,7 +88,7 @@ F3.5 Lines are justified, meaning both edges are straight, with hyphenation turn
 
 F3.6 Line spacing is comfortable and even. In print, about 1.3 to 1.5 times the type size. On a screen, at least 1.5 times, because a little more room between lines is easier to read on a phone (the web's accessibility guidelines, WCAG, ask for at least 1.5). Inkhorse's standard spacing on screen, Normal in Aa, is 1.55. A reader may choose tighter or looser spacing in Aa; that is the reader's choice, not the book's.
 
-F3.7 No widows or orphans. A single line of a paragraph should not sit alone at the top or the bottom of a page.
+F3.7 No widows or orphans. A single line of a paragraph should not sit alone at the top or the bottom of a page. A page that stops part-way through a paragraph stops at the end of a full line, and that line is justified like the lines above it, unless that would open a gap wider than F3.10 allows.
 
 F3.8 No empty paragraphs. Space between parts of a chapter comes from a scene break (F5), never from blank lines.
 
@@ -238,6 +238,7 @@ Proven: an automatic test checks it before every change goes out. For the print 
 
 - F1.1, F1.3 and F1.4 Title, copyright and dedication pages are front matter: no chapter label, no paragraph indents, not counted as chapters. A book with its own typed title and copyright pages gets each one once in the EPUB, and neither is listed in the Contents.
 - F1.2 Covers: one 2:3 size, the whole cover always shown.
+- F1.3 on screen: the title pages of the three model books brought in to read (an e-book, a Word file and a PDF) are centred.
 - F1.5 The title page, copyright page, dedication and Contents each start on their own page, in that order, in the print PDF and the EPUB.
 - F1.6 A page named Copyright Page, Contents, Table of Contents or Contents at a Glance is a front page at any length, in a book brought in from a PDF. The test uses a made-up "For Dummies"-style PDF.
 - F2.1 Every chapter starts on a new page, on screen, in print and in the EPUB.
@@ -252,7 +253,7 @@ Proven: an automatic test checks it before every change goes out. For the print 
 - F3.2 and F3.3 A small first-line indent, 1 to 1.5 times the type size, with no blank lines and no empty paragraphs, on the page and in the EPUB.
 - F3.5 Justified text with hyphenation on every screen, phones included.
 - F3.6 Line spacing in print (1.4 times the type size) and in the EPUB (1.5), even from line to line, and on screen at Normal (1.55), the same on every line of a page.
-- F3.7 No widows or orphans on screen. The test checks every page break in the User manual.
+- F3.7 No widows or orphans on screen. The test checks every page break in the User manual. Every page of the four model books (see How we keep the standard) that stops part-way through a paragraph ends at the end of a full line, never on one word alone.
 - F3.8 and F4.5 Blank lines and double spaces a writer types never reach the book: no empty paragraphs, and one space after a period, on the page and in the EPUB.
 - F3.9, F10.2 and F10.4 A PDF's printed lines are joined back into whole paragraphs, and a hyphen that only split a word at a line end is removed. The test uses a made-up PDF; a real PDF can still surprise, so read an imported book through once.
 - F3.10 Every text size from the smallest to the largest: no line stretched past the limit, no word past the margin, nothing cut off. The test reads every page of both standards and the first part of the User manual at four sizes.
@@ -307,7 +308,8 @@ Waiting on a decision: none.
 2. Each rule that can be checked by machine gets an automatic test, like the cover-size and big-book speed tests.
 3. Every change goes to a preview page first. It goes live only after the full automatic check passes and Steve Patient, who makes Inkhorse, approves it on his own phone.
 4. The scorecard in Part 11 is kept true: when a rule's standing changes, the scorecard changes with it, and its heading says the date.
-5. This book is updated whenever the standard changes, and its edition line says when. The history of changes to Inkhorse itself is kept in the Inkhorse Release Notes, not in this book or in the User manual.
+5. Four model books are kept as the standard you can see: one written in Inkhorse, and one each brought in from an e-book, a Word file and a PDF. Every page of each, on screen, and the print PDF, Word manuscript and EPUB of the one written in Inkhorse, is looked at by a person and approved, and the automatic check compares every page with the approved one each time. A change that alters any page stops until someone has looked at the new page and said why.
+6. This book is updated whenever the standard changes, and its edition line says when. The history of changes to Inkhorse itself is kept in the Inkhorse Release Notes, not in this book or in the User manual.
 
 ## Sources
 

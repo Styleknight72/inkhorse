@@ -1470,6 +1470,92 @@ const path = require('path');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
   });
+  /* rev 242: the model books. Four books (one written in Inkhorse, one each brought in from an e-book, a Word file and a PDF) have every page
+     drawn on screen and, for the book written in Inkhorse, made as a print PDF, a Word manuscript and an EPUB. Each page is compared with the
+     recorded one, which a person has looked at and approved. MODEL_UPDATE=1 records them again (and writes the pictures to
+     tests/fixtures/model-books/pages/) - only when a change is meant to change how pages look, and said to Steve and in CHANGELOG.md. */
+  await step('Model books: every page of four model books looks exactly as recorded and approved, on screen, in print, in the Word manuscript and in the EPUB (rev 242)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=242))) return 'SKIP: before rev 242';
+    if(!PDFJS_DIR) return 'SKIP: set PDFJS_DIR (the PDF model book and the print check need it)';
+    let JSPDF_FILE=null; try{ JSPDF_FILE=require.resolve('jspdf/dist/jspdf.umd.min.js'); }catch(_){ return 'SKIP: jspdf is not installed for the test (npm i jspdf@2.5.1)'; }
+    if(!JSZIP_FILE) return 'SKIP: jszip is not installed for the test';
+    const fs=require('fs'), P=require('path'), crypto=require('crypto'), JSZip=require('jszip'), DIR=P.join(__dirname,'fixtures','model-books'), LOCK=P.join(DIR,'model-lock.json'), PICS=P.join(DIR,'pages'), H=b=>crypto.createHash('sha1').update(b).digest('hex').slice(0,16);
+    let pdfjs; { const w=console.warn, l=console.log; console.warn=console.log=()=>{}; try{ pdfjs=require(P.join(PDFJS_DIR,'..','legacy','build','pdf.js')); } finally { console.warn=w; console.log=l; } }
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max'],deviceScaleFactor:1,acceptDownloads:true});
+    await ctx.route(/jspdf[^/]*\.js$/, r=>r.fulfill({body:fs.readFileSync(JSPDF_FILE),contentType:'application/javascript'}));
+    await ctx.route(/jszip(\.min)?\.js$/, r=>r.fulfill({body:fs.readFileSync(JSZIP_FILE),contentType:'application/javascript'}));
+    await ctx.route(/pdf\.js\/3\.11\.174\/pdf\.min\.js/, r=>r.fulfill({path:P.join(PDFJS_DIR,'pdf.min.js'),contentType:'application/javascript'}));
+    await ctx.route(/pdf\.js\/3\.11\.174\/pdf\.worker\.min\.js/, r=>r.fulfill({path:P.join(PDFJS_DIR,'pdf.worker.min.js'),contentType:'application/javascript'}));
+    const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    const got={chrome:String(browser.version()).split('.')[0], screen:{}, print:{}, word:{}, epub:{}}, pics={}, tpSeen={};
+    try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      /* the same settings and the book typeface built into Inkhorse for print, as in the Layout lock, so the pages do not depend on the test machine's fonts */
+      const fontOk=await pg.evaluate(async()=>{ S.tips=false; S.just=true; S.fs=18; S.lh='1.55';
+        const bin=atob(PDFFONT.r), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); const ff=new FontFace('InkLock',u.buffer); await ff.load(); document.fonts.add(ff); FACES.inklock="'InkLock'"; S.face='inklock'; applyType(); return document.fonts.check('18px InkLock'); });
+      if(!fontOk) throw new Error('the lock typeface did not load');
+      const shootAll=async (name,max=300)=>{ const list=[];   // max: the PDF model book is a whole book; its first 40 pages (front matter and opening chapters) are locked
+        const refs=await pg.evaluate(()=>{ setTab('read'); relayout(); const out=[]; for(const id of rOrder()){ if(isCover(id)) continue; const n=pag(id).pages.length; for(let i=0;i<n;i++) out.push({ch:id,i}); } return out; });
+        for(let k=0;k<refs.length&&k<max;k++){ await pg.evaluate(r=>{ goTo(r); drawView(); },refs[k]); await pg.waitForTimeout(40);
+          /* rev 242 checks on every page: a page that stops part-way through a paragraph ends at the end of a full line (F3.7), that line is justified
+             unless stretching it would open a gap wider than three word spaces (F3.10), and a title page is centred */
+          const chk=await pg.evaluate(r=>{ const P=pag(r.ch), [a,b]=P.pages[r.i], doc=P.doc, pt=document.querySelector('#spread .face:not(.gone) .ptext'); if(!pt) return null;
+            const out={label:[...pt.querySelectorAll('h2')].map(h=>h.textContent.trim()).find(x=>LABEL_FRONT.test(x))||'', rhLabel:(()=>{ const rh=document.querySelector('#spread .face:not(.gone) .rh'); return rh&&LABEL_FRONT.test(rh.textContent.trim())?rh.textContent.trim():''; })(), tp:pt.classList.contains('tp'), tpLeft:[...pt.querySelectorAll('p')].some(p=>pt.classList.contains('tp')&&getComputedStyle(p).textAlign!=='center')};
+            const Pp=b>a&&b<doc.words.length?doc.paras[doc.words[b-1].p]:null; if(!Pp||Pp.img||Pp.h||Pp.toc||Pp.sb||Pp.end<=b||doc.front) return out;
+            const ps=pt.querySelectorAll('p'), p=ps[ps.length-1]; if(!p) return out; const lines=[]; let cur=null;
+            for(const sp of p.querySelectorAll('span[data-w]')) for(const q of sp.getClientRects()){ if(!(q.width>0)) continue; if(!cur||Math.abs(q.top-cur.top)>q.height*0.5){ cur={top:q.top,it:[]}; lines.push(cur); } cur.it.push({l:q.left,r:q.right}); }
+            const L=lines[lines.length-1]; if(!L) return out; const right=p.getBoundingClientRect().right, sw=spaceW(p)*(scaleK||1);
+            out.one=L.it.length<2 && lines.length>1; out.short=right-L.it[L.it.length-1].r>sw*1.5; out.more=p.classList.contains('more'); return out; },refs[k]);
+          if(chk&&chk.one) throw new Error(name+' page '+(k+1)+': the page stops part-way through a paragraph with one word alone on its last line');
+          if(chk&&(chk.label||chk.rhLabel)) throw new Error(name+' page '+(k+1)+': the page shows the label "'+(chk.label||chk.rhLabel)+'" as a heading or page header (F1.3)');
+          if(chk&&chk.tpLeft) throw new Error(name+' page '+(k+1)+': a line of the title page is not centred');
+          if(chk&&chk.tp) tpSeen[name]=(tpSeen[name]||0)+1;
+          if(chk&&chk.more===false&&chk.short===false){} 
+          const el=await pg.$('#spread .face:not(.gone)'); if(!el) throw new Error(name+': no page drawn at '+(k+1)); const buf=await el.screenshot({animations:'disabled'});
+          list.push(H(buf)); pics[name+'/'+String(k+1).padStart(3,'0')+'.jpg']=await el.screenshot({animations:'disabled',type:'jpeg',quality:70}); }
+        got.screen[name]=list; };
+      /* 1. a book written in Inkhorse */
+      const mem=JSON.parse(fs.readFileSync(P.join(DIR,'memoir.json'),'utf8'));
+      await pg.evaluate(m=>{ BOOK.order.slice().forEach(id=>{ CH.delete(id); deleted.add(id); }); BOOK.order=[]; BOOK.sample=false; BOOK.title=m.title; BOOK.author=m.author;
+        const f=FM(); f.subtitle=m.subtitle; f.dedication=m.dedication; f.year='2026'; f.toc=true; m.chapters.forEach(([t,x])=>{ const id=addChapter(t,x); dirty.add(id); });
+        S.cur=BOOK.order[0]; touchIndex(); PCACHE.clear(); loadEditor(); renderChapterUI(); renderDrawer(); },mem);
+      await shootAll('1-written');
+      const dl=async sel=>{ const [d]=await Promise.all([pg.waitForEvent('download',{timeout:120000}), pg.evaluate(s=>document.querySelector(s).click(),sel)]); return fs.readFileSync(await d.path()); };
+      { const doc=await pdfjs.getDocument({data:new Uint8Array(await dl('#expPdf')),disableFontFace:true}).promise;
+        for(let n=1;n<=doc.numPages;n++){ const tc=await (await doc.getPage(n)).getTextContent(); got.print[String(n).padStart(3,'0')]=H(JSON.stringify(tc.items.map(i=>[i.str,+i.transform[4].toFixed(1),+i.transform[5].toFixed(1),+i.height.toFixed(1)]))); } }
+      { const z=await JSZip.loadAsync(await dl('#expDocx')); for(const f of ['word/document.xml','word/header1.xml','word/styles.xml']) got.word[f]=H(await z.file(f).async('string')); }
+      { const z=await JSZip.loadAsync(await dl('#expEpub')); for(const f of Object.keys(z.files).filter(f=>/\.(xhtml|css)$/.test(f)).sort()) got.epub[f]=H((await z.file(f).async('string')).replace(/urn:uuid:[0-9a-f-]+/g,'UUID')); }
+      /* 2-4. books brought in to read: an e-book, a Word file, a PDF */
+      for(const [name,file] of [['2-epub',P.join(__dirname,'fixtures','import','foreign.epub')],['3-word',P.join(__dirname,'fixtures','import','word-book.docx')],['4-pdf',P.join(__dirname,'fixtures','dummies-like.pdf')]]){
+        const before=await pg.evaluate(()=>LIB.map(b=>b.id));
+        await pg.evaluate(()=>{ setTab('read'); document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(500);
+        await pg.setInputFiles('#libIn',file); await pg.waitForTimeout(800);
+        if(/\.pdf$/.test(file)) await pg.click('#libAsk [data-way="text"]');
+        await pg.waitForFunction(b=>LIB.some(x=>!b.includes(x.id))||/couldn|Could/.test(document.querySelector('#libNote').textContent),before,{timeout:120000});
+        const ok=await pg.evaluate(async b=>{ const bk=LIB.find(x=>!b.includes(x.id)); if(!bk) return false; await openLibBook(bk.id,true); S.fs=18; S.just=true; S.face='inklock'; applyType(); relayout(); return bk.title; },before);
+        if(!ok) throw new Error(name+': the book was not added: '+await pg.textContent('#libNote'));
+        await pg.evaluate(()=>{ const d=document.querySelector('#libDone'); if(d&&d.offsetParent) d.click(); });
+        if(name==='4-pdf'){ const leak=await pg.evaluate(()=>{ const all=rOrder().map(id=>RB.ch.get(id).text).join('\n'); const m=/(?:^|\n)[^\n]{0,40}\b\d{1,3} Blendworks For Learners\b[^\n]{0,20}/.exec(all); return m?m[0].trim():''; });
+          if(leak) throw new Error('4-pdf: a printed page header came in as text (F10.3): "'+leak+'"'); }
+        await shootAll(name,name==='4-pdf'?40:300); }
+      for(const nm of ['2-epub','3-word','4-pdf']) if(!tpSeen[nm]) throw new Error(nm+': its title page is not set as a title page');
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx.close(); }
+    const REV=await page.evaluate(()=>INK_VERSION.rev);
+    const total=Object.values(got.screen).reduce((a,l)=>a+l.length,0);
+    const write=()=>{ fs.mkdirSync(PICS,{recursive:true}); for(const f of fs.readdirSync(PICS)) fs.rmSync(P.join(PICS,f),{recursive:true,force:true});
+      for(const [k,b] of Object.entries(pics)){ fs.mkdirSync(P.join(PICS,P.dirname(k)),{recursive:true}); fs.writeFileSync(P.join(PICS,k),b); }
+      fs.writeFileSync(LOCK,JSON.stringify({note:'How every page of the model books looks. Re-record only when a change is MEANT to change pages, after looking at the new pictures, and say so in CHANGELOG.md: MODEL_UPDATE=1 node tests/audit.js preview/next.html',recordedAtRev:REV,...got},null,1)); };
+    if(process.env.MODEL_UPDATE){ write(); return 'OK: '+total+' screen pages, '+Object.keys(got.print).length+' print pages recorded; pictures in tests/fixtures/model-books/pages/'; }
+    if(!fs.existsSync(LOCK)) throw new Error('there is no recorded model-book lock; record one with MODEL_UPDATE=1');
+    const want=JSON.parse(fs.readFileSync(LOCK,'utf8'));
+    if(want.chrome!==got.chrome) return 'SKIP: the model books were recorded with test browser '+want.chrome+'; this machine has '+got.chrome+'. Record them here once with MODEL_UPDATE=1 before changing the app';
+    const bad=[], tmp=P.join(require('os').tmpdir(),'inkhorse-model-now');
+    for(const name of Object.keys(want.screen)){ const a=want.screen[name], b=got.screen[name]||[]; if(a.length!==b.length) bad.push(name+': '+a.length+' pages became '+b.length); else a.forEach((h,i)=>{ if(h!==b[i]) bad.push(name+' page '+(i+1)); }); }
+    for(const part of ['print','word','epub']){ const a=want[part], b=got[part]; const keys=new Set([...Object.keys(a),...Object.keys(b)]); for(const k of keys) if(a[k]!==b[k]) bad.push(part+' '+k); }
+    if(bad.length){ fs.mkdirSync(tmp,{recursive:true}); for(const [k,b] of Object.entries(pics)){ fs.mkdirSync(P.join(tmp,P.dirname(k)),{recursive:true}); fs.writeFileSync(P.join(tmp,k),b); }
+      throw new Error(bad.length+' model-book pages changed: '+bad.slice(0,8).join('; ')+(bad.length>8?' …':'')+'. New pictures: '+tmp+'. If the change is meant, look at them, tell Steve, and re-record with MODEL_UPDATE=1'); }
+    return 'OK: '+total+' screen pages, '+Object.keys(got.print).length+' print pages, the Word manuscript and the EPUB match';
+  });
   await step('Layout lock: a fixed test book breaks its pages exactly where the recorded layout says, so no change can move a reader\'s pages without it being seen and said (rev 236)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=236))) return 'SKIP: before rev 236';
     const fs=require('fs'), file=require('path').join(__dirname,'fixtures','layout-lock.json');

@@ -1,12 +1,12 @@
 {
  "note": "Where the pages of the lock book break. Re-record only when a change is MEANT to move pages, and say so in CHANGELOG.md: LOCK_UPDATE=1 node tests/audit.js preview/next.html",
- "recordedAtRev": 236,
+ "recordedAtRev": 242,
  "page": "384x457 margin 27",
  "font": true,
  "pages": {
   "Lock One": [
    "0",
-   "44",
+   "45",
    "126",
    "202",
    "288+322",
@@ -14,7 +14,7 @@
    "456+539",
    "545",
    "628+676",
-   "712",
+   "713",
    "805+840",
    "891",
    "982",
@@ -31,10 +31,10 @@
    "560",
    "651+718",
    "741",
-   "825+840",
+   "824+840",
    "905",
    "988",
-   "1075+1112",
+   "1076+1112",
    "1163+1197"
   ],
   "Lock Three": [
@@ -50,7 +50,7 @@
    "756+760",
    "836+840",
    "919",
-   "1005",
+   "1004",
    "1098+1154",
    "1182+1183"
   ]
