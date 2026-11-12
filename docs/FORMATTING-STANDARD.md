@@ -70,7 +70,7 @@ F2.6 No page header on a chapter's first page. The page number may appear at the
 
 F2.7 Chapter titles are all set the same way in a book: the same font, size, spacing and capitalization.
 
-F2.8 When a book numbers its own chapters ("Chapter 1," "Chapter 2"), Inkhorse uses the book's numbers. A page the book leaves unnumbered, such as an Introduction, a Part page or an Index, gets no number of Inkhorse's own, so the book never shows two different numbers for the same chapter.
+F2.8 When a book numbers its own chapters ("Chapter 1," "Chapter 2"), Inkhorse uses the book's numbers. A page the book leaves unnumbered, such as an Introduction, a Part page or an Index, gets no number of Inkhorse's own, so the book never shows two different numbers for the same chapter. In a book you write, a chapter that sits in an exact gap of the book's own numbering, such as an unnumbered chapter between "Chapter One" and "Chapter Three", is shown as "Chapter Two" in the book's own style, on screen, in the Contents and in every export; its title is not changed. A book brought in to read is never given words it does not have.
 
 # Part 3 · Body text
 
@@ -136,7 +136,7 @@ F6.1 The contents page Inkhorse makes for your own book is titled "Contents." A 
 
 F6.2 One entry per line. A long title wraps onto a second line under itself; it never runs into the next entry.
 
-F6.3 Each entry is joined to its page number by a dotted line, and the numbers line up at the right edge.
+F6.3 Each entry is joined to its page number by a dotted line, and the numbers line up at the right edge, in the text's own colour, as in a printed book.
 
 F6.4 Chapter entries and section entries look different: sections sit indented under their chapter, smaller or lighter.
 
@@ -238,6 +238,8 @@ Proven: an automatic test checks it before every change goes out. For the print 
 
 - F1.1, F1.3 and F1.4 Title, copyright and dedication pages are front matter: no chapter label, no paragraph indents, not counted as chapters. A book with its own typed title and copyright pages gets each one once in the EPUB, and neither is listed in the Contents.
 - F1.2 Covers: one 2:3 size, the whole cover always shown.
+- F2.8 Even chapter numbering in a book you write: the memoir model book's unnumbered second chapter shows as "Chapter Two" on screen, in the print PDF, its Contents, the EPUB and the Word manuscript.
+- F6.3 The page numbers of a contents page are in the text's own colour.
 - F1.3 on screen: the title pages of the three model books brought in to read (an e-book, a Word file and a PDF) are centred.
 - F1.5 The title page, copyright page, dedication and Contents each start on their own page, in that order, in the print PDF and the EPUB.
 - F1.6 A page named Copyright Page, Contents, Table of Contents or Contents at a Glance is a front page at any length, in a book brought in from a PDF. The test uses a made-up "For Dummies"-style PDF.

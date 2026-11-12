@@ -1499,13 +1499,15 @@ const path = require('path');
           /* rev 242 checks on every page: a page that stops part-way through a paragraph ends at the end of a full line (F3.7), that line is justified
              unless stretching it would open a gap wider than three word spaces (F3.10), and a title page is centred */
           const chk=await pg.evaluate(r=>{ const P=pag(r.ch), [a,b]=P.pages[r.i], doc=P.doc, pt=document.querySelector('#spread .face:not(.gone) .ptext'); if(!pt) return null;
-            const out={label:[...pt.querySelectorAll('h2')].map(h=>h.textContent.trim()).find(x=>LABEL_FRONT.test(x))||'', rhLabel:(()=>{ const rh=document.querySelector('#spread .face:not(.gone) .rh'); return rh&&LABEL_FRONT.test(rh.textContent.trim())?rh.textContent.trim():''; })(), tp:pt.classList.contains('tp'), tpLeft:[...pt.querySelectorAll('p')].some(p=>pt.classList.contains('tp')&&getComputedStyle(p).textAlign!=='center')};
+            const tn=pt.querySelector('p.toc .tn'), tt=pt.querySelector('p.toc .tt');
+            const out={tnColor:tn&&tt&&getComputedStyle(tn).color!==getComputedStyle(tt).color?getComputedStyle(tn).color:'', label:[...pt.querySelectorAll('h2')].map(h=>h.textContent.trim()).find(x=>LABEL_FRONT.test(x))||'', rhLabel:(()=>{ const rh=document.querySelector('#spread .face:not(.gone) .rh'); return rh&&LABEL_FRONT.test(rh.textContent.trim())?rh.textContent.trim():''; })(), tp:pt.classList.contains('tp'), tpLeft:[...pt.querySelectorAll('p')].some(p=>pt.classList.contains('tp')&&getComputedStyle(p).textAlign!=='center')};
             const Pp=b>a&&b<doc.words.length?doc.paras[doc.words[b-1].p]:null; if(!Pp||Pp.img||Pp.h||Pp.toc||Pp.sb||Pp.end<=b||doc.front) return out;
             const ps=pt.querySelectorAll('p'), p=ps[ps.length-1]; if(!p) return out; const lines=[]; let cur=null;
             for(const sp of p.querySelectorAll('span[data-w]')) for(const q of sp.getClientRects()){ if(!(q.width>0)) continue; if(!cur||Math.abs(q.top-cur.top)>q.height*0.5){ cur={top:q.top,it:[]}; lines.push(cur); } cur.it.push({l:q.left,r:q.right}); }
             const L=lines[lines.length-1]; if(!L) return out; const right=p.getBoundingClientRect().right, sw=spaceW(p)*(scaleK||1);
             out.one=L.it.length<2 && lines.length>1; out.short=right-L.it[L.it.length-1].r>sw*1.5; out.more=p.classList.contains('more'); return out; },refs[k]);
           if(chk&&chk.one) throw new Error(name+' page '+(k+1)+': the page stops part-way through a paragraph with one word alone on its last line');
+          if(chk&&chk.tnColor) throw new Error(name+' page '+(k+1)+': a contents page number is coloured ('+chk.tnColor+'), not in the text colour (F6.3)');
           if(chk&&(chk.label||chk.rhLabel)) throw new Error(name+' page '+(k+1)+': the page shows the label "'+(chk.label||chk.rhLabel)+'" as a heading or page header (F1.3)');
           if(chk&&chk.tpLeft) throw new Error(name+' page '+(k+1)+': a line of the title page is not centred');
           if(chk&&chk.tp) tpSeen[name]=(tpSeen[name]||0)+1;
@@ -1518,6 +1520,7 @@ const path = require('path');
       await pg.evaluate(m=>{ BOOK.order.slice().forEach(id=>{ CH.delete(id); deleted.add(id); }); BOOK.order=[]; BOOK.sample=false; BOOK.title=m.title; BOOK.author=m.author;
         const f=FM(); f.subtitle=m.subtitle; f.dedication=m.dedication; f.year='2026'; f.toc=true; m.chapters.forEach(([t,x])=>{ const id=addChapter(t,x); dirty.add(id); });
         S.cur=BOOK.order[0]; touchIndex(); PCACHE.clear(); loadEditor(); renderChapterUI(); renderDrawer(); },mem);
+      { const dt=await pg.evaluate(()=>BOOK.order.map(dispTitle)); if(dt[1]!=='Chapter Two: A Family Between Two Countries, and the Long Road from Quebec to the Mill Towns of New England'||dt[0]!=='Chapter One: Point of Origin') throw new Error('1-written: the chapters are not numbered evenly (F2.8): '+dt.join(' | ')); }
       await shootAll('1-written');
       const dl=async sel=>{ const [d]=await Promise.all([pg.waitForEvent('download',{timeout:120000}), pg.evaluate(s=>document.querySelector(s).click(),sel)]); return fs.readFileSync(await d.path()); };
       { const doc=await pdfjs.getDocument({data:new Uint8Array(await dl('#expPdf')),disableFontFace:true}).promise;
