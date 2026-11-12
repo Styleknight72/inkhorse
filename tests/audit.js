@@ -1245,6 +1245,19 @@ const path = require('path');
     const bad=gaps.filter(g=>g/11<1.3-0.005||g/11>1.5+0.005); if(gaps.length<10) throw new Error('too few lines to measure'); if(bad.length) throw new Error('print: lines are '+(bad[0]/11).toFixed(2)+' times the type size apart on page '+p.n);
     if(Math.max(...gaps)-Math.min(...gaps)>0.2) throw new Error('print: line spacing is uneven on page '+p.n+' ('+Math.min(...gaps).toFixed(1)+' to '+Math.max(...gaps).toFixed(1)+' pt)');
   });
+  await step('F3.6 On screen, Normal line spacing is 1.55 times the type size (at least 1.5) and the same on every line of a page (rev 240, decided by Steve Nov 11)', async () => {
+    const pg=await browser.newPage(); try{ await pg.goto(page.url()); await pg.waitForTimeout(2000);
+      const r=await pg.evaluate(async()=>{ const dflt=S.lh; await openLibBook('standard',true); setTab('read'); await new Promise(r=>setTimeout(r,800)); const body=rOrder().find(id=>!isCover(id)&&!isFront(id)); goTo({ch:body,i:0}); drawView(); await new Promise(r=>setTimeout(r,600));
+        const ps=[...document.querySelectorAll('#spread .face:not(.gone) .ptext p')].filter(p=>{ const rg=document.createRange(); rg.selectNodeContents(p); return new Set([...rg.getClientRects()].map(x=>Math.round(x.top))).size>=4; });
+        if(!ps.length) return {dflt,none:true}; const p=ps[0], cs=getComputedStyle(p), ratio=parseFloat(cs.lineHeight)/parseFloat(cs.fontSize);
+        const rg=document.createRange(); rg.selectNodeContents(p); const tops=[...new Set([...rg.getClientRects()].map(x=>Math.round(x.top*2)/2))].sort((a,b)=>a-b), gaps=tops.slice(1).map((t,i)=>t-tops[i]).filter(g=>g>2);
+        return {dflt,ratio,spread:gaps.length?Math.max(...gaps)-Math.min(...gaps):0,n:gaps.length}; });
+      if(r.none) throw new Error('no paragraph to measure');
+      if(String(r.dflt)!=='1.55') throw new Error('Normal spacing is '+r.dflt);
+      if(r.ratio<1.5||Math.abs(r.ratio-1.55)>0.01) throw new Error('lines are '+r.ratio.toFixed(3)+' times the type size apart');
+      if(r.n<3||r.spread>1.5) throw new Error('line spacing is uneven on the page ('+r.spread+' px)');
+    } finally { await pg.close(); }
+  });
   await step('F3.8 F4.5 F8.5 Blank lines and double spaces typed by the writer never reach the book: no empty paragraphs and one space after a period, on the page and in the EPUB; EPUB paragraphs are real paragraphs with no line breaks, tabs or space indents (rev 236)', async () => {
     const L=await exportLab(); if(typeof L==='string') return L; const sc=L.rich.screen;
     if(sc.empty) throw new Error(sc.empty+' empty paragraph(s) on the page'); if(sc.dbl) throw new Error(sc.dbl+' paragraph(s) on the page keep a double space');
