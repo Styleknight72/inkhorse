@@ -239,27 +239,28 @@ Proven: an automatic test checks it before every change goes out. For the print 
 - F1.1, F1.3 and F1.4 Title, copyright and dedication pages are front matter: no chapter label, no paragraph indents, not counted as chapters. A book with its own typed title and copyright pages gets each one once in the EPUB, and neither is listed in the Contents.
 - F1.2 Covers: one 2:3 size, the whole cover always shown.
 - F4.6 Italics: *words* and _words_ are italic on screen, in the e-book, the print PDF and the Word manuscript (never underlined); e-books and Word files brought in keep their italics; punctuation outside the marks stays upright; a lone star, snake_case and an escaped \* stay as typed; none of the built-in books changes.
-- F2.8 Even chapter numbering in a book you write: the memoir model book's unnumbered second chapter shows as "Chapter Two" on screen, in the print PDF, its Contents, the EPUB and the Word manuscript.
-- F6.3 The page numbers of a contents page are in the text's own colour.
+- F2.8 Even chapter numbering in a book you write: the memoir model book's unnumbered second chapter shows as "Chapter Two" on screen, above its title on its first page in the print PDF and the EPUB, in the Contents of both and in the Word manuscript, and never also as "Chapter 2". The test reads each file's own text.
+- F6.3 The page numbers and entries of a contents page are in the same colour as the page's own text, in all four model books.
 - F1.3 on screen: the title pages of the three model books brought in to read (an e-book, a Word file and a PDF) are centred.
 - F1.5 The title page, copyright page, dedication and Contents each start on their own page, in that order, in the print PDF and the EPUB.
 - F1.6 A page named Copyright Page, Contents, Table of Contents or Contents at a Glance is a front page at any length, in a book brought in from a PDF. The test uses a made-up "For Dummies"-style PDF.
 - F2.1 Every chapter starts on a new page, on screen, in print and in the EPUB.
 - F2.2 The chapter title sits about a third of the way down its first page.
-- F2.3 The book's own label (PART 1, CHAPTER THREE) shows above the title in place of "Chapter N," on the page, in the EPUB and in the print PDF.
+- F2.3 The book's own label (PART 1, CHAPTER THREE) shows above the title in place of "Chapter N," on the page, in the EPUB and in the print PDF. The label is the same in all three, just above the title, in two print sizes.
 - F2.4 The first paragraph of every chapter is not indented.
 - F2.5 Every chapter opens the same way. A book chooses one of four opening styles: Classic, Ornament, Big number or Drop cap.
 - F2.6 No page header on a chapter's first page.
 - F2.7 A chapter with no heading takes its name from the book's own contents list.
+- F2.7 Chapter titles are all set the same way: the same font, size, weight, spacing, capitals and place on the page, on screen, in the print PDF in all four sizes, and in the EPUB.
 - F2.8 A book's own chapter numbers win: the Introduction and other unnumbered pages get no number of Inkhorse's own.
 - F3.1 The body type is a serif book typeface; in print it is 11 point, and the typeface is built into the PDF file.
 - F3.2 and F3.3 A small first-line indent, 1 to 1.5 times the type size, with no blank lines and no empty paragraphs, on the page and in the EPUB.
 - F3.5 Justified text with hyphenation on every screen, phones included.
 - F3.6 Line spacing in print (1.4 times the type size) and in the EPUB (1.5), even from line to line, and on screen at Normal (1.55), the same on every line of a page.
-- F3.7 No widows or orphans on screen. The test checks every page break in the User manual. Every page of the four model books (see How we keep the standard) that stops part-way through a paragraph ends at the end of a full line, never on one word alone.
+- F3.7 No widows or orphans on screen. The test checks every page break in the User manual. Every page of the four model books (see How we keep the standard) that stops part-way through a paragraph ends at the end of a full line, never on one word alone, and that line reaches the right margin unless filling it would open gaps wider than F3.10 allows.
 - F3.8 and F4.5 Blank lines and double spaces a writer types never reach the book: no empty paragraphs, and one space after a period, on the page and in the EPUB.
 - F3.9, F10.2 and F10.4 A PDF's printed lines are joined back into whole paragraphs, and a hyphen that only split a word at a line end is removed. The test uses a made-up PDF; a real PDF can still surprise, so read an imported book through once.
-- F3.10 Every text size from the smallest to the largest: no line stretched past the limit, no word past the margin, nothing cut off. The test reads every page of both standards and the first part of the User manual at four sizes.
+- F3.10 Every text size from the smallest to the largest: no line stretched past the limit, no word past the margin, nothing cut off. A line that would be stretched past the limit is set unstretched instead, including one that ends inside a hyphenated word. The test reads every page of both standards and the first part of the User manual at four sizes, on a phone set to English.
 - F3.10 and F7.4 The formatting holds. The same book shows the same lines on the same pages after the text size is moved to both ends and back, after Justify and the typeface are changed and changed back, after the phone is turned sideways and back, and after Inkhorse is closed and opened again. A recorded layout of a fixed test book fails the test if any change moves a page break.
 - F4.1 to F4.4 Curly quotes and apostrophes, closed em dashes, en dashes in a range of years, and the one-mark ellipsis, on the page and in the EPUB. A phone number or a web address is never changed.
 - F5.1 A section heading is smaller than the chapter title and every section heading is set the same way, on screen, in print and in the EPUB.
@@ -280,13 +281,14 @@ Proven: an automatic test checks it before every change goes out. For the print 
 - F7.1 In the print PDF, front matter is numbered in small Roman numerals (the contents page shows its number; the title, copyright, dedication and blank pages carry none), and chapter one starts again at 1. The Contents gives each chapter that number.
 - F9.1 The print PDF comes in 6 × 9, 5.5 × 8.5, 5 × 8 and 8.5 × 11 inches, and every page is exactly that size.
 - F9.2 and F9.3 The print PDF's inside margin is 0.875 inch, enough for a book of any length Amazon prints, and its outside margin is 0.625 inch, on every page.
-- F9.4 The print PDF holds no cover.
+- F9.4 The print PDF holds no cover, also for a book that has one: its own pictures are printed, its cover is not.
+- F1.4 in print: the copyright page is page 2, the back of the title page, set smaller than the body text, in all four sizes.
 - F10.1 and F4.7 A PDF that stores no spaces between its words comes in with every space put back, and no words run together.
-- F10.3 Running heads from the printed pages are left out of an imported PDF's text.
-- F10.5 A run-on contents page is split into one entry per line.
-- F10.6 A label above a chapter title stays with its title.
+- F10.3 Running heads from the printed pages are left out of an imported PDF's text. The test uses the made-up "For Dummies"-style PDF; page footers and leftover page numbers are not yet checked on their own.
+- F10.5 A run-on contents page is split into one entry per line: every chapter and part of the test PDF's contents is an entry of its own, and no entry holds two.
+- F10.6 A label above a chapter title stays with its title, in an e-book brought in. The test uses one made-up e-book; chapters found from a PDF's bookmarks are not yet tested on their own.
 - F10.7 A PDF kept as pictures of its pages shows its first page as the cover and one picture for each page after it, with the type settings that cannot apply switched off.
-- F10.8 A drop capital printed apart from its word is joined back to it.
+- F10.8 A drop capital printed apart from its word is joined back to it, and the chapter's opening reads correctly, with the words printed beside the capital kept in order (four chapter openings of the test PDF).
 - F10.9 A section is never mistaken for a chapter, and the Introduction's own sections stay inside it.
 
 Meets the standard, checked by eye but not yet by an automatic test:

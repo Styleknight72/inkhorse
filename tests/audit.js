@@ -395,7 +395,7 @@ const path = require('path');
     if(!r.onFs||!/Drag across/.test(r.onFull)) throw new Error('tips did not come back when switched on: '+JSON.stringify(r));
     return true;
   });
-  await step('F2.3 + F2.6 Chapter opening (Classic): no page header on a chapter\'s first page; the label sits just above the title in the sink; print PDF and EPUB carry the same label (rev 198)', async () => {
+  await step('F2.3 + F2.6 Chapter opening (Classic): no page header on a chapter\'s first page; the label sits just above the title in the sink; print PDF and EPUB are checked in the F2.3 label step (rev 198)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=198))) return 'SKIP: before rev 198';
     const was=await page.evaluate(()=>RB&&RB.id); if(was) await page.evaluate(()=>leaveLibraryBook()); const curBefore=await page.evaluate(()=>[S.cur,S.rch,S.anchor]);
     const id=await page.evaluate(()=>{ return addChapter('Chapter Nine: Opening test',Array.from({length:40},(_,i)=>'Sentence '+i+' of the opening test, long enough to fill a few lines of the page.').join('\n')); });
@@ -786,7 +786,7 @@ const path = require('path');
       const D=await look(); if(/rgba\(0, 0, 0, 0\)|transparent/.test(D.bg)) throw new Error('in the night theme the dark lettering has no light card behind it');
     } finally { await ctx.close(); }
   });
-  await step('F1.2 F1.3 The Inkhorse Formatting Standard comes with Inkhorse: on the shelf beside the manual, opens with its cover, front matter and every part; Delete offers to put it back, and that works (rev 225)', async () => {
+  await step('The Inkhorse Formatting Standard comes with Inkhorse: on the shelf beside the manual, opens with its cover, front matter and every part; Delete offers to put it back, and that works (rev 225)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=225))) return 'SKIP: before rev 225 only the manual came with Inkhorse';
     const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
     try{
@@ -840,7 +840,7 @@ const path = require('path');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
   });
-  await step('F1.4 P3.6 The credit line is the author’s choice: blank by default, one tap writes “Made with Inkhorse”, it reaches the copyright page, and it can be cleared (rev 228)', async () => {
+  await step('P3.6 The credit line is the author’s choice: blank by default, one tap writes “Made with Inkhorse”, it reaches the copyright page, and it can be cleared (rev 228)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=228))) return 'SKIP: before rev 228 there was no Made with Inkhorse button';
     const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
     try{
@@ -945,11 +945,12 @@ const path = require('path');
   });
   await step('F3.10 A clean page at every text size: from the smallest to the largest, no justified line is stretched past the limit, no word runs past the margin, nothing is cut off, long words break the same way everywhere, and a web address can break (rev 234)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=234))) return 'SKIP: before rev 234 big text opened wide gaps between words';
-    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    /* rev 244 (independent review): the test phone is set to English, so Inkhorse's own word breaking must be on; if it is off, that is a fault, not a reason to skip */
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max'],locale:'en-US'}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
     try{
       await pg.goto(page.url()); await pg.waitForTimeout(2500); await pg.evaluate(()=>document.fonts.ready);
       const own=await pg.evaluate(()=>({on:OWNHY, std:hyWord('standard'), ink:hyWord('Inkhorse'), cap:hyWord('Publishing'), last:hyWord('book'), url:urlBr('kobowritinglife.zendesk.com/help'), css:getComputedStyle(M2).hyphens||getComputedStyle(M2).webkitHyphens}));
-      if(!own.on) return 'SKIP: this browser is not set to English, so the browser\'s own hyphenation is in use';
+      if(!own.on) throw new Error('on a phone set to English, Inkhorse\'s own word breaking is off');
       if(own.ink!=='Ink­horse') throw new Error('"Inkhorse" should break as Ink-horse, got '+JSON.stringify(own.ink));
       if(own.std.indexOf('­')<0||own.cap.indexOf('­')<0) throw new Error('a long word (or a capitalized one) is not broken: '+JSON.stringify([own.std,own.cap]));
       if(own.last!=='book') throw new Error('a short word was broken: '+JSON.stringify(own.last));
@@ -971,7 +972,7 @@ const path = require('path');
                 for(const s of p.querySelectorAll('span[data-w]')){ const rs=s.getClientRects(); for(let q=0;q<rs.length;q++){ const r=rs[q]; if(!(r.width>0)) continue; if(!cur||Math.abs(r.top-cur.top)>r.height*0.5){ cur={top:r.top,it:[]}; lines.push(cur); } cur.it.push({l:r.left,r:r.right,t:s.textContent,whole:q===rs.length-1}); if(r.right>B.right+1) res.past.push(T(id)+' p'+(i+1)+': '+s.textContent); } }
                 res.lines+=lines.length;
                 if(cs.textAlign==='justify') for(let q=0;q<lines.length-1;q++){ const it=lines[q].it; if(it.length<2) continue; res.just++; let g=0; for(let x=1;x<it.length;x++) g=Math.max(g,it[x].l-it[x-1].r);
-                  if(g>LOOSE*sp*1.08){ if(it[it.length-1].whole) res.loose.push(T(id)+' p'+(i+1)+' ('+(g/sp).toFixed(1)+' spaces): '+it.map(x=>x.t).join(' ')); else res.hyEnd++; } } } } } }
+                  if(g>LOOSE*sp*1.08){ if(it[it.length-1].whole) res.loose.push(T(id)+' p'+(i+1)+' ('+(g/sp).toFixed(1)+' spaces): '+it.map(x=>x.t).join(' ')); else { res.hyEnd++; res.hyAt=(res.hyAt||[]).concat(T(id)+' p'+(i+1)+': '+it.map(x=>x.t).join(' ')); } } } } } } }
         return res; },{book,fs,maxPages});
       const runs=[['publishing',12,999],['publishing',18,999],['publishing',23,999],['publishing',28,999],['standard',12,999],['standard',18,999],['standard',28,999],['manual',12,40],['manual',18,40],['manual',28,60]];
       const cap={12:0.04,18:0.12,23:0.15,28:0.27};   /* measured Nov 10, 2026: at most 1.6%, 8.0%, 9.3% and 20.7% */
@@ -980,7 +981,8 @@ const path = require('path');
         if(r.cut.length) throw new Error(at+'text is cut off at the bottom of '+r.cut.slice(0,3).join(', '));
         if(r.past.length) throw new Error(at+'a word runs past the margin: '+r.past.slice(0,3).join(' | '));
         if(r.loose.length) throw new Error(at+r.loose.length+' line(s) stretched past the limit, e.g. '+r.loose.slice(0,2).join(' | '));
-        if(r.hyEnd>Math.max(2,r.just*0.02)) throw new Error(at+r.hyEnd+' loose lines end inside a broken word and were left stretched');
+        /* rev 244 (independent review): none allowed now; the old 2% allowance hid real stretched lines */
+        if(r.hyEnd>0) throw new Error(at+r.hyEnd+' loose line(s) end inside a broken word and were left stretched, e.g. '+r.hyAt.slice(0,2).join(' | '));
         if(!r.shyBody) throw new Error(at+'no long word on these pages was given a break point');
         if(r.shyElse) throw new Error(at+'a heading, contents line or front page was given hyphen breaks');
         if(r.ragged>r.just*cap[fs]) throw new Error(at+r.ragged+' of '+r.just+' justified lines had to be set unstretched; more than '+Math.round(cap[fs]*100)+'% means the breaking got worse'); }
@@ -989,7 +991,7 @@ const path = require('path');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
   });
-  await step('F6.3 F6.6 On a contents page, a tap at the edge turns the page (the page number is not a link), and a tap on an entry’s words opens that entry (rev 231)', async () => {
+  await step('F6.6 On a contents page, a tap at the edge turns the page (the page number is not a link), and a tap on an entry’s words opens that entry (rev 231)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=231))) return 'SKIP: before rev 231 the page number at the edge of a contents line was a link';
     const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
     try{
@@ -1022,7 +1024,10 @@ const path = require('path');
     if(c.other.length) throw new Error(name+': the contents page holds something that is not a contents entry: '+c.other.slice(0,2).join(' | '));
     const pr=c.entries.find(e=>/(\.{3,}|…|\s\d{1,4})$/.test(e.tt)); if(pr) throw new Error(name+': an entry still carries a printed page number or dots from the paper book: "'+pr.tt+'"');
     const nn=c.entries.find(e=>e.link&&!/^[\d,]+$/.test(e.tn)); if(nn) throw new Error(name+': a linked entry has no page number of Inkhorse\'s own: "'+nn.tt+'" → "'+nn.tn+'"');
-    if(!c.sig[1]) throw new Error(name+': no chapter entry with a dotted line and a number was found'); };
+    if(!c.sig[1]) throw new Error(name+': no chapter entry with a dotted line and a number was found');
+    /* rev 244 (independent review): one entry per line. Two printed contents lines run together show as one entry holding two chapter or part
+       numbers, or as an entry that wraps over more than three lines */
+    const ro=c.entries.find(e=>(e.tt.match(/\b(?:chapter|part)\s+\d+\b/gi)||[]).length>1||e.lines>3); if(ro) throw new Error(name+': two contents lines ran together into one entry: "'+ro.tt.slice(0,120)+'" ('+ro.lines+' lines)'); };
   // rev 233: the For-Dummies-style PDF is imported once; each rule below checks its own part of the result.
   let dummiesP=null;
   const dummiesLike=()=>dummiesP||(dummiesP=(async()=>{
@@ -1041,7 +1046,7 @@ const path = require('path');
         const o=rOrder(), T=x=>RB.ch.get(x).title, find=re=>o.find(x=>re.test(T(x)));
         const front=o.filter(isFront).map(T), intro=find(/^Introduction$/), c1=find(/^Chapter 1:/), c5=find(/^Chapter 5:/);
         const lab=x=>{ goTo({ch:x,i:0}); drawView(); refreshReader(); return {lab:document.querySelector('#chLab').textContent,ck:(document.querySelector('#spread .ck')||{}).textContent||''}; };
-        const out={front,intro:lab(intro),c1:lab(c1),c5no:fmtChapterNo(c5,0),c1text:RB.ch.get(c1).text.split('\n').slice(0,2), heads:o.filter(x=>!isFront(x)).map(x=>RB.ch.get(x).text).join('\n').split('\n').filter(l=>/(?:^|\s)(?:CHAPTER \d+ |PART \d+ )[A-Z][a-z]/.test(l)).slice(0,3), cap:RB.ch.get(c1).text.split('\n').slice(0,3), titles:o.filter(x=>!isFront(x)).map(T)};
+        const out={front,intro:lab(intro),c1:lab(c1),c5no:fmtChapterNo(c5,0),c1text:RB.ch.get(c1).text.split('\n').slice(0,2), heads:o.filter(x=>!isFront(x)).map(x=>RB.ch.get(x).text).join('\n').split('\n').filter(l=>/(?:^|\s)(?:CHAPTER \d+ |PART \d+ )[A-Z][a-z]/.test(l)).slice(0,3), cap:RB.ch.get(c1).text.split('\n').slice(0,3), caps:[1,10,11,12].map(n=>{ const x=find(new RegExp('^Chapter '+n+':')); return x?RB.ch.get(x).text.split('\n').filter(l=>l.trim()).slice(0,2).join(' '):null; }), titles:o.filter(x=>!isFront(x)).map(T)};
         out.toc=[]; out.over=[]; for(const id of o.filter(x=>CONTENTS_HEAD.test(T(x)))){ const n=pag(id).pages.length; for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); const B=document.querySelector('#spread .ptext').getBoundingClientRect();
           document.querySelectorAll('#spread p.toc').forEach(e=>{ const t=e.innerText.replace(/\s+/g,' ').trim(); if([...e.querySelectorAll('.tt,.tn')].some(x=>x.getBoundingClientRect().right>B.right+1)) out.over.push(t); if(/origins/.test(t)) out.toc.push({t,link:!!e.dataset.goch,big:e.classList.contains('t1')}); }); } }
         return out; });
@@ -1069,6 +1074,11 @@ const path = require('path');
   await step('F10.8 A drop capital printed apart from its word is joined back to it in an imported PDF (rev 232, rule written in rev 233)', async () => {
     const r=await dummiesLike(); if(typeof r==='string') return r;
     if(r.cap.some(l=>/^[A-Z]$/.test(l.trim()))) throw new Error('a drop capital was left apart from its word: '+r.cap.join(' / '));
+    /* rev 244 (independent review): the opening must also read correctly: the capital joined to its own word, and the text beside the capital kept in order */
+    const want=[['Menu of is modifier vertex cut option','Timeline option edge paint option bone rotate'],['Tool timeline with the sculpt keyframe','Tool light brush weight select you curve'],['That outliner layer your node camera','option. Each to as value join origin'],['Outliner shading shading each bevel','In for that sculpt material join']];
+    const norm=t=>String(t||'').replace(/[\u00ad\u2060]/g,'').replace(/\s+/g,' ');
+    want.forEach(([a,b],k)=>{ const t=norm(r.caps[k]); if(!t.startsWith(a)) throw new Error('chapter opening '+(k+1)+' does not read correctly: it starts '+JSON.stringify(t.slice(0,60)));
+      const i=t.indexOf(b); if(i<0) throw new Error('chapter opening '+(k+1)+': the words beside the drop capital are lost or out of order: '+JSON.stringify(t.slice(0,160))); });
   });
   await step('F10.9 A section is never mistaken for a chapter: a section that starts with its chapter\'s words stays a section in the Table of Contents (rev 232, rule written in rev 233)', async () => {
     const r=await dummiesLike(); if(typeof r==='string') return r;
@@ -1104,6 +1114,12 @@ const path = require('path');
         BOOK.title=L.title; BOOK.author=L.author;
         return L.chapters.map((t,c)=>addChapter(t,Array.from({length:44},(_,k)=>para(c*17+k)).join('\n'),BOOK.order.length)); },lab);
       lab.order=await pg.evaluate(()=>BOOK.order.map(id=>CH.get(id).title));
+      /* rev 244 (F2.3): the label each chapter's first page shows on screen, to compare with print and the e-book */
+      lab.labels=await pg.evaluate(async ids=>{ setTab('read'); await new Promise(r=>setTimeout(r,300)); const out=[]; for(const id of ids){ goTo({ch:id,i:0}); drawView(); await new Promise(r=>setTimeout(r,60));
+        const f=document.querySelector('#spread .face:not(.gone) .ptext[data-ch="'+id+'"]'), face=f&&f.closest('.face'), ck=face&&face.querySelector('.ck,.bn'), h=f&&f.querySelector('h2.cht');
+        const cs=h&&getComputedStyle(h), pr=f&&f.getBoundingClientRect(), hr=h&&h.getBoundingClientRect();
+        out.push({ck:ck?ck.textContent.trim():null,title:h?h.textContent.replace(/[\u00ad\u2060]/g,'').trim():null,
+          sig:cs?[cs.fontFamily,cs.fontSize,cs.fontWeight,cs.fontStyle,cs.letterSpacing,cs.textTransform,cs.fontVariantCaps,cs.textAlign,cs.lineHeight,cs.marginTop,cs.marginBottom,Math.round(hr.top-pr.top)].join(' | '):null}); } return out; },lab.ids);
       /* on screen (F3.2, F3.3): the second page of a chapter, where every paragraph is an ordinary one */
       lab.screen=await pg.evaluate(async id=>{ setTab('read'); await new Promise(r=>setTimeout(r,400)); const all=[]; for(let i=1;i<=6;i++){ goTo({ch:id,i}); drawView(); await new Promise(r=>setTimeout(r,60));
         const pt=document.querySelector('#spread .face:not(.gone) .ptext'), ps=[...pt.querySelectorAll('p:not(.toc):not(.sb)')], k=pt.getBoundingClientRect().width/pt.offsetWidth;
@@ -1159,6 +1175,31 @@ const path = require('path');
     if(!m) throw new Error('the e-book has no paragraph style'); const ti=/text-indent:\s*([\d.]+)em/.exec(m[1]), mg=/margin:\s*0(?:[;\s}]|$)/.test(m[1]);
     if(!ti||+ti[1]<1||+ti[1]>1.5) throw new Error('the e-book paragraph indent is '+(ti?ti[1]+'em':'missing')+'; it should be 1 to 1.5 em'); if(!mg) throw new Error('the e-book puts space between paragraphs as well as an indent: '+m[1]);
   });
+  await step('F2.3 The chapter label is the same on screen, in the print PDF and in the e-book, and sits just above the chapter title in each (rev 244)', async () => {
+    const L=await exportLab(); if(typeof L==='string') return L;
+    const sq=x=>String(x||'').replace(/\s+/g,'').toUpperCase();
+    for(let c=0;c<L.chapters.length;c++){ const want=L.labels[c], name=L.chapters[c];
+      if(!want||!want.ck) throw new Error(name+': no chapter label on the first page on screen: '+JSON.stringify(want));
+      if(want.title!==name) throw new Error(name+': the title on screen reads '+JSON.stringify(want.title));
+      for(const size of ['6x9','8.5x11']){ const op=L.pdf[size].find(p=>p.opener===name); if(!op) throw new Error(size+': no first page for '+name);
+        const t=op.it.find(i=>i.s.trim()===name), lab=op.it.filter(i=>i.y>t.y&&i.y<t.y+60&&i.h<t.h);
+        if(sq(lab.map(i=>i.s).join(''))!==sq(want.ck)) throw new Error(size+' '+name+': print label is '+JSON.stringify(lab.map(i=>i.s).join(''))+', screen shows '+JSON.stringify(want.ck)); }
+      const f=Object.keys(L.epub).filter(k=>/\.xhtml$/.test(k)).find(k=>new RegExp('<h1>'+name+'</h1>').test(L.epub[k])); if(!f) throw new Error('e-book: no chapter page with the title '+name);
+      const m=/<p class="(?:ck|bn)">([^<]*)<\/p>\s*<h1>/.exec(L.epub[f]);
+      if(!m||sq(m[1])!==sq(want.ck)) throw new Error('e-book '+name+': the label just before the title is '+JSON.stringify(m&&m[1])+', screen shows '+JSON.stringify(want.ck)); }
+  });
+  await step('F2.7 Chapter titles are all set the same way, on screen, in the print PDF and in the e-book: same font, size, weight, spacing, capitals and place on the page (rev 244)', async () => {
+    const L=await exportLab(); if(typeof L==='string') return L;
+    const sc=L.labels.map(x=>x.sig); if(sc.some(x=>!x)) throw new Error('a chapter title was not found on screen');
+    const d=sc.findIndex(x=>x!==sc[0]); if(d>0) throw new Error('on screen, '+L.chapters[d]+' is set differently from '+L.chapters[0]+': '+sc[d]+' vs '+sc[0]);
+    for(const size of Object.keys(SIZES)){ const t=L.chapters.map(c=>{ const op=L.pdf[size].find(p=>p.opener===c), i=op&&op.it.find(x=>x.s.trim()===c); return i?{h:+i.h.toFixed(2),y:+i.y.toFixed(1)}:null; });
+      if(t.some(x=>!x)) throw new Error(size+': a chapter title is missing in print');
+      const b=t.findIndex(x=>x.h!==t[0].h||Math.abs(x.y-t[0].y)>0.5); if(b>0) throw new Error(size+': in print '+L.chapters[b]+' is set differently from '+L.chapters[0]+': '+JSON.stringify([t[b],t[0]])); }
+    const hs=Object.keys(L.epub).filter(k=>/\.xhtml$/.test(k)).map(k=>(/<section[^>]*>(?:<p class="(?:ck|bn)">[^<]*<\/p>)?(<h1[^>]*>)/.exec(L.epub[k])||[])[1]).filter(Boolean);
+    if(hs.length<L.chapters.length) throw new Error('e-book: only '+hs.length+' chapter titles found');
+    if(new Set(hs).size!==1) throw new Error('e-book chapter titles are not all marked up the same way: '+[...new Set(hs)].join(' , '));
+    const css=Object.entries(L.epub).filter(([f])=>/\.css$/.test(f)).map(([,c])=>c).join('\n'); if(/h1\s*\.|h1:nth|h1\[/.test(css)) throw new Error('the e-book styles some chapter titles differently from others');
+  });
   await step('F9.1 P6.1 Print PDF: every page is exactly the size chosen, in all four sizes (6 × 9, 5.5 × 8.5, 5 × 8, 8.5 × 11 in) (rev 235)', async () => {
     const L=await exportLab(); if(typeof L==='string') return L;
     for(const [size,[wi,hi]] of Object.entries(SIZES)){ const pages=L.pdf[size]; if(!pages||pages.length<8) throw new Error(size+': only '+(pages?pages.length:0)+' pages');
@@ -1173,11 +1214,24 @@ const path = require('path');
         if(p.ch&&!p.opener&&p.body.length>40){ full++; if(x>lm+0.6||r<rm-1.5) throw new Error(size+' page '+p.n+': a full page of text does not reach both margins ('+(x/IN).toFixed(3)+' in and '+((p.w-r)/IN).toFixed(3)+' in)'); } }
       if(!full) throw new Error(size+': no full page of text was found to measure'); }
   });
-  await step('F9.4 F1.3 P6.4 Print PDF: no cover and no picture in the file; page 1 is the title page, with no page number and no header (rev 235)', async () => {
+  await step('F9.4 F1.3 P6.4 Print PDF: no cover in the file, in a book without a cover and in one with a cover and a picture; page 1 is the title page, with no page number and no header (rev 235)', async () => {
     const L=await exportLab(); if(typeof L==='string') return L;
     for(const size of Object.keys(SIZES)){ const pages=L.pdf[size], im=pages.find(p=>p.imgs); if(im) throw new Error(size+': page '+im.n+' holds a picture, in a book that has none');
       const p1=pages[0], t=p1.it.map(i=>i.s).join(' '); if(!t.includes(L.title)||!t.includes(L.author)) throw new Error(size+': page 1 is not the title page: '+t.slice(0,80));
       if(p1.head||p1.foot) throw new Error(size+': the title page carries a header or a page number ('+(p1.head||p1.foot)+')'); }
+    /* rev 244 (independent review): the same check on a book that HAS a cover: the cover stays out, and its one picture is printed once, by its caption */
+    const R=L.rich.pdf, n=R.reduce((a,p)=>a+p.imgs,0), at=R.filter(p=>p.imgs);
+    if(n!==1) throw new Error('the book with a cover and one picture prints '+n+' picture(s) (pages '+at.map(p=>p.n).join(', ')+'); the cover must not be in the print file');
+    if(!/A small harbor at dawn/.test(at[0].text)) throw new Error('the one picture in print is not the book\'s own picture (page '+at[0].n+': '+at[0].text.slice(0,80)+')');
+    if(!R[0].text.includes(L.title)||R[0].imgs) throw new Error('with a cover, page 1 of the print file is not the title page: '+R[0].text.slice(0,80));
+  });
+  await step('F1.4 Print PDF: the copyright page is page 2, the back of the title page, and is set smaller than the body text, in all four sizes (rev 244)', async () => {
+    const L=await exportLab(); if(typeof L==='string') return L;
+    for(const size of Object.keys(SIZES)){ const pages=L.pdf[size], cp=pages.findIndex(p=>/©|Copyright/.test(p.text));
+      if(cp!==1) throw new Error(size+': the copyright page is page '+(cp+1)+', not page 2 (the back of the title page)');
+      const body=pages.find(p=>p.ch&&!p.opener&&p.body.length>40); if(!body) throw new Error(size+': no full page of body text to compare with');
+      const bh=body.body.map(i=>i.h).sort((a,b)=>a-b)[Math.floor(body.body.length/2)], ch=Math.max(...pages[1].it.map(i=>i.h));
+      if(!(ch<bh)) throw new Error(size+': the copyright page is set at '+ch.toFixed(1)+' pt, not smaller than the body text ('+bh.toFixed(1)+' pt)'); }
   });
   await step('F7.2 F9.5 F2.6 P6.5 Print PDF: every chapter opens on a right-hand page with no header; a blank page carries no number and no header (rev 235)', async () => {
     const L=await exportLab(); if(typeof L==='string') return L;
@@ -1419,6 +1473,11 @@ const path = require('path');
     for(const name of Object.keys(all)) if(!all[name].titles.length) delete all[name];   /* a book with no contents page (both standards) has nothing to check */
     if(Object.keys(all).length<2||!all['the User manual']) throw new Error('fewer than two books with a contents page were read: '+Object.keys(all).join(', '));
     for(const [name,c] of Object.entries(all)) checkContents(name,c);
+    /* rev 244: the imported PDF's own contents list comes through whole: every one of its 21 chapters and 5 parts is an entry of its own */
+    { const tt=D.cont.entries.map(e=>e.tt.replace(/\s+/g,' ')); const miss=[];
+      for(let n=1;n<=21;n++) if(!tt.some(t=>new RegExp('^chapter '+n+'\\b','i').test(t))) miss.push('Chapter '+n);
+      for(let n=1;n<=5;n++) if(!tt.some(t=>new RegExp('^part '+n+'\\b','i').test(t))) miss.push('Part '+n);
+      if(miss.length) throw new Error('the imported PDF\'s contents lost entries (run together or dropped): '+miss.slice(0,6).join(', ')+' — entries: '+JSON.stringify(tt.slice(0,12))); }
     const base=all['the User manual'].sig[1]; for(const [name,c] of Object.entries(all)) if(c.sig[1]!==base) throw new Error('chapter entries are set differently in '+name+' ('+c.sig[1]+') than in the User manual ('+base+')');
     if(!/flex/.test(base)||!/dotted/.test(base)||!/num-at-right-edge/.test(base)) throw new Error('a contents entry is not a line with a dotted leader and its number at the right edge: '+base);
     const two=Object.entries(all).filter(([,c])=>c.sig[2]); if(!two.length) throw new Error('no book in the test has section entries to compare'); for(const [name,c] of two){ if(c.sig[2]===c.sig[1]) throw new Error('in '+name+' section entries look the same as chapter entries: '+c.sig[2]); if(c.sig[2]!==two[0][1].sig[2]) throw new Error('section entries are set differently in '+name+' than in '+two[0][0]); }
@@ -1537,7 +1596,7 @@ const path = require('path');
     await ctx.route(/pdf\.js\/3\.11\.174\/pdf\.min\.js/, r=>r.fulfill({path:P.join(PDFJS_DIR,'pdf.min.js'),contentType:'application/javascript'}));
     await ctx.route(/pdf\.js\/3\.11\.174\/pdf\.worker\.min\.js/, r=>r.fulfill({path:P.join(PDFJS_DIR,'pdf.worker.min.js'),contentType:'application/javascript'}));
     const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
-    const got={chrome:String(browser.version()).split('.')[0], screen:{}, print:{}, word:{}, epub:{}}, pics={}, tpSeen={};
+    const got={chrome:String(browser.version()).split('.')[0], screen:{}, print:{}, word:{}, epub:{}}, pics={}, tpSeen={}, runOnSeen={}, LOOSE_T=await page.evaluate(()=>LOOSE);
     try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
       /* the same settings and the book typeface built into Inkhorse for print, as in the Layout lock, so the pages do not depend on the test machine's fonts */
       const fontOk=await pg.evaluate(async()=>{ S.tips=false; S.just=true; S.fs=18; S.lh='1.55';
@@ -1550,18 +1609,25 @@ const path = require('path');
              unless stretching it would open a gap wider than three word spaces (F3.10), and a title page is centred */
           const chk=await pg.evaluate(r=>{ const P=pag(r.ch), [a,b]=P.pages[r.i], doc=P.doc, pt=document.querySelector('#spread .face:not(.gone) .ptext'); if(!pt) return null;
             const tn=pt.querySelector('p.toc .tn'), tt=pt.querySelector('p.toc .tt');
-            const out={tnColor:tn&&tt&&getComputedStyle(tn).color!==getComputedStyle(tt).color?getComputedStyle(tn).color:'', label:[...pt.querySelectorAll('h2')].map(h=>h.textContent.trim()).find(x=>LABEL_FRONT.test(x))||'', rhLabel:(()=>{ const rh=document.querySelector('#spread .face:not(.gone) .rh'); return rh&&LABEL_FRONT.test(rh.textContent.trim())?rh.textContent.trim():''; })(), tp:pt.classList.contains('tp'), tpLeft:[...pt.querySelectorAll('p')].some(p=>pt.classList.contains('tp')&&getComputedStyle(p).textAlign!=='center')};
+            /* rev 244 (independent review): compared with the page's own text colour, not with the entry title (both could be coloured alike) */
+            const body=getComputedStyle(pt).color, bad=[...pt.querySelectorAll('p.toc .tn,p.toc .tt')].find(x=>getComputedStyle(x).color!==body);
+            const out={tnColor:bad?getComputedStyle(bad).color+' (text is '+body+')':'', label:[...pt.querySelectorAll('h2')].map(h=>h.textContent.trim()).find(x=>LABEL_FRONT.test(x))||'', rhLabel:(()=>{ const rh=document.querySelector('#spread .face:not(.gone) .rh'); return rh&&LABEL_FRONT.test(rh.textContent.trim())?rh.textContent.trim():''; })(), tp:pt.classList.contains('tp'), tpLeft:[...pt.querySelectorAll('p')].some(p=>pt.classList.contains('tp')&&getComputedStyle(p).textAlign!=='center')};
             const Pp=b>a&&b<doc.words.length?doc.paras[doc.words[b-1].p]:null; if(!Pp||Pp.img||Pp.h||Pp.toc||Pp.sb||Pp.end<=b||doc.front) return out;
             const ps=pt.querySelectorAll('p'), p=ps[ps.length-1]; if(!p) return out; const lines=[]; let cur=null;
             for(const sp of p.querySelectorAll('span[data-w]')) for(const q of sp.getClientRects()){ if(!(q.width>0)) continue; if(!cur||Math.abs(q.top-cur.top)>q.height*0.5){ cur={top:q.top,it:[]}; lines.push(cur); } cur.it.push({l:q.left,r:q.right}); }
             const L=lines[lines.length-1]; if(!L) return out; const right=p.getBoundingClientRect().right, sw=spaceW(p)*(scaleK||1);
-            out.one=L.it.length<2 && lines.length>1; out.short=right-L.it[L.it.length-1].r>sw*1.5; out.more=p.classList.contains('more'); return out; },refs[k]);
+            out.one=L.it.length<2 && lines.length>1; out.short=right-L.it[L.it.length-1].r>sw*1.5; out.more=p.classList.contains('more');
+            out.need=L.it.length>1?(sw+(right-L.it[L.it.length-1].r)/(L.it.length-1))/sw:99; out.runOn=true; return out; },refs[k]);
           if(chk&&chk.one) throw new Error(name+' page '+(k+1)+': the page stops part-way through a paragraph with one word alone on its last line');
-          if(chk&&chk.tnColor) throw new Error(name+' page '+(k+1)+': a contents page number is coloured ('+chk.tnColor+'), not in the text colour (F6.3)');
+          if(chk&&chk.tnColor) throw new Error(name+' page '+(k+1)+': a contents page number or entry is coloured '+chk.tnColor+', not in the text colour (F6.3)');
           if(chk&&(chk.label||chk.rhLabel)) throw new Error(name+' page '+(k+1)+': the page shows the label "'+(chk.label||chk.rhLabel)+'" as a heading or page header (F1.3)');
           if(chk&&chk.tpLeft) throw new Error(name+' page '+(k+1)+': a line of the title page is not centred');
           if(chk&&chk.tp) tpSeen[name]=(tpSeen[name]||0)+1;
-          if(chk&&chk.more===false&&chk.short===false){} 
+          /* rev 244 (F3.7, independent review): the last line of a paragraph that runs on to the next page reaches the right margin, unless
+             stretching it would open gaps wider than the F3.10 limit (then it is set unstretched, like any loose line) */
+          if(chk&&chk.runOn){ runOnSeen[name]=(runOnSeen[name]||0)+1;
+            if(chk.more&&chk.short) throw new Error(name+' page '+(k+1)+': the run-on paragraph\'s last line is marked full but stops short of the margin (F3.7)');
+            if(chk.short&&chk.need<LOOSE_T*0.9) throw new Error(name+' page '+(k+1)+': the run-on paragraph\'s last line stops short of the margin though it could be filled with gaps of '+chk.need.toFixed(1)+' spaces (F3.7)'); }
           const el=await pg.$('#spread .face:not(.gone)'); if(!el) throw new Error(name+': no page drawn at '+(k+1)); const buf=await el.screenshot({animations:'disabled'});
           list.push(H(buf)); pics[name+'/'+String(k+1).padStart(3,'0')+'.jpg']=await el.screenshot({animations:'disabled',type:'jpeg',quality:70}); }
         got.screen[name]=list; };
@@ -1573,10 +1639,17 @@ const path = require('path');
       { const dt=await pg.evaluate(()=>BOOK.order.map(dispTitle)); if(dt[1]!=='Chapter Two: A Family Between Two Countries, and the Long Road from Quebec to the Mill Towns of New England'||dt[0]!=='Chapter One: Point of Origin') throw new Error('1-written: the chapters are not numbered evenly (F2.8): '+dt.join(' | ')); }
       await shootAll('1-written');
       const dl=async sel=>{ const [d]=await Promise.all([pg.waitForEvent('download',{timeout:120000}), pg.evaluate(s=>document.querySelector(s).click(),sel)]); return fs.readFileSync(await d.path()); };
-      { const doc=await pdfjs.getDocument({data:new Uint8Array(await dl('#expPdf')),disableFontFace:true}).promise;
-        for(let n=1;n<=doc.numPages;n++){ const tc=await (await doc.getPage(n)).getTextContent(); got.print[String(n).padStart(3,'0')]=H(JSON.stringify(tc.items.map(i=>[i.str,+i.transform[4].toFixed(1),+i.transform[5].toFixed(1),+i.height.toFixed(1)]))); } }
-      { const z=await JSZip.loadAsync(await dl('#expDocx')); for(const f of ['word/document.xml','word/header1.xml','word/styles.xml']) got.word[f]=H(await z.file(f).async('string')); }
-      { const z=await JSZip.loadAsync(await dl('#expEpub')); for(const f of Object.keys(z.files).filter(f=>/\.(xhtml|css)$/.test(f)).sort()) got.epub[f]=H((await z.file(f).async('string')).replace(/urn:uuid:[0-9a-f-]+/g,'UUID')); }
+      /* rev 244 (F2.8, independent review): the even numbering is read in each export's own words, not only through the recorded fingerprints */
+      const sq=t=>String(t).replace(/<[^>]+>/g,' ').replace(/\s+/g,'').toLowerCase(), two={};
+      { const doc=await pdfjs.getDocument({data:new Uint8Array(await dl('#expPdf')),disableFontFace:true}).promise; let all='';
+        for(let n=1;n<=doc.numPages;n++){ const tc=await (await doc.getPage(n)).getTextContent(); all+=tc.items.map(i=>i.str).join(' ')+'\n'; got.print[String(n).padStart(3,'0')]=H(JSON.stringify(tc.items.map(i=>[i.str,+i.transform[4].toFixed(1),+i.transform[5].toFixed(1),+i.height.toFixed(1)]))); } two.print=all; }
+      { const z=await JSZip.loadAsync(await dl('#expDocx')); for(const f of ['word/document.xml','word/header1.xml','word/styles.xml']){ const x=await z.file(f).async('string'); if(f==='word/document.xml') two.word=x.replace(/<\/w:p>/g,'\n'); got.word[f]=H(x); } }
+      { const z=await JSZip.loadAsync(await dl('#expEpub')); two.epub=''; for(const f of Object.keys(z.files).filter(f=>/\.(xhtml|css)$/.test(f)).sort()){ const x=await z.file(f).async('string'); if(/\.xhtml$/.test(f)) two.epub+=x; got.epub[f]=H(x.replace(/urn:uuid:[0-9a-f-]+/g,'UUID')); } }
+      for(const [k,t] of Object.entries(two)){ if(sq(t).indexOf('chaptertwo')<0) throw new Error('1-written '+k+': the unnumbered second chapter is not shown as "Chapter Two" (F2.8)');
+        if(/chapter2(?!\d)/.test(sq(t))) throw new Error('1-written '+k+': the second chapter also carries a number of Inkhorse\'s own ("Chapter 2") (F2.8)'); }
+      if(sq(two.print).indexOf('chaptertwoafamily')<0) throw new Error('1-written print: the second chapter\'s first page does not carry the label "Chapter Two" above its title (F2.8)');
+      if(!/class="(?:ck|bn)">Chapter Two<\/p>\s*<h1>A Family/.test(two.epub)) throw new Error('1-written e-book: the second chapter\'s page does not carry the label "Chapter Two" above its title (F2.8)');
+      if(!/Chapter Two/.test((/<nav[\s\S]*?<\/nav>/.exec(two.epub)||[''])[0])) throw new Error('1-written: the e-book\'s contents list does not show "Chapter Two" (F2.8)');
       /* 2-4. books brought in to read: an e-book, a Word file, a PDF */
       for(const [name,file] of [['2-epub',P.join(__dirname,'fixtures','import','foreign.epub')],['3-word',P.join(__dirname,'fixtures','import','word-book.docx')],['4-pdf',P.join(__dirname,'fixtures','dummies-like.pdf')]]){
         const before=await pg.evaluate(()=>LIB.map(b=>b.id));
@@ -1590,6 +1663,7 @@ const path = require('path');
         if(name==='4-pdf'){ const leak=await pg.evaluate(()=>{ const all=rOrder().map(id=>RB.ch.get(id).text).join('\n'); const m=/(?:^|\n)[^\n]{0,40}\b\d{1,3} Blendworks For Learners\b[^\n]{0,20}/.exec(all); return m?m[0].trim():''; });
           if(leak) throw new Error('4-pdf: a printed page header came in as text (F10.3): "'+leak+'"'); }
         await shootAll(name,name==='4-pdf'?40:300); }
+      if(!Object.values(runOnSeen).reduce((a,b)=>a+b,0)) throw new Error('no page that stops part-way through a paragraph was checked (F3.7)');
       for(const nm of ['2-epub','3-word','4-pdf']) if(!tpSeen[nm]) throw new Error(nm+': its title page is not set as a title page');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
@@ -2108,7 +2182,7 @@ const path = require('path');
     return !hits.length || (()=>{ throw new Error('found '+hits.join(', ')); })();
   });
   await step('Manual opens with a Contents page and page numbers', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1500); let all=''; for(let i=0;i<12;i++){ all+=await page.evaluate(()=>document.querySelector('#spread').innerText); await page.click('#next').catch(()=>{}); await page.waitForTimeout(450);} await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return /(^|\n)Welcome to Inkhorse\s+\d/.test(all) && /Chapter 1 · The big picture\s+\d/.test(all); });   /* rev 158: front pages carry no number in the Contents, like on their own pages */
-  await step('F3.7 Full screen: quick side taps turn one page each, in order, and leaving full screen mid-turn keeps the place (rev 193)', async () => {
+  await step('Full screen: quick side taps turn one page each, in order, and leaving full screen mid-turn keeps the place (rev 193)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=193))) return 'SKIP: before rev 193';
     await page.waitForFunction(()=>!turning && !turnQ.length,null,{timeout:8000}).catch(()=>{});   /* earlier steps' page turns finish first */
     await page.evaluate(()=>{ try{ if(RB) leaveLibraryBook(); }catch(_){ } }); await page.waitForTimeout(400);
