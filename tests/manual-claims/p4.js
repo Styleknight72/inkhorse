@@ -42,7 +42,7 @@ const readZip=async raw=>{ const z=await JSZip.loadAsync(raw), o={files:Object.k
    say(dd&&dd.text.trim()==='For the keeper of the light'&&/For the keeper of the light/.test(X)?'OK':'FAULT','YB-23c','the dedication is on its own page: '+(dd?'"'+dd.text.trim()+'"':'not found'));
    const need=['Copyright © 2025 Ada Tester','978-1-23456-789-7','Pier Press','Made with Inkhorse','Some names have been changed.']; const missP=need.filter(n=>!(cp&&cp.text.includes(n))), missE=need.filter(n=>!X.includes(n));
    say(!missP.length&&!missE.length?'OK':'FAULT','YB-23d','year, ISBN, publisher, credit line and notes go on the copyright page: missing in print '+JSON.stringify(missP)+', in EPUB '+JSON.stringify(missE));
-   const order=['title','copy','ded','toc','ch1'].map((k,i)=>[ /The Harbor Book/, /All rights reserved/, /For the keeper of the light/, /^Contents/, /^(?:C ?H ?A ?P ?T ?E ?R \d+ )?First Light/i ][i]);
+   const order=['title','copy','ded','toc','ch1'].map((k,i)=>[ /The Harbor Book/, /All rights reserved/, /For the keeper of the light/, /^(?:[ivxlc]+ )?Contents/, /^(?:C ?H ?A ?P ?T ?E ?R \d+ )?First Light/i ][i]);
    const pn=order.map(re=>{ const p=pdf.find(p=>re.test(p.text.trim())); return p?p.n:-1; });
    say(pn.every((n,i)=>n>0&&(i===0||n>pn[i-1]))?'OK':'FAULT','YB-26a','the exported book opens: title page, copyright page, dedication, contents, then chapters (print pages '+pn.join(', ')+') '+pdf.slice(4,7).map(p=>p.text.slice(0,30)).join(' || '));
    await pg.evaluate(()=>{ const c=document.querySelector('#fmToc'); c.checked=false; c.dispatchEvent(new Event('change',{bubbles:true})); }); await pg.waitForTimeout(150);

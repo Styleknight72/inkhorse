@@ -2443,6 +2443,20 @@ const path = require('path');
       ttsStop(); return ok; });
     return (r&&r.saved&&r.playing&&/fixed by ear/.test(r.now||'')) || (()=>{ throw new Error(JSON.stringify(r)); })();
   });
+  await step('Fix in place: pressing a word in the chapter title or a section heading opens the page with nothing selected, so typing never replaces words the writer did not choose (rev 246)', async () => {
+    const r=await page.evaluate(async()=>{
+      readMine(); const id=addChapter('Harbor Title','A first paragraph that is long enough to read.\n# The Truck\nA second paragraph after the heading.'); S.rch=id; S.anchor=0; PCACHE.clear(); refreshReader(); $('#tab-read').click(); await new Promise(z=>setTimeout(z,300));
+      jumpTo({ch:id,i:0}); await new Promise(z=>setTimeout(z,300)); const before=CH.get(id).text;
+      for(const word of ['Title','Truck']){ const sp=[...document.querySelectorAll('#spread .ptext [data-w]')].find(e=>e.textContent===word); if(!sp) return 'no "'+word+'" on the page';
+        fixOpen({ch:id,w:+sp.dataset.w}); if($('#fixBox').hidden) return 'did not open for '+word;
+        const t=$('#fixText'); if(ED.sel[0]!==ED.sel[1]||t.selectionStart!==t.selectionEnd) return 'pressing "'+word+'" selected '+JSON.stringify(t.value.slice(ED.sel[0],ED.sel[1]));
+        fixDone(); await new Promise(z=>setTimeout(z,400)); }
+      const sp=[...document.querySelectorAll('#spread .ptext [data-w]')].find(e=>e.textContent.replace(/­/g,'')==='paragraph'); fixOpen({ch:id,w:+sp.dataset.w});
+      if($('#fixText').value.slice(ED.sel[0],ED.sel[1])!=='paragraph') return 'a body word is no longer selected: '+JSON.stringify($('#fixText').value.slice(ED.sel[0],ED.sel[1]));
+      fixDone(); await new Promise(z=>setTimeout(z,300));
+      return CH.get(id).text===before?true:'the chapter changed: '+JSON.stringify(CH.get(id).text); });
+    return r===true || (()=>{ throw new Error(r); })();
+  });
   await step('Fix in place saves into the right paragraph when lines repeat, and an emptied page keeps its spot (rev 154)', async () => {
     const r=await page.evaluate(async()=>{
       readMine(); const same='She nodded and looked out of the window for a long while, saying nothing at all.';

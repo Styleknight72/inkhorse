@@ -2,6 +2,11 @@
 
 Read CLAUDE.md first, then this top section. Everything under "Older notes" is history kept for reference.
 
+## Where we left off (November 13, 2026, ~12:30 am)
+
+- **Preview = rev 246, waiting for Steve's "approved". Live = artifact = rev 245.** Next rev number is 247. Rev 246 = the User manual proven claim by claim for its last five chapters: tests/manual-claims p7–p10 (132 checks; p1–p6 = 126 for the first two chapters). All p1–p10 pass on the preview, apart from the README's two known-wrong p2 lines (BP-47b/c, re-checked right by p2b). Audit on preview/next.html: 176/176, 0 SKIP, 0 page errors (EPUBCheck jar at /root/epubcheck, deps in /root/jsdeps). One real fault fixed: in `fixOpen`, a word pressed in a chapter title or a section heading is not in the fix box, so the old code kept caret=0 and selected the first letters of the page's text (typing replaced them). Now `found` is checked and ED.sel=[0,0]. New audit step "Fix in place: pressing a word in the chapter title or a section heading…" fails on rev 245 (proven). Manual fixes: the two "tap a title or its page number" lines now say only the words of an entry open it (F6.6); a sentence on pressing a title/heading word; "now" taken out of two lines; Quick fixes "Old horse… | Old version showing" split into two lines. Test-side fixes: p4 YB-26a allows the Roman folio before "Contents" (since rev 241).
+- **Release 1.2 plan, where it stands (target about Nov 25):** User manual claim by claim = DONE on the preview (rev 246). Still to do: (1) move tests/manual-claims into tests/audit.js so they run before every push; (2) Publishing Standard P1.3 and P2.1 tests; (3) Steve's iPhone and iPad pass (nothing since rev 232 seen on his iPhone); (4) a few quiet days, then his call. Footnotes (F8.6) and the PDF items are after 1.2.
+
 ## Where we left off (November 11, 2026, midday)
 
 - **DEADLINE (Steve, Nov 11, 12:20 am: "You have 2 months"): Inkhorse ready by JANUARY 11, 2027.** "Ready" = a book tool people would pay for, trusted the way Vellum is: any book in, a good book out, automatically, every rule proven. The plan given to him, in order, each step on the preview with tests, nothing new outside it:
