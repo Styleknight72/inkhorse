@@ -265,6 +265,7 @@ Proven: an automatic test checks it before every change goes out. For the print 
 - F4.1 to F4.4 Curly quotes and apostrophes, closed em dashes, en dashes in a range of years, and the one-mark ellipsis, on the page and in the EPUB. A phone number or a web address is never changed.
 - F5.1 A section heading is smaller than the chapter title and every section heading is set the same way, on screen, in print and in the EPUB.
 - F5.2 and F3.4 A scene break is a centered ornament, and the paragraph after it is not indented, on the page, in the EPUB and in the print PDF.
+- F5.5 Lists, letters and quoted passages: a line that starts with a dash, a number or a greater-than sign is a list item or a quoted line. It is indented on both sides, the same in every chapter, with a little space above and below, on the page, in the e-book (real lists and block quotes, passing EPUBCheck), in the print PDF and in the Word manuscript (real Word lists and a Quote style). A list keeps its own numbers, and its bullets or numbers hang in the margin. E-books and Word files brought in keep their lists and quotations, and a backslash keeps a plain paragraph that starts with one of these marks plain.
 - F5.3 and F5.4 Pictures are never stretched, are centered unless the writer places them at a side, and carry the caption underneath in smaller type. The test reads the User manual's pictures at three text sizes.
 - F6.1 The Contents that Inkhorse makes for your book is titled "Contents," lists every chapter once in order, and in print gives the page each chapter really starts on.
 - F6.2 to F6.5, F6.7 and F6.8 One contents style for every book, whatever file it came from: one entry per line, a dotted line to Inkhorse's own page number at the right edge, chapter entries set apart from section entries, nothing else on the page, and no page numbers left over from the paper book. No contents line runs off the page.
@@ -303,7 +304,7 @@ Not done yet. Inkhorse does not meet these rules today:
 
 - F8.6 Footnotes. Inkhorse has no footnotes yet.
 - F4.6 Italics in a book brought in from a PDF. A PDF's italic words come in upright for now.
-- F5.5 Lists, letters and quoted passages. Inkhorse has no way yet to set a passage off from the body text.
+- F5.5 Lists and quoted passages in a book brought in from a PDF. A PDF's bulleted or numbered lines are not yet tested on their own.
 
 Waiting on a decision: none.
 

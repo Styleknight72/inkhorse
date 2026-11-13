@@ -1529,6 +1529,74 @@ const path = require('path');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
   });
+  await step('F5.5 Lists and quoted passages are set off by indenting both sides, the same in every chapter, on the page, in the e-book, the print PDF and the Word manuscript; they come back in from an e-book and a Word file; a backslash keeps a plain paragraph plain; the manual\'s steps are real lists (rev 245)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=245))) return 'SKIP: before rev 245';
+    if(!PDFJS_DIR) return 'SKIP: set PDFJS_DIR'; let JSPDF_FILE=null; try{ JSPDF_FILE=require.resolve('jspdf/dist/jspdf.umd.min.js'); }catch(_){ return 'SKIP: jspdf is not installed for the test'; }
+    if(!JSZIP_FILE) return 'SKIP: jszip is not installed for the test';
+    const fs=require('fs'), P=require('path'), JSZip=require('jszip'); let pdfjs; { const w=console.warn, l=console.log; console.warn=console.log=()=>{}; try{ pdfjs=require(P.join(PDFJS_DIR,'..','legacy','build','pdf.js')); } finally { console.warn=w; console.log=l; } }
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max'],acceptDownloads:true});
+    await ctx.route(/jspdf[^/]*\.js$/, r=>r.fulfill({body:fs.readFileSync(JSPDF_FILE),contentType:'application/javascript'}));
+    await ctx.route(/jszip(\.min)?\.js$/, r=>r.fulfill({body:fs.readFileSync(JSZIP_FILE),contentType:'application/javascript'}));
+    const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const body='The harbor master kept a short list of what every boat must carry before it left the quay in winter, and he read it to each crew.';
+      const T1=body+'\n- A lamp with oil enough for two nights, and a spare wick wrapped in oilcloth against the spray.\n- Rope.\n\\- Not a list, a plain paragraph that starts with a dash.\nHis steps for a launch were always the same, and he said them aloud:\n3. Check the weather glass and the sky to the west before anything else.\n4. Cast off.\nYears later his daughter found a letter in his desk, folded in four, under the tide tables.\n> My dear Anna, I have kept the lamp lit every night you were away, and the sea has been kind this winter.\n> Come home when the ice is off the river.\nShe read it twice.';
+      const T2=body+'\n* A second list in another chapter, set the same way as the first one was.\n> A second quotation in another chapter, set the same way as the first.\nThe end.';
+      const r=await pg.evaluate(async([T1,T2])=>{ S.tips=false; BOOK.order.slice().forEach(id=>{ CH.delete(id); deleted.add(id); }); BOOK.order=[]; BOOK.sample=false; BOOK.title='List Test'; BOOK.author='Ada Tester';
+        const a=addChapter('One',T1), b=addChapter('Two',T2); dirty.add(a); dirty.add(b); S.cur=a; touchIndex(); PCACHE.clear(); loadEditor(); setTab('read'); relayout();
+        const out={pages:[],sig:{}};
+        for(const id of [a,b]) for(let i=0;i<pag(id).pages.length;i++){ goTo({ch:id,i}); drawView(); const pt=document.querySelector('#spread .face:not(.gone) .ptext'), R=pt.getBoundingClientRect();
+          for(const p of pt.querySelectorAll('p')){ const cs=getComputedStyle(p), r=p.getBoundingClientRect(), k=p.classList.contains('li')?'li':p.classList.contains('bq')?'bq':'body';
+            const s={k,t:p.textContent.replace(/[­⁠]/g,'').slice(0,40),m:p.dataset.m||'',before:p.dataset.m?getComputedStyle(p,'::before').content:'',ti:cs.textIndent,ta:cs.textAlign,l:Math.round(r.left-R.left),rr:Math.round(R.right-r.right),mt:cs.marginTop,mb:cs.marginBottom};
+            out.pages.push(s); if(k!=='body') (out.sig[k]=out.sig[k]||new Set()).add([cs.marginLeft,cs.marginRight,cs.textAlign,cs.fontSize,cs.fontFamily,cs.lineHeight].join('|')); } }
+        out.sig={li:[...(out.sig.li||[])],bq:[...(out.sig.bq||[])]};
+        const man=MANUAL.chapters.find(c=>/home screen/i.test(c.title)), md=tokenize(man.text); out.manLi=md.paras.filter(p=>p.li).map(p=>p.li);
+        return out; },[T1,T2]);
+      const ps=r.pages, find=t=>ps.find(p=>p.t.startsWith(t)); const body0=find('The harbor master');
+      for(const [t,k,m] of [['A lamp','li','•'],['Rope.','li','•'],['Check the weather','li','3.'],['Cast off.','li','4.'],['My dear Anna','bq',''],['Come home','bq',''],['A second list','li','•'],['A second quotation','bq','']]){
+        const p=find(t); if(!p) throw new Error('"'+t+'" is not on the page as its own paragraph (its mark may show)');
+        if(p.k!==k) throw new Error('"'+t+'" is set as '+p.k+', not as a '+(k==='li'?'list item':'quoted passage'));
+        if(p.m!==m||(m&&p.before!=='"'+m+'"')) throw new Error('"'+t+'" shows the mark '+JSON.stringify(p.before)+', not '+m);
+        if(!(p.l>body0.l+15&&p.rr>body0.rr+15)) throw new Error('"'+t+'" is not indented on both sides (left '+p.l+', right '+p.rr+'; body text '+body0.l+', '+body0.rr+')');
+        if(p.ti!=='0px'&&!(k==='bq'&&t==='Come home')) throw new Error('"'+t+'" has a first-line indent of '+p.ti); }
+      if(find('A lamp').ta!=='left') throw new Error('a list item is not set ragged-right ('+find('A lamp').ta+')');
+      if(find('Come home').ti==='0px') throw new Error('the second paragraph of a quotation is not indented');
+      if(!(parseFloat(find('A lamp').mt)>0&&parseFloat(find('Rope.').mb)>0&&find('Rope.').mt==='0px')) throw new Error('no space above and below the list, or space between its items');
+      const nl=find('- Not a list'); if(!nl||nl.k!=='body') throw new Error('a backslash did not keep "- Not a list" a plain paragraph that shows its dash');
+      if(find('His steps').ti==='0px') throw new Error('a plain paragraph after a plain paragraph lost its indent');
+      if(find('Years later').ti!=='0px') throw new Error('the text after a list does not start flush');
+      if(r.sig.li.length!==1||r.sig.bq.length!==1) throw new Error('lists or quotations are not set the same way in every chapter: '+JSON.stringify(r.sig));
+      if(JSON.stringify(r.manLi)!==JSON.stringify(['1.','2.','3.','4.','1.','2.','3.'])) throw new Error('the User manual\'s home-screen steps are not numbered lists: '+JSON.stringify(r.manLi));
+      const dl=async sel=>{ const [d]=await Promise.all([pg.waitForEvent('download',{timeout:90000}), pg.evaluate(s=>document.querySelector(s).click(),sel)]); return fs.readFileSync(await d.path()); };
+      const epub=await dl('#expEpub'), docx=await dl('#expDocx');
+      { const z=await JSZip.loadAsync(epub), x=await z.file(Object.keys(z.files).find(f=>/ch1\.xhtml$/.test(f))).async('string'), css=await z.file(Object.keys(z.files).find(f=>/\.css$/.test(f))).async('string');
+        for(const s of ['<ul>\n<li><p>A lamp','<li><p>Rope.</p></li>\n</ul>','<ol start="3">\n<li><p>Check the weather','<blockquote>\n<p>My dear Anna','<p>Come home when the ice is off the river.</p>\n</blockquote>','<p>- Not a list']) if(!x.includes(s)) throw new Error('the e-book does not have '+JSON.stringify(s));
+        if(!/ul,ol\{margin:[^}]*\}/.test(css)||!/blockquote\{margin:[.\d]+em [.\d]+em\}/.test(css)) throw new Error('the e-book does not indent lists and quotations on both sides'); }
+      { const z=await JSZip.loadAsync(docx), x=await z.file('word/document.xml').async('string'), nm=z.file('word/numbering.xml'), n=nm?await nm.async('string'):'';
+        if((x.match(/<w:numPr>/g)||[]).length!==5) throw new Error('the Word manuscript has '+(x.match(/<w:numPr>/g)||[]).length+' real list items, not 5');
+        if(!/<w:startOverride w:val="3"\/>/.test(n)||!/w:numFmt w:val="bullet"/.test(n)) throw new Error('the Word manuscript\'s numbering does not keep the bullet and the starting number 3');
+        if((x.match(/w:val="Quote(More)?"/g)||[]).length!==3) throw new Error('the Word manuscript does not set the three quoted paragraphs as quotations');
+        if(!/w:styleId="Quote"[^]*?<w:ind w:left="720" w:right="720"/.test(await z.file('word/styles.xml').async('string'))) throw new Error('the Word Quote style is not indented on both sides'); }
+      { const doc=await pdfjs.getDocument({data:new Uint8Array(await dl('#expPdf')),disableFontFace:true}).promise; const all=[];
+        /* each printed line (page, baseline) as one piece of text, with its left and right edges */
+        for(let n=1;n<=doc.numPages;n++){ const tc=await (await doc.getPage(n)).getTextContent(), g={};
+          for(const i of tc.items){ if(!i.str.trim()) continue; const k=Math.round(i.transform[5]); (g[k]=g[k]||[]).push({s:i.str,x:i.transform[4],r:i.transform[4]+i.width}); }
+          for(const k in g){ const it=g[k].sort((a,b)=>a.x-b.x); all.push({n,s:it.map(i=>i.s).join(' ').replace(/\s+/g,' ').trim(),x:it[0].x,r:it[it.length-1].r}); } }
+        const at=t=>all.find(i=>i.s.startsWith(t)), plain=at('Years later'), wide=Math.max(...all.map(i=>i.r));
+        const l=at('\u2022 A lamp'), l2=at('wrapped in oilcloth'), n3=at('3. Check the weather'), n3b=at('thing else'), q=at('My dear Anna'), q2=at('away, and the sea');
+        if(!l||!l2||!n3||!n3b||!q||!q2||!plain) throw new Error('the print PDF lacks a list item with its bullet, the item numbered 3, or the quotation: '+JSON.stringify(all.map(i=>i.s.slice(0,24)).slice(0,40)));
+        if(!(l.x>plain.x+5&&l2.x>l.x+5&&n3b.x>n3.x+5)) throw new Error('in print the bullet or number does not hang in the left indent with the item\'s lines indented past it ('+[plain.x,l.x,l2.x,n3.x,n3b.x].map(v=>v.toFixed(0))+')');
+        if(!(q.x>plain.x+10&&Math.abs(q2.x-q.x)<1)) throw new Error('in print the quotation is not indented on the left');
+        if(!(q.r<wide-10&&q2.r<wide-10)) throw new Error('in print the quotation is not indented on the right ('+q.r.toFixed(0)+' vs '+wide.toFixed(0)+')');
+        if(!at('- Not a list')) throw new Error('in print the backslashed line does not read "- Not a list"'); }
+      /* doors in: the e-book and the Word manuscript, brought back in, keep the lists and quotations; a plain line stays plain */
+      const back=await pg.evaluate(async([e,d])=>{ const u=b=>Uint8Array.from(atob(b),c=>c.charCodeAt(0)).buffer; const pick=bk=>bk.chapters.map(c=>c.text).join('\n').split('\n').filter(l=>/lamp|Rope\.|Not a list|weather glass|Cast off|dear Anna|ice is off|second list|second quotation/.test(l)).map(l=>l.slice(0,22));
+        return {e:pick(await epubToBook(u(e))),d:pick(await docxToBook(u(d),'x.docx'))}; },[epub.toString('base64'),docx.toString('base64')]);
+      const want=['• A lamp with oil enou','• Rope.','\\- Not a list, a plain','3. Check the weather g','4. Cast off.','> My dear Anna, I have','> Come home when the i','• A second list in ano','> A second quotation i'];
+      for(const k of ['e','d']) if(JSON.stringify(back[k])!==JSON.stringify(want)) throw new Error((k==='e'?'the e-book':'the Word file')+' brought back in reads '+JSON.stringify(back[k]));
+      if(errs.length) throw new Error('page errors: '+errs.join(' | '));
+    } finally { await ctx.close(); }
+  });
   await step('F4.6 Italics: *words* and _words_ show in italics on the page and stay italic in the e-book, the print PDF and the Word manuscript; italics in e-books and Word files brought in are kept; punctuation outside the marks stays upright; a lone *, snake_case and \* stay as typed; no built-in book changes (rev 243)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=243))) return 'SKIP: before rev 243';
     if(!PDFJS_DIR) return 'SKIP: set PDFJS_DIR'; let JSPDF_FILE=null; try{ JSPDF_FILE=require.resolve('jspdf/dist/jspdf.umd.min.js'); }catch(_){ return 'SKIP: jspdf is not installed for the test'; }
@@ -1734,7 +1802,8 @@ const path = require('path');
       if(r.sb!==3) throw new Error('the book has 3 scene breaks drawn as a rule; '+r.sb+' reached the page');
       for(const l of ['The gulls came in low,','the nets came in full,','and the lamp stayed lit.']) if(!lines.includes(l)) throw new Error('lines of verse were run together: '+(lines.find(x=>/gulls came in low/.test(x))||''));
       if(/out\.1/.test(flat)||!/never lent it out\. \[1\]/.test(flat)) throw new Error('a footnote mark is stuck to the word before it: '+(/.{0,20}lent it out.{0,8}/.exec(flat)||[''])[0]);
-      for(const l of ['bread and salt','lamp oil','two coils of rope']) if(!lines.includes(l)) throw new Error('a list item did not come in on its own line: '+l);
+      /* rev 245 (F5.5): the e-book's list comes in as a list, its block quote as a quoted line */
+      for(const l of ['\u2022 bread and salt','\u2022 lamp oil','\u2022 two coils of rope','> Keep the lamp trimmed and the door unlatched.']) if(!lines.includes(l)) throw new Error('a list item or the quotation did not come in on its own line, as a list item or quoted line: '+l);
       if(r.figs!==3) throw new Error('the book has a picture in each of 3 chapters; '+r.figs+' are shown');
       if(r.cut.length) throw new Error('text is cut off at the bottom of '+r.cut[0]); if(r.past.length) throw new Error('a word runs past the margin on '+r.past[0]); if(r.left.length) throw new Error('leftover markup on the page: '+r.left[0]);
       if(errs.length) throw new Error('page error: '+errs[0]);
@@ -1774,7 +1843,7 @@ const path = require('path');
   await step('F1.1 F2.3 F5.1 A Word file comes in whole by both doors: its Title and author make the title page and name the book, each Heading 1 is a chapter numbered from 1, and a smaller heading is a section heading (rev 238)', () => bothDoors('word-book.docx',(r,door)=>{
     same(r,'the chapters',r.titles,['','The Copper Kettle','A Long Way Round','What the Tide Left']); same(r,'the front pages',r.front,['Harbor Stories / Ada Tester']); same(r,'the chapter numbers',r.nums,[0,1,2,3]);
     if(r.book!=='Harbor Stories'||r.author!=='Ada Tester') throw new Error(r.at+'the book came in as "'+r.book+'" by "'+r.author+'"'); if(!/^# A Smaller Heading$/m.test(r.text)) throw new Error(r.at+'the smaller heading is not a section heading');
-    for(const l of ['bread and salt','lamp oil','two coils of rope','Keep the lamp trimmed and the door unlatched.','She read *The Long Voyage Home* twice that winter.']) if(!r.text.split('\n').map(x=>x.trim()).includes(l)) throw new Error(r.at+'a line did not come in whole on its own: '+l); }));   /* rev 243: the italic title keeps its italics (F4.6), written with marks */
+    for(const l of ['\u2022 bread and salt','\u2022 lamp oil','\u2022 two coils of rope','> Keep the lamp trimmed and the door unlatched.','She read *The Long Voyage Home* twice that winter.'])   /* rev 245 (F5.5): Word's List Bullet and Intense Quote come in as a list and a quotation */ if(!r.text.split('\n').map(x=>x.trim()).includes(l)) throw new Error(r.at+'a line did not come in whole on its own: '+l); }));   /* rev 243: the italic title keeps its italics (F4.6), written with marks */
   await step('F6.1 F6.5 F6.8 An e-book that shows its own contents page keeps it, by both doors: under the book\'s own heading, every entry there, and every chapter entry a working link (rev 238)', () => bothDoors('foreign.epub',(r,door)=>{
     same(r,'the pages before chapter one',r.titles.slice(0,3),['Harbor Stories','','Table of Contents']); const want=['The Copper Kettle','A Smaller Heading','A Long Way Round','A Smaller Heading','What the Tide Left','A Smaller Heading']; same(r,'the contents entries',r.toc.map(e=>e.t),want);
     const dead=r.toc.filter(e=>!/Smaller/.test(e.t)&&!e.link); if(dead.length) throw new Error(r.at+'a chapter entry on the contents page is not a link: '+dead[0].t); if(r.sb!==3) throw new Error(r.at+r.sb+' of 3 scene breaks reached the page'); }));

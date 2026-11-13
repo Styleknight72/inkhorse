@@ -212,7 +212,7 @@ What is yours to check:
 Not yet:
 
 - P4.5 Inkhorse does not make the wide paperback cover with a spine. Amazon's own cover tools can.
-- P6.7 The print PDF meets the Formatting Standard's print rules, except the ones Inkhorse does not do anywhere yet: footnotes, and lists or quoted passages. Part 11 of The Inkhorse Formatting Standard has the full list. Read a print proof with care.
+- P6.7 The print PDF meets the Formatting Standard's print rules, except the one Inkhorse does not do anywhere yet: footnotes. Part 11 of The Inkhorse Formatting Standard has the full list. Read a print proof with care.
 - P1.3 and P1.5 Find works one chapter at a time. Inkhorse cannot yet search the whole book at once.
 - P7.1 Inkhorse has no place to write and keep the store description.
 - A single “Ready to publish?” check that runs a book against this standard and shows a tick or a note for every rule. This book comes first; the check is meant to follow.
