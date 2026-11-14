@@ -1,15 +1,29 @@
 /* Inkhorse stability audit. Run before every push:  node tests/audit.js app.html
    Opens the app in a phone-size browser, uses the main features, and reports PASS/FAIL per step plus any page errors. */
-const { chromium, devices } = require('playwright');
+const PW = require('playwright'); const { devices } = PW;
+/* rev 250: AUDIT_ENGINE=webkit runs every step in WebKit, the engine inside Safari on every iPhone; the default is still Chromium. A push needs both runs clean. */
+const ENGINE = process.env.AUDIT_ENGINE || 'chromium'; const chromium = PW[ENGINE];
 const path = require('path');
 (async () => {
   const file = path.resolve(process.argv[2] || 'app.html');
+  /* rev 250: in WebKit the app is served from a small local web server, the way Safari gets it from getinkhorse.com: WebKit will not let a page opened straight from a file save a book or load its own pictures, which is a limit of the test, not of the app. */
+  let APPURL='file://'+file;
+  if(ENGINE!=='chromium'){ const http=require('http'), fs0=require('fs'), REPO0=path.resolve(__dirname,'..'); const types0={'.html':'text/html','.js':'text/javascript','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.css':'text/css','.mp3':'audio/mpeg','.wasm':'application/wasm'};
+    const srv0=http.createServer((q,r)=>{ const u=decodeURIComponent(q.url.split('?')[0]); const f=path.join(REPO0,u.endsWith('/')?u+'index.html':u); if(!f.startsWith(REPO0)){ r.writeHead(403); return r.end(); } fs0.readFile(f,(e,d)=>{ if(e){ r.writeHead(404); return r.end(); } r.writeHead(200,{'Content-Type':types0[path.extname(f)]||'application/octet-stream'}); r.end(d); }); });
+    await new Promise(r=>srv0.listen(0,'127.0.0.1',r)); APPURL='http://127.0.0.1:'+srv0.address().port+'/'+path.relative(REPO0,file).split(path.sep).join('/'); }
   const browser = await chromium.launch();
-  const ctx = await browser.newContext({ ...devices['iPhone 14 Pro Max'], permissions: ['clipboard-read','clipboard-write'] });
+  /* rev 250: every phone or tablet the WebKit run opens is told the two things the test WebKit gets wrong or cannot do */
+  if(ENGINE!=='chromium'){ const nc=browser.newContext.bind(browser); browser.newContext=async o=>{ const c=await nc(o); if(o&&o.hasTouch) await c.addInitScript(() => { /* a real iPhone says it has five touch points; the test WebKit says none, which made Inkhorse treat the phone as a computer (and go full screen when the window matched the screen) */
+      try{ Object.defineProperty(Navigator.prototype,'maxTouchPoints',{get(){ return 5; },configurable:true}); }catch(e){}
+      /* the test tool cannot grant WebKit the clipboard: Copy and Paste talk to a stand-in. This checks Inkhorse's side; Safari's own permission prompt can only be seen on a real phone. */
+      let clip=''; const fake={ writeText:async t=>{ clip=String(t); }, readText:async()=>clip, write:async items=>{ try{ const b=await items[0].getType('text/plain'); clip=await b.text(); }catch(e){} }, read:async()=>[] };
+      try{ Object.defineProperty(navigator,'clipboard',{value:fake,configurable:true}); }catch(e){}
+      try{ const ex=document.execCommand.bind(document); document.execCommand=function(c){ if(String(c).toLowerCase()==='copy'){ try{ let t=''; for(const a of [document.activeElement,...[...document.querySelectorAll('textarea,input')].reverse()]){ try{ if(a&&a.value!=null&&a.selectionEnd>a.selectionStart){ t=a.value.slice(a.selectionStart,a.selectionEnd); break; } }catch(e){} } if(!t) t=String(getSelection()); if(t) clip=t; }catch(e){} } return ex.apply(document,arguments); }; }catch(e){} }); return c; }; }
+  const ctx = await browser.newContext({ ...devices['iPhone 14 Pro Max'], ...(ENGINE==='chromium'?{permissions: ['clipboard-read','clipboard-write']}:{}) });
   await ctx.addInitScript(() => { // headless Chrome has no voices: a stand-in that "speaks" each sentence for 300 ms
     const syn = { speaking:false, pending:false, paused:false, onvoiceschanged:null, addEventListener(){}, removeEventListener(){}, pause(){}, resume(){}, cancel(){ this._t&&clearTimeout(this._t); },
       getVoices(){ return [{ name:'Test voice', lang:'en-US', voiceURI:'test', default:true, localService:true }]; },
-      speak(u){ this._t=setTimeout(()=>{ try{ u.onstart&&u.onstart({}); u.onboundary&&u.onboundary({charIndex:0,name:'word'}); }catch(e){} this._t=setTimeout(()=>{ try{ u.onend&&u.onend({}); }catch(e){} },300); },10); } };
+      speak(u){ this._t=setTimeout(()=>{ try{ u.onstart&&u.onstart({}); u.onboundary&&u.onboundary({charIndex:0,name:'word'}); }catch(e){} this._t=setTimeout(()=>{ try{ u.onend&&u.onend({}); }catch(e){} },window.__ttsMs||300); },10); } };
     Object.defineProperty(window,'speechSynthesis',{value:syn,configurable:true});
     window.SpeechSynthesisUtterance=function(t){ this.text=t; };
   });
@@ -36,10 +50,11 @@ const path = require('path');
   page.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
   page.on('console', m => { if (m.type()==='error' && !/ERR_TUNNEL|ERR_|favicon|net::|Failed to load resource/.test(m.text())) errs.push('CONSOLE ' + m.text()); });
   const ONLY=process.env.AUDIT_ONLY?new RegExp(process.env.AUDIT_ONLY):null;   // rev 235: AUDIT_ONLY='F9|F7.3' runs just the steps whose names match (for working on one test; a push still needs the full run)
-  const step = async (name, fn) => { if(ONLY&&!ONLY.test(name)) return; try { const v = await fn(); /* rev 163: a returned message that isn't SKIP is a failure (before, it counted as a pass, so a dozen checks could never fail) */ const bad = v === false || (typeof v === 'string' && !/^(SKIP|OK)/.test(v)); res.push([bad?'FAIL':(typeof v==='string'&&v.startsWith('SKIP')?'SKIP':'PASS'), name, bad?(v===false?'returned false':v.slice(0,300)):(v===undefined||v===true?'':JSON.stringify(v).slice(0,90))]); } catch (e) { res.push(['FAIL', name, e.message.slice(0,600)]); } };
+  const step = async (name, fn) => { if(ONLY&&!ONLY.test(name)) return; try { const v = await fn(); /* rev 163: a returned message that isn't SKIP is a failure (before, it counted as a pass, so a dozen checks could never fail) */ /* rev 250: a step that hands back a finding (an object such as {want,got}) has FAILED. Before, anything that was not false or a message counted as a pass, so "Tapping a Contents line" passed for weeks while landing on the wrong page. A step that needs a tool only Chromium has returns 'NA: reason' in the WebKit run: it is listed, and is neither a pass nor a skip. */ const bad = v === false || (typeof v === 'string' && !/^(SKIP|OK|NA)/.test(v)) || (v !== null && typeof v === 'object'); res.push([bad?'FAIL':(typeof v==='string'&&v.startsWith('SKIP')?'SKIP':typeof v==='string'&&v.startsWith('NA')?'NA':'PASS'), name, bad?(v===false?'returned false':typeof v==='string'?v.slice(0,300):JSON.stringify(v).slice(0,300)):(v===undefined||v===true?'':JSON.stringify(v).slice(0,90))]); } catch (e) { res.push(['FAIL', name, e.message.slice(0,600)]); } if(process.env.AUDIT_TRACE){ /* where each step leaves the app, to find the step that leaves it somewhere different in another browser */ try{ const st=await page.evaluate(()=>({tab:document.querySelector('#app').dataset.tab,imm:document.documentElement.className.replace(/\s+/g,' ').slice(0,80),ch:typeof S!=='undefined'?(typeof BOOK!=='undefined'?BOOK.order.indexOf(S.rch):-1):-1,pg:(document.querySelector('#pgCur')||{}).textContent,lib:typeof RB!=='undefined'&&RB?RB.id||'lib':'',vw:innerWidth,tts:typeof TTS!=='undefined'?!!TTS.playing:null,fs:typeof S!=='undefined'?S.fs:0,mode:typeof S!=='undefined'?S.justMode:''})); require('fs').appendFileSync(process.env.AUDIT_TRACE,res.length+' '+JSON.stringify(st)+' '+name.slice(0,50)+'\n'); }catch(_){ } }
+    if(process.env.AUDIT_SHOTS&&res.length&&res[res.length-1][0]==='FAIL'){ try{ await page.screenshot({path:require('path').join(process.env.AUDIT_SHOTS,'fail-'+res.length+'.png')}); res[res.length-1][2]+=' [picture: fail-'+res.length+'.png]'; }catch(_){ } } };
   const T = () => page.inputValue('#manuscript');
   const tools = async () => { if (await page.getAttribute('#toolsBtn','aria-expanded') !== 'true') await page.click('#toolsBtn',{timeout:3000}); await page.waitForTimeout(150); };
-  await page.goto('file://' + file); await page.waitForTimeout(2500);
+  await page.goto(APPURL); await page.waitForTimeout(2500);
 
   await step('works on older phone browsers: no look-behind in fixed code (rev 89)', async () => {
     // Safari before iOS 16.4 can't read (?<= or (?<! written straight into the code, and then the whole app fails to open.
@@ -541,7 +556,7 @@ const path = require('path');
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=207))) return 'SKIP: before rev 207';
     const ctx=await browser.newContext({viewport:{width:1400,height:900}}); const pg=await ctx.newPage();
     try{
-      await pg.goto(page.url()); await pg.waitForTimeout(1800);
+      await pg.goto(page.url()); await pg.waitForTimeout(1800); await pg.waitForFunction(()=>typeof mouseUser==='function'&&typeof S==='object',null,{timeout:20000});   /* rev 250: wait until the app has finished starting, however busy the test machine is */
       if(!(await pg.evaluate(()=>mouseUser()))) return 'SKIP: this test browser does not report a mouse';
       await pg.evaluate(()=>{ S.tips=true; localStorage.removeItem('inkhorse-fs-hint-shown'); setTab('read'); goTo({ch:rOrder()[0],i:0}); drawView(); }); await pg.waitForTimeout(500);
       const hint=await pg.evaluate(()=>{ setImmersive(true); const t=document.querySelector('#fsHint').textContent; setImmersive(false); return t; });
@@ -1454,9 +1469,9 @@ const path = require('path');
                 const side=/\b(al-left|al-right|wrap-left|wrap-right)\b/.test(f.className), fr=f.getBoundingClientRect(); if(!side&&Math.abs((fr.left+fr.right)/2-(B.left+B.right)/2)>2*k) out.bad.push(where+': a picture is '+Math.round(Math.abs((fr.left+fr.right)/2-(B.left+B.right)/2)/k)+' px off centre');
                 if(cap&&cap.textContent.trim()){ const C=cap.getBoundingClientRect(); if(C.top<R.bottom-2*k) out.bad.push(where+': the caption is not under its picture'); if(C.bottom>B.bottom+1) out.bad.push(where+': the caption is cut off at the bottom of the page');
                   if(!(parseFloat(getComputedStyle(cap).fontSize)<parseFloat(getComputedStyle(pt).fontSize))) out.bad.push(where+': the caption is not smaller than the body text'); } }
-              if(out.figs>=14) break outer; } }
+              /* rev 250: every picture in the manual is read. Before, the test stopped after the first 14, and a picture taller than the page (the 15th or later) went unseen. */ } }
           return out; },fs_);
-        if(r.figs<6) throw new Error('at text size '+fs_+' only '+r.figs+' pictures were found in the manual');
+        if(r.figs<60) throw new Error('at text size '+fs_+' only '+r.figs+' pictures were found in the manual');
         if(r.bad.length) throw new Error('at text size '+fs_+': '+r.bad.slice(0,3).join(' | ')+(r.bad.length>3?' (and '+(r.bad.length-3)+' more)':'')); }
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
@@ -1532,7 +1547,9 @@ const path = require('path');
   await step('F3.10 F7.4 The formatting holds: the same book shows the same lines on the same pages after the text size is moved to both ends and back, after Justify and the typeface are changed and changed back, after the phone is turned sideways and back, and after Inkhorse is closed and opened again (rev 236)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=236))) return 'SKIP: before rev 236';
     const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
-    const snap=()=>pg.evaluate(async()=>{ await openLibBook('publishing',true); setTab('read'); await new Promise(r=>setTimeout(r,300)); const out=[];
+    const snap=()=>pg.evaluate(async()=>{ await openLibBook('publishing',true); setTab('read'); await new Promise(r=>setTimeout(r,300));
+      /* rev 250: a page number is left blank until every chapter before it has been counted, which Inkhorse does in short bursts so reading is never held up. A slower browser (WebKit here) had not finished in 300 ms, so the first reading saw blank numbers and the second saw them filled in. The test now waits for the count to finish, as a reader's eye would, up to 8 seconds. */
+      for(let k=0;k<160&&bookPageInfo().est;k++) await new Promise(r=>setTimeout(r,50)); if(bookPageInfo().est) throw new Error('the page count had not finished after 8 seconds'); const out=[];
       for(const id of rOrder().filter(x=>!isCover(x))){ const n=pag(id).pages.length; for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); const pt=document.querySelector('#spread .face:not(.gone) .ptext'), lines=[]; let top=null;
           if(pt) pt.querySelectorAll('span[data-w]').forEach(s=>{ for(const r of s.getClientRects()){ const t=Math.round(r.top); if(top===null||Math.abs(t-top)>6){ lines.push(s.dataset.w); top=t; } } });
           out.push(RB.ch.get(id).title.slice(0,24)+' p'+(i+1)+':'+lines.join(',')+'|'+(pt?pt.querySelectorAll('br.lz').length:0)+'|'+((document.querySelector('#spread .face:not(.gone) .folio')||{}).textContent||'')); } }
@@ -1677,7 +1694,7 @@ const path = require('path');
     if(!PDFJS_DIR) return 'SKIP: set PDFJS_DIR (the PDF model book and the print check need it)';
     let JSPDF_FILE=null; try{ JSPDF_FILE=require.resolve('jspdf/dist/jspdf.umd.min.js'); }catch(_){ return 'SKIP: jspdf is not installed for the test (npm i jspdf@2.5.1)'; }
     if(!JSZIP_FILE) return 'SKIP: jszip is not installed for the test';
-    const fs=require('fs'), P=require('path'), crypto=require('crypto'), JSZip=require('jszip'), DIR=P.join(__dirname,'fixtures','model-books'), LOCK=P.join(DIR,'model-lock.json'), PICS=P.join(DIR,'pages'), H=b=>crypto.createHash('sha1').update(b).digest('hex').slice(0,16);
+    const fs=require('fs'), P=require('path'), crypto=require('crypto'), JSZip=require('jszip'), DIR=P.join(__dirname,'fixtures','model-books'), /* rev 250: WebKit has its own approved record and pictures: the two browsers draw small capitals at slightly different widths, so their pages are not the same pages */ LOCK=P.join(DIR,ENGINE==='chromium'?'model-lock.json':'model-lock.'+ENGINE+'.json'), PICS=P.join(DIR,ENGINE==='chromium'?'pages':'pages-'+ENGINE), H=b=>crypto.createHash('sha1').update(b).digest('hex').slice(0,16);
     let pdfjs; { const w=console.warn, l=console.log; console.warn=console.log=()=>{}; try{ pdfjs=require(P.join(PDFJS_DIR,'..','legacy','build','pdf.js')); } finally { console.warn=w; console.log=l; } }
     const ctx=await browser.newContext({...devices['iPhone 14 Pro Max'],deviceScaleFactor:1,acceptDownloads:true});
     await ctx.route(/jspdf[^/]*\.js$/, r=>r.fulfill({body:fs.readFileSync(JSPDF_FILE),contentType:'application/javascript'}));
@@ -1774,7 +1791,7 @@ const path = require('path');
   });
   await step('Layout lock: a fixed test book breaks its pages exactly where the recorded layout says, so no change can move a reader\'s pages without it being seen and said (rev 236)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=236))) return 'SKIP: before rev 236';
-    const fs=require('fs'), file=require('path').join(__dirname,'fixtures','layout-lock.json');
+    const fs=require('fs'), file=require('path').join(__dirname,'fixtures',ENGINE==='chromium'?'layout-lock.json':'layout-lock.'+ENGINE+'.json');   /* rev 250: WebKit keeps its own record */
     const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
     try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
       const got=await pg.evaluate(async()=>{ S.tips=false; S.justMode='on'; S.just=true; S.fs=18; S.lh='1.55';
@@ -2078,7 +2095,7 @@ const path = require('path');
   await step('Jump-to sheet opens', async () => { await page.click('#whereBtn'); await page.waitForTimeout(300); const v=await page.isVisible('#gotoDone'); await page.click('#gotoDone').catch(()=>{}); return v; });
   await step('Colors: every theme applies', async () => { for (const th of ['light','dark','sepia','sky','custom']) { await page.evaluate(t=>{ localStorage.setItem('inkhorse-theme',t); inkApplyTheme(); },th); if((await page.evaluate(()=>document.documentElement.getAttribute('data-theme')))!==th) return th+' failed'; } await page.evaluate(()=>{ localStorage.removeItem('inkhorse-theme'); inkApplyTheme(); }); });
   await step('Night schedule + warmth apply', async () => { await page.evaluate(()=>{ localStorage.setItem('inkhorse-night','dark'); const hm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'), n=Date.now(); localStorage.setItem('inkhorse-night-from',hm(new Date(n-3600e3))); localStorage.setItem('inkhorse-night-to',hm(new Date(n+3600e3)));   /* rev 218: a window around now, so the check can't fail in the last minute before midnight */ localStorage.setItem('inkhorse-warmth','40'); inkApplyTheme(); }); const r=await page.evaluate(()=>[document.documentElement.getAttribute('data-theme'),document.documentElement.hasAttribute('data-warm')]); await page.evaluate(()=>{ ['inkhorse-night','inkhorse-night-from','inkhorse-night-to','inkhorse-warmth'].forEach(k=>localStorage.removeItem(k)); inkApplyTheme(); }); return r[0]==='dark'&&r[1]; });
-  await step('Read aloud: player opens, buttons work', async () => { await page.click('#listenBtn'); await page.waitForTimeout(600); const bar=await page.isVisible('#ttsBar'); for (const id of ['ttsFwd','ttsBack','ttsAgain','ttsPlay']) { const b=await page.$('#'+id); if(b&&await b.isVisible()) await b.click({timeout:2000}); await page.waitForTimeout(150); } await page.evaluate(()=>ttsStop()); return bar; });
+  await step('Read aloud: player opens, buttons work', async () => { /* rev 250: the stand-in voice takes 2.5 s a sentence here, so the short sample book is still being read while each button is pressed (in WebKit it had reached "The end." and closed the player before the last press) */ await page.evaluate(()=>{ window.__ttsMs=2500; }); try{ await page.click('#listenBtn'); await page.waitForTimeout(600); const bar=await page.isVisible('#ttsBar'); for (const id of ['ttsFwd','ttsBack','ttsAgain','ttsPlay']) { const b=await page.$('#'+id); if(b&&await b.isVisible()) await b.click({timeout:2000}); await page.waitForTimeout(150); } return bar; } finally { await page.evaluate(()=>{ window.__ttsMs=0; try{ ttsStop(); }catch(_){ } }); } });
   await step('Read aloud: Meilin, the natural voice, is offered and asks before downloading (rev 97)', async () => {
     // This test machine has no internet for the voice itself; Bella's real download and reading are tested separately over the internet.
     if(!(await page.$('#kokNote'))) return 'SKIP: this version has no natural voices';
@@ -2122,11 +2139,12 @@ const path = require('path');
   });
   await step('F2.7 F1.3 F2.3 PDF "Make it a real book": contents page one entry per line and front matter; "Chapter One: …" keeps its title and its own label (rev 98, 100)', async () => {
     if(!PDFJS_DIR) return 'SKIP: set PDFJS_DIR to test PDF import (the PDF reader is loaded from the internet on phones)';
-    const mk=await ctx.newPage(); const titles=['Chapter One: Point of Origin','Chapter Two: Florida, 1981','Chapter Three: Memory'];
+    /* rev 250: the test PDF is printed by Chromium (the only browser the test tool can print with), then brought into Inkhorse in the browser under test */
+    const mkB=ENGINE==='chromium'?null:await PW.chromium.launch(); const mk=await (mkB?mkB:ctx).newPage(); const titles=['Chapter One: Point of Origin','Chapter Two: Florida, 1981','Chapter Three: Memory'];
     const para=i=>`<p>At the time, Manchester was a city with a long industrial history and a deeply rooted French-Canadian community number ${i}. The Merrimack River divided the city, and on its western bank families had established their homes and churches.</p>`;
     let html=`<style>body{font-family:serif;font-size:11pt;text-align:justify}p{margin:0;text-indent:2em}h1{font-weight:normal;text-align:center;page-break-before:always;margin-top:2in}</style><div style="text-align:center;margin-top:3in">A Test Book</div><h1>Contents</h1>${titles.map((t,i)=>`<p style="text-indent:0">${t} ........ ${3+i*4}</p>`).join('')}`;
     titles.forEach((t,ci)=>{ html+=`<h1>${t}</h1>`; for(let i=0;i<12;i++) html+=para(ci*100+i); });
-    await mk.setContent(html); const buf=await mk.pdf({width:'5.5in',height:'8.5in',displayHeaderFooter:true,headerTemplate:'<span></span>',footerTemplate:'<div style="font-size:8pt;width:100%;text-align:center"><span class="pageNumber"></span></div>',margin:{top:'0.7in',bottom:'0.8in',left:'0.7in',right:'0.7in'}}); await mk.close();
+    await mk.setContent(html); const buf=await mk.pdf({width:'5.5in',height:'8.5in',displayHeaderFooter:true,headerTemplate:'<span></span>',footerTemplate:'<div style="font-size:8pt;width:100%;text-align:center"><span class="pageNumber"></span></div>',margin:{top:'0.7in',bottom:'0.8in',left:'0.7in',right:'0.7in'}}); await mk.close(); if(mkB) await mkB.close();
     if(!(await page.isVisible('#library'))){ await page.click('#tab-read').catch(()=>{}); await page.click('#libBtn'); await page.waitForTimeout(400); }
     await page.setInputFiles('#libIn',{name:'pdf-test-book.pdf',mimeType:'application/pdf',buffer:buf}); await page.waitForTimeout(300);
     await page.click('#libAsk [data-way="text"]');
@@ -2306,7 +2324,7 @@ const path = require('path');
       await page.evaluate(([f,t,id])=>{ try{ ttsStop(); }catch(_){ } S.turn=t; setImmersive(false); try{ dropChapter(id); }catch(_){ } setTab(f); },[fromTab,keepTurn,id]); await page.waitForTimeout(400);
     }
   });
-  await step('Manual: tapping a Contents line goes to that page', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1500); let line=null; for(let i=0;i<8&&!line;i++){ line=await page.$('#spread p.toc.t2[data-goto]'); if(!line){ await page.click('#next'); await page.waitForTimeout(450); await page.waitForFunction(()=>!turning,null,{timeout:4000}).catch(()=>{}); } } if(!line) return 'no contents line found'; await page.waitForTimeout(900); line=await page.$('#spread .page:not(.curl) p.toc.t2[data-goto], #spread p.toc.t2[data-goto]'); const want=await line.getAttribute('data-goto'); const bx=await line.boundingBox(); await page.mouse.click(bx.x+30, bx.y+bx.height/2); await page.waitForTimeout(1200); const got=(await page.textContent('#pgCur')).replace(/[^0-9–]/g,''); await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return got.split('–').includes(want) ? true : {want,got}; });
+  await step('Manual: tapping a Contents line goes to that page', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1500); /* rev 250: start on the Contents page itself, wherever an earlier step left the manual open */ await page.evaluate(()=>{ const id=rOrder().find(x=>RB.ch.get(x)&&RB.ch.get(x).title==='Contents'); if(id){ jumpTo({ch:id,i:0}); } }); await page.waitForTimeout(900); let line=null; for(let i=0;i<8&&!line;i++){ line=await page.$('#spread p.toc.t2[data-goto]'); if(!line){ await page.click('#next'); await page.waitForTimeout(450); await page.waitForFunction(()=>!turning,null,{timeout:4000}).catch(()=>{}); } } if(!line) return 'no contents line found'; await page.waitForTimeout(900); line=await page.$('#spread .page:not(.curl) p.toc.t2[data-goto], #spread p.toc.t2[data-goto]'); const want=await line.getAttribute('data-goto'); /* rev 250: tap the middle of the entry's words, which is what the app promises (rev 231: only the words jump, away from the page edges). The old tap, 30 px in, landed on the turn-back edge. */ const bx=await line.evaluate(p=>{ const r=p.querySelector('.tt').getClientRects()[0]; return {x:r.left,y:r.top,width:r.width,height:r.height}; }); await page.mouse.click(bx.x+bx.width/2, bx.y+bx.height/2); await page.waitForTimeout(1200); const got=(await page.textContent('#pgCur')).replace(/[^0-9–]/g,''); await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return got.split('–').includes(want) ? true : {want,got}; });
   await step('Jump to: typing a page number goes there', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200); await page.click('#whereBtn'); await page.fill('#gotoNum','20'); await page.click('#gotoGo'); await page.waitForTimeout(800); const got=(await page.textContent('#pgCur')).replace(/[^0-9–]/g,''); const closed=!(await page.isVisible('#gotoDone')); await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return got.split('–').includes('20')&&closed ? true : {got,closed}; });
   await step('Highlighter: tap and Clear page remove highlights (rev 135, Erase removed rev 142)', async () => {
     await page.click('#tab-read').catch(()=>{}); await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200);
@@ -2408,7 +2426,7 @@ const path = require('path');
     const memo=JSON.parse(require('fs').readFileSync(path.join(__dirname,'fixtures/model-books/memoir.json'),'utf8'));
     const draw=async(eng,fsz)=>{ let b; try{ b=await eng.launch(); }catch(e){ return {skip:'WebKit is not installed here (npx playwright install webkit)'}; }
       try{ const cx=await b.newContext({...devices['iPhone 15 Pro Max']}); const pg=await cx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
-        await pg.goto('file://'+file); await pg.waitForTimeout(2500);
+        await pg.goto(eng===PW.chromium?'file://'+file:APPURL.startsWith('http')?APPURL:'file://'+file); await pg.waitForTimeout(2500);
         await pg.evaluate(([m,fsz])=>{ BOOK.order.slice().forEach(id=>{ CH.delete(id); deleted.add(id); }); BOOK.order=[]; BOOK.sample=false; BOOK.title=m.title; for(const [t,x] of m.chapters){ const id=addChapter(t,x); dirty.add(id); }
           S.fs=fsz; S.justMode='auto'; S.tips=false; S.cur=BOOK.order[0]; S.rch=S.cur; S.anchor=0; touchIndex(); PCACHE.clear(); applyType(); loadEditor(); setTab('read'); setImmersive(true); },[memo,fsz]);
         await pg.waitForTimeout(1500); await pg.evaluate(()=>document.fonts.ready);
@@ -2425,7 +2443,7 @@ const path = require('path');
         }
         return {pages,errs}; } finally{ await b.close(); } };
     const seen=[];
-    for(const fsz of [16,18,20,24]){ const c=await draw(chromium,fsz), w=await draw(webkit,fsz); if(w.skip) return 'SKIP: '+w.skip;
+    for(const fsz of [16,18,20,24]){ const c=await draw(PW.chromium,fsz), w=await draw(webkit,fsz); if(w.skip) return 'SKIP: '+w.skip;
       if(w.errs.length) return 'size '+fsz+': page error in WebKit: '+w.errs[0];
       if(c.pages.length!==w.pages.length) return 'size '+fsz+': '+c.pages.length+' pages in the test browser, '+w.pages.length+' in WebKit';
       for(let i=0;i<c.pages.length;i++){ const a=c.pages[i].text, b=w.pages[i].text; for(let k=0;k<Math.max(a.length,b.length);k++) if(a[k]!==b[k]) return 'size '+fsz+' page '+(i+1)+' line '+(k+1)+': test browser "'+a[k]+'" but WebKit "'+b[k]+'"';
@@ -2662,7 +2680,7 @@ const path = require('path');
     } finally { await ctx.close(); }
   });
   await step('P1.3 Notes to yourself can be found: Find shows every “TODO” or “???” in the chapter and steps through them; the Book Hub lists every highlight and its note in the whole book, with its page, and Clear all empties it (rev 247)', async () => {
-    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max'],permissions:['clipboard-read','clipboard-write']}); const pg=await ctx.newPage(); const perr=[]; pg.on('pageerror',e=>perr.push(e.message));
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max'],...(ENGINE==='chromium'?{permissions:['clipboard-read','clipboard-write']}:{})}); const pg=await ctx.newPage(); const perr=[]; pg.on('pageerror',e=>perr.push(e.message));
     try{
       await pg.goto(page.url()); await pg.waitForTimeout(2500);
       await pubBook(pg,[['The Dock','Mara walked to the dock TODO check the date. The boats were still ???\n\nShe counted the lanterns. todo: name the boat.\n\nA last line with ??? in it.'],
@@ -2720,6 +2738,7 @@ const path = require('path');
 
   const fails = res.filter(r=>r[0]==='FAIL').length;
   res.forEach(r=>console.log(r[0].padEnd(5), r[1].padEnd(58), r[2]));
-  console.log('\n'+(res.length-fails)+'/'+res.length+' steps passed, '+errs.length+' page error(s)'); errs.forEach(e=>console.log('  '+e));
+  const skips=res.filter(r=>r[0]==='SKIP').length, nas=res.filter(r=>r[0]==='NA').length;
+  console.log('\n['+ENGINE+'] '+(res.length-fails-skips-nas)+'/'+res.length+' steps passed, '+fails+' failed, '+skips+' skipped, '+nas+' not possible in this browser, '+errs.length+' page error(s)'); errs.forEach(e=>console.log('  '+e));
   await browser.close(); process.exit(fails||errs.length?1:0);
 })();

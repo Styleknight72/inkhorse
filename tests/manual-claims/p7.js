@@ -18,7 +18,7 @@ const LONG=k=>[1,2,3,4,5,6,7,8].map(j=>para(k*10+j,90)).join('\n');
        el.dispatchEvent(new TouchEvent('touchstart',{touches:[t(x0)],changedTouches:[t(x0)],bubbles:true,cancelable:true}));
        for(let k=1;k<=6;k++) el.dispatchEvent(new TouchEvent('touchmove',{touches:[t(x0+(x1-x0)*k/6)],changedTouches:[t(x0+(x1-x0)*k/6)],bubbles:true,cancelable:true}));
        el.dispatchEvent(new TouchEvent('touchend',{touches:[],changedTouches:[t(x1)],bubbles:true,cancelable:true})); },[x0,x1,r.y+r.h*0.5]); await pg.waitForTimeout(1200); };
-   const cdp=await pg.ctx.newCDPSession(pg); const swipe=async(x0,x1)=>{ const y=r.y+r.h*0.5; await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:x0,y}]}); for(let k=1;k<=8;k++){ await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x0+(x1-x0)*k/8,y}]}); await pg.waitForTimeout(16); } await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]}); await pg.waitForTimeout(1200); };
+   const cdp=await require('./common.js').finger(pg); const swipe=async(x0,x1)=>{ const y=r.y+r.h*0.5; await cdp.start(x0,y); for(let k=1;k<=8;k++){ await cdp.move(x0+(x1-x0)*k/8,y); await pg.waitForTimeout(16); } await cdp.end(); await pg.waitForTimeout(1200); };
    await swipe(r.x+r.w*0.7,r.x+r.w*0.2); const d=await loc(pg);
    const ptr=async(x0,x1)=>{ await pg.mouse.move(x0,r.y+r.h*0.5); await pg.mouse.down(); for(let k=1;k<=8;k++) await pg.mouse.move(x0+(x1-x0)*k/8,r.y+r.h*0.5); await pg.mouse.up(); await pg.waitForTimeout(1200); };
    await ptr(r.x+r.w*0.95,r.x+r.w*0.3); const e=await loc(pg);

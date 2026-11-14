@@ -4,12 +4,13 @@ const run=async(id,fn)=>{ try{ await fn(); }catch(e){ say('ERROR',id,e.message.s
 const ok=(c,id,msg)=>say(c?'OK':'FAULT',id,msg);
 const read=async pg=>{ await pg.evaluate(()=>setTab('read')); await pg.waitForTimeout(500); };
 const LONG=k=>[1,2,3,4,5,6,7,8].map(j=>para(k*10+j,90)).join('\n');
-const hold=async(pg,cdp,x,y,ms)=>{ await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]}); await pg.waitForTimeout(ms); await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]}); await pg.waitForTimeout(400); };
+const {finger}=require('./common.js');
+const hold=async(pg,cdp,x,y,ms)=>{ await cdp.start(x,y); await pg.waitForTimeout(ms); await cdp.end(); await pg.waitForTimeout(400); };
 const tap=async(pg,cdp,x,y)=>hold(pg,cdp,x,y,40);
 const wordPt=(pg,n)=>pg.evaluate(n=>{ const sp=[...document.querySelectorAll('#spread .ptext [data-w]')][n]; const r=sp.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2,w:sp.textContent}; },n);
 (async()=>{ const b=await chromium.launch();
  // ---------- Fix it right on the page, with a real finger
- await run('RB-20',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',LONG(1)]]); await read(pg); const cdp=await pg.ctx.newCDPSession(pg);
+ await run('RB-20',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',LONG(1)]]); await read(pg); const cdp=await finger(pg);
    await pg.evaluate(()=>{ jumpTo({ch:BOOK.order[0],i:1}); }); await pg.waitForTimeout(500);
    const w=await wordPt(pg,20); await tap(pg,cdp,w.x,w.y); const quick=await pg.evaluate(()=>({fix:!document.querySelector('#fixBox').hidden,i:curIndex()}));
    ok(!quick.fix,'RB-20a','a quick tap on a word does not open it for fixing: '+JSON.stringify(quick));
@@ -80,8 +81,12 @@ const wordPt=(pg,n)=>pg.evaluate(n=>{ const sp=[...document.querySelectorAll('#s
      c.checked=true; c.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(r=>setTimeout(r,500)); const pages=pag(BOOK.order[0]).pages.length;
      const starts=[]; for(let i=0;i<nPages(BOOK.order[0]);i++){ jumpTo({ch:BOOK.order[0],i}); await new Promise(r=>setTimeout(r,120)); const h=document.querySelector('#spread .ptext h2:not(.cht)'); const first=document.querySelector('#spread .ptext > *:not(.rh):not(.folio)'); starts.push(h?(h===first||h.previousElementSibling===null||/rh|folio/.test((h.previousElementSibling||{}).className||''))?'top:'+h.textContent:'mid:'+h.textContent:'-'); }
      c.checked=false; c.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(r=>setTimeout(r,400)); return {off,n0,pages,starts}; });
-   const mid=await pg.evaluate(async()=>{ const o=[]; for(let i=0;i<nPages(BOOK.order[0]);i++){ jumpTo({ch:BOOK.order[0],i}); await new Promise(r=>setTimeout(r,120)); const h=document.querySelector('#spread .ptext h2:not(.cht)'); if(h){ const p=h.previousElementSibling; o.push((p&&p.tagName==='P'?'mid:':'top:')+h.textContent); } } return o; });
-   ok(!r.off&&mid.length===2&&mid.every(x=>/^mid:/.test(x)),'RB-31a','unchecked to start, and sections carry on down the same page under the text before them: '+JSON.stringify(mid));
+   /* rev 250: every section heading is read (before, only the first on each page), and a heading that opens a page is not a fault when the page before
+      had no room left for it and two lines of its text: that is an ordinary page break, and where it falls differs by a word or two between browsers. Such a heading is marked "fit:". */
+   const mid=await pg.evaluate(async()=>{ const o=[]; let free=1e9; for(let i=0;i<nPages(BOOK.order[0]);i++){ jumpTo({ch:BOOK.order[0],i}); await new Promise(r=>setTimeout(r,120)); const pt=document.querySelector('#spread .ptext'), B=pt.getBoundingClientRect(), lh=parseFloat(getComputedStyle(pt).lineHeight)||24;
+       for(const h of pt.querySelectorAll('h2:not(.cht)')){ const p=h.previousElementSibling; let tag=(p&&p.tagName==='P')?'mid:':'top:'; if(tag==='top:'){ const cs=getComputedStyle(h), need=h.getBoundingClientRect().height+parseFloat(cs.marginTop)+parseFloat(cs.marginBottom)+2*lh; if(free<need) tag='fit:'; } o.push(tag+h.textContent); }
+       const ks=[...pt.children].filter(e=>e.matches('h2,p,figure')), last=ks[ks.length-1]; free=last?B.bottom-last.getBoundingClientRect().bottom:1e9; } return o; });
+   ok(!r.off&&mid.length===2&&mid.every(x=>/^(mid|fit):/.test(x))&&mid.some(x=>/^mid:/.test(x)),'RB-31a','unchecked to start, and sections carry on down the same page under the text before them: '+JSON.stringify(mid));
    ok(r.pages>=3&&r.starts.filter(s=>/^top:/.test(s)).length===2,'RB-31b','checked, every section starts on a fresh page: '+JSON.stringify(r.starts));
    await pg.ctx.close(); });
  await run('RB-32',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',LONG(1)]]); await read(pg);

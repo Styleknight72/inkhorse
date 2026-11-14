@@ -122,7 +122,7 @@ F5.1 Section headings inside a chapter are smaller than the chapter title and se
 
 F5.2 A scene break, a change of time or place within a chapter, is marked with a centered ornament, such as three spaced asterisks or a small symbol. A bare blank line is not enough, because it disappears when it falls at the bottom of a page.
 
-F5.3 Pictures are centered, sized to the page width or a set fraction of it, and never stretched or squashed.
+F5.3 Pictures are centered, sized to the page width or a set fraction of it, and never stretched or squashed. A picture and its caption always fit on one page: a picture too tall for the page is made smaller, never cut off.
 
 F5.4 A caption sits directly under its picture, smaller than the body text.
 
@@ -230,11 +230,11 @@ F10.9 A section is never mistaken for a chapter. A section heading that starts w
 
 # Part 11 · Where Inkhorse stands today
 
-## F11 · Scorecard, November 13, 2026
+## F11 · Scorecard, November 14, 2026
 
 Every rule in this book is on this scorecard, in one of five lists: proven by a test, checked by eye, yours to check, not done yet, or waiting on a decision. A rule counts as met only when a test proves it.
 
-Proven: an automatic test checks it before every change goes out. For the print and e-book rules the test opens the real files Inkhorse exports and reads inside them.
+Proven: an automatic test checks it before every change goes out. For the print and e-book rules the test opens the real files Inkhorse exports and reads inside them. Since November 14, 2026 every test runs twice: once in Chromium, the engine inside Chrome and Edge, and once in WebKit, the engine inside Safari on every iPhone and iPad. The WebKit run is on a test computer, not a phone: sound, the phone's own Copy permission and a real finger on the glass can only be checked on a phone.
 
 - F1.1, F1.3 and F1.4 Title, copyright and dedication pages are front matter: no chapter label, no paragraph indents, not counted as chapters. A book with its own typed title and copyright pages gets each one once in the EPUB, and neither is listed in the Contents.
 - F1.2 Covers: one 2:3 size, the whole cover always shown.
@@ -266,7 +266,7 @@ Proven: an automatic test checks it before every change goes out. For the print 
 - F5.1 A section heading is smaller than the chapter title and every section heading is set the same way, on screen, in print and in the EPUB.
 - F5.2 and F3.4 A scene break is a centered ornament, and the paragraph after it is not indented, on the page, in the EPUB and in the print PDF.
 - F5.5 Lists, letters and quoted passages: a line that starts with a dash, a number or a greater-than sign is a list item or a quoted line. It is indented on both sides, the same in every chapter, with a little space above and below, on the page, in the e-book (real lists and block quotes, passing EPUBCheck), in the print PDF and in the Word manuscript (real Word lists and a Quote style). A list keeps its own numbers, and its bullets or numbers hang in the margin. E-books and Word files brought in keep their lists and quotations, and a backslash keeps a plain paragraph that starts with one of these marks plain.
-- F5.3 and F5.4 Pictures are never stretched, are centered unless the writer places them at a side, and carry the caption underneath in smaller type. The test reads the User manual's pictures at three text sizes.
+- F5.3 and F5.4 Pictures are never stretched, are centered unless the writer places them at a side, fit on the page with their caption, and carry the caption underneath in smaller type. The test reads every picture in the User manual at three text sizes.
 - F6.1 The Contents that Inkhorse makes for your book is titled "Contents," lists every chapter once in order, and in print gives the page each chapter really starts on.
 - F6.2 to F6.5, F6.7 and F6.8 One contents style for every book, whatever file it came from: one entry per line, a dotted line to Inkhorse's own page number at the right edge, chapter entries set apart from section entries, nothing else on the page, and no page numbers left over from the paper book. No contents line runs off the page.
 - F6.6 On a contents page, a tap on an entry's words opens it, and a tap at the edge, where the page number sits, turns the page.
@@ -304,6 +304,7 @@ Not done yet. Inkhorse does not meet these rules today:
 
 - F8.6 Footnotes. Inkhorse has no footnotes yet.
 - F3.10 Even spacing in justified text. When text is justified (long lines, or Justify: On), Inkhorse still breaks each line on its own, one at a time, so neighbouring lines can be spaced differently, and a line that would stretch too far is left a little short. Professional typesetting plans the breaks of a whole paragraph together and keeps every word space between 80% and 133% of normal; Inkhorse does not do that yet.
+- F2.5 True small capitals. The opening words of a chapter are set in small capitals that the browser makes by shrinking capital letters, because the typeface file Inkhorse loads carries no small capitals of its own. Professional books use small capitals drawn for the typeface. Safari and other browsers also shrink them by slightly different amounts, so the same chapter can break a line, and now and then a page, in a different place on an iPhone than on another device. Each device's own pages still hold from day to day.
 - F4.6 Italics in a book brought in from a PDF. A PDF's italic words come in upright for now.
 - F5.5 Lists and quoted passages in a book brought in from a PDF. A PDF's bulleted or numbered lines are not yet tested on their own.
 

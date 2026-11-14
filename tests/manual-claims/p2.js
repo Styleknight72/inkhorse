@@ -115,12 +115,16 @@ const {chromium,say,mk,book,para,toastText,vis,toolsOpen,fs,S,REPO}=require('./c
  await run('BP-94',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); const big=Array.from({length:40},(_,k)=>para(k,30+(k%7)*9)); const txt=[];
    big.forEach((p,k)=>{ txt.push(p); if(k%3===2) txt.push('# Heading number '+k); }); await book(pg,[['One',txt.join('\n')]]);
    const r=await pg.evaluate(async()=>{ setTab('read'); await new Promise(r=>setTimeout(r,300)); const id=S.cur, n=pag(id).pages.length; const o={n,alone:[],style:null,sameP:0,newpage:0};
-     for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); const pt=document.querySelector('#spread .face:not(.gone) .ptext'), ks=[...pt.children].filter(e=>e.matches('h2,p'));
+     /* rev 250: a heading that opens a page because the page before had no room for it and two lines of its text is an ordinary page break, not a forced new page;
+        it is counted with the headings that follow text (o.fit says how many), and a heading that opens a page with room left before it is counted in o.forced */
+     let free=1e9; o.fit=0; o.forced=0; o.heads=0;
+     for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); const pt=document.querySelector('#spread .face:not(.gone) .ptext'), ks=[...pt.children].filter(e=>e.matches('h2,p')), B=pt.getBoundingClientRect(), lh=parseFloat(getComputedStyle(pt).lineHeight)||24;
        const last=ks[ks.length-1]; if(last&&last.matches('h2:not(.cht)')) o.alone.push(i+1);
-       ks.forEach((e,k)=>{ if(e.matches('h2:not(.cht)')){ if(!o.style){ const cs=getComputedStyle(e); o.style={align:cs.textAlign,weight:cs.fontWeight,mt:parseFloat(cs.marginTop)}; } if(k>0&&ks[k-1].matches('p')) o.sameP++; } }); }
+       ks.forEach((e,k)=>{ if(e.matches('h2:not(.cht)')){ o.heads++; const cs=getComputedStyle(e); if(!o.style){ o.style={align:cs.textAlign,weight:cs.fontWeight,mt:parseFloat(cs.marginTop)}; } if(k>0&&ks[k-1].matches('p')) o.sameP++; else if(free<e.getBoundingClientRect().height+parseFloat(cs.marginTop)+parseFloat(cs.marginBottom)+2*lh){ o.fit++; } else o.forced++; } });
+       free=last?B.bottom-last.getBoundingClientRect().bottom:1e9; }
      return o; });
    say(r.style&&r.style.align==='center'&&+r.style.weight>=600&&r.style.mt>0?'OK':'FAULT','BP-94a','a # heading shows centered and bold with space above: '+JSON.stringify(r.style));
-   say(r.sameP>5?'OK':'FAULT','BP-94b','the text carries on down the same page: '+r.sameP+' headings follow text on the same page');
+   say(r.heads>=8&&r.sameP>=3&&r.forced===0?'OK':'FAULT','BP-94b','the text carries on down the same page: of '+r.heads+' headings, '+r.sameP+' follow text on the same page, '+r.fit+' open a page only because the page before was full, and '+r.forced+' were pushed to a new page with room to spare');
    say(!r.alone.length?'OK':'FAULT','BP-94c','a heading is never left alone at the bottom of a page: checked '+r.n+' pages'+(r.alone.length?', alone on '+r.alone.join(','):''));
    await pg.ctx.close(); });
  await b.close(); })();
