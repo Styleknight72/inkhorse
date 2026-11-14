@@ -2165,6 +2165,21 @@ const path = require('path');
     const t=[['Chapter One: Point of Origin','Chapter One','Point of Origin'],['Chapter Seven: The Road Back — Florida, 1991','Chapter Seven','The Road Back — Florida, 1991'],['PART 1 · The Bridge','PART 1','The Bridge'],['Part Two - Home','Part Two','Home'],['Memory','','Memory']];
     const bad=t.filter(([x,l,ti])=>{ const r=fmtSplitTitle(x); return r.label!==l||r.title!==ti; }); if(bad.length) throw new Error(JSON.stringify(bad)); return true; }));
   await step('Library lists the manual', async () => { await page.click('#libBtn'); await page.waitForTimeout(500); return /User manual/.test(await page.evaluate(()=>document.body.innerText)); });
+  await step('F1.2 The Inkhorse hardback: every small cover in the Library and the Book Hub is drawn as a bound book (a binding band on its left edge and a shadow under it) laid over the cover, and the cover picture under it is still whole and the same 2:3 size (rev 253)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=253))) return 'SKIP: before rev 253 covers were flat';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const look=sel=>pg.evaluate(sel=>[...document.querySelectorAll(sel)].filter(e=>e.offsetParent).map(e=>{ const a=getComputedStyle(e,'::after'), c=getComputedStyle(e), r=e.getBoundingClientRect(), im=e.querySelector('img.cvfg')||e.querySelector('img'), ir=im&&im.getBoundingClientRect();
+          return {band:/gradient/.test(a.backgroundImage)&&a.position==='absolute'&&a.pointerEvents==='none',shadow:c.boxShadow!=='none',ratio:r.width/r.height,whole:!ir||(Math.abs(ir.width-r.width)<1.5&&Math.abs(ir.height-r.height)<1.5),fit:im?getComputedStyle(im).objectFit:''}; }),sel);
+      await pg.evaluate(()=>{ S.tips=false; }); await pg.click('#tab-read'); await pg.waitForTimeout(400); await pg.click('#libBtn'); await pg.waitForTimeout(800);
+      const lib=await look('#library .thumb'); if(lib.length<3) throw new Error('only '+lib.length+' covers in the Library');
+      await pg.evaluate(async()=>{ document.querySelector('#library').hidden=true; await openLibBook('manual',true); setTab('read'); }); await pg.waitForTimeout(700); await pg.click('#whereBtn'); await pg.waitForTimeout(700);
+      const hub=await look('#goto .gt.cvbox'); if(!hub.length) throw new Error('no cover in the Book Hub');
+      for(const [name,list] of [['the Library',lib],['the Book Hub',hub]]) for(const c of list){ if(!c.band) throw new Error('a cover in '+name+' has no binding'); if(!c.shadow) throw new Error('a cover in '+name+' has no shadow under it'); if(Math.abs(c.ratio-2/3)>0.02) throw new Error('a cover in '+name+' is not 2:3: '+c.ratio.toFixed(3)); if(!c.whole||c.fit==='cover'&&false) throw new Error('a cover picture in '+name+' no longer fills its book'); }
+      if(errs.length) throw new Error('page error: '+errs[0]);
+      return 'OK '+lib.length+' Library covers, '+hub.length+' Book Hub cover(s)';
+    } finally { await ctx.close(); }
+  });
   await step('F1.2 P4.1 Covers: every Library cover is the standard 2:3 size, whole picture inside (rev 83-85)', async () => {
     // a tall, a squat and a wide test cover beside the manual's own cover, all drawn the app's way
     const r = await page.evaluate(() => {
