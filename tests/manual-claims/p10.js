@@ -78,6 +78,9 @@ const click=async(pg,sel,wait)=>{ await pg.evaluate(s=>document.querySelector(s)
    ok(/Whole book/i.test(r.t)&&/pages/i.test(r.t),'CP-01b','Whole book estimates the pages on a phone, a tablet and a 6 × 9 paperback: '+(r.t.match(/Whole book.{0,200}/i)||[''])[0]);
    const tap=await pg.evaluate(async()=>{ const d0=S.dev; const row=[...document.querySelectorAll('#rows [data-dev],#rows button,#compare [data-dev]')].find(e=>/Tablet/.test(e.innerText)&&!/Small/.test(e.innerText)); if(!row) return 'no row'; row.click(); await new Promise(r=>setTimeout(r,800)); return {tab:S.tab,dev:S.dev,d0}; });
    ok(tap&&tap.tab==='read'&&tap.dev==='tablet','CP-01c','tap a device: your book opens in Read at that screen size: '+JSON.stringify(tap));
+   const stay=await pg.evaluate(async()=>{ setTab('write'); await new Promise(r=>setTimeout(r,300)); setTab('read'); await new Promise(r=>setTimeout(r,300)); const kept=S.dev;
+     const sel=document.querySelector('#deviceSel'); sel.value='screen'; sel.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(r=>setTimeout(r,400)); return {kept,back:S.dev}; });
+   ok(stay.kept==='tablet'&&stay.back==='screen','CP-01d','the book stays at that size until you pick Fit my screen in the Device menu: '+JSON.stringify(stay));
    await pg.ctx.close(); });
  // ---------- Put Inkhorse on your home screen
  await run('HS-01',async()=>{ const man=JSON.parse(fs.readFileSync(REPO+'/manifest.webmanifest','utf8')); const app=fs.readFileSync(REPO+'/app.html','utf8'), sw=fs.readFileSync(REPO+'/sw.js','utf8');

@@ -46,9 +46,8 @@ const {chromium,say,mk,book,para,toastText,vis,toolsOpen,fs,S,REPO}=require('./c
    const done=await pg.evaluate(()=>[...document.querySelectorAll('button')].filter(x=>x.offsetParent&&/^Done$/.test(x.textContent.trim())).map(x=>x.id||x.className));
    if(done.length) await pg.evaluate(()=>{ const d=[...document.querySelectorAll('button')].find(x=>x.offsetParent&&/^Done$/.test(x.textContent.trim())); d.click(); }); await pg.waitForTimeout(300);
    const back=await pg.evaluate(()=>!!document.querySelector('nav.tabs').offsetParent&&!(typeof focusOn!=='undefined'&&focusOn));
+   /* BP-47b and BP-47c are checked by p2b.js (rev 246: p2's own versions looked for the wrong things and were taken out) */
    say(r.ta&&r.hiddenAll.every(x=>/true$/.test(x))?'OK':'FAULT','BP-47a','Focus hides everything except your words: '+r.hiddenAll.join(' '));
-   say(wc.some(w=>w.top<120)?'OK':'FAULT','BP-47b','in Focus the word count appears at the top when you pause: '+JSON.stringify(wc));
-   say(done.length&&back?'OK':'FAULT','BP-47c','Done comes back: '+JSON.stringify(done)+' back '+back);
    await pg.ctx.close(); });
  // ---------- Picture: placement panel, each placement on the page, edit, remove
  await run('BP-50',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One',para(1,60)+'\n'+para(2,60)+'\n'+para(3,60)]]);

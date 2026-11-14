@@ -2560,6 +2560,31 @@ const path = require('path');
   await step('tablet width shows Side by side', async () => { await page.setViewportSize({width:900,height:1200}); await page.waitForTimeout(800); await page.click('#tab-write'); await page.waitForTimeout(300); await tools(); return page.isVisible('#splitBtn'); });
   await step('phone sideways does not break', async () => { await page.setViewportSize({width:932,height:430}); await page.waitForTimeout(800); await page.click('#tab-read').catch(()=>{}); await page.waitForTimeout(500); });
 
+  /* rev 246: the User manual's claims (tests/manual-claims, one check per thing the manual says Inkhorse does) run with every audit,
+     against the same file, so a change can't break a promise in the manual without this failing. Any FAULT or ERROR line, a script
+     that stops early, or one that prints no checks, fails the step (NOTE lines are information). */
+  await step('User manual: every claim it makes holds (tests/manual-claims p1–p10, rev 246)', async () => {
+    const http=require('http'), cp=require('child_process'), fs=require('fs'), REPO=path.resolve(__dirname,'..'), dir=path.join(__dirname,'manual-claims');
+    const types={'.html':'text/html','.js':'text/javascript','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.css':'text/css','.mp3':'audio/mpeg','.wasm':'application/wasm'};
+    const srv=http.createServer((q,s)=>{ const u=decodeURIComponent(q.url.split('?')[0]); const f=path.join(REPO,u.endsWith('/')?u+'index.html':u);
+      if(!f.startsWith(REPO)) { s.writeHead(403); return s.end(); }
+      fs.readFile(f,(e,d)=>{ if(e){ s.writeHead(404); return s.end(); } s.writeHead(200,{'Content-Type':types[path.extname(f)]||'application/octet-stream'}); s.end(d); }); });
+    await new Promise(r=>srv.listen(0,'127.0.0.1',r)); const port=srv.address().port;
+    const rel=path.relative(REPO,file).split(path.sep).join('/'); if(rel.startsWith('..')) { srv.close(); throw new Error(file+' is not inside the repository'); }
+    const scripts=fs.readdirSync(dir).filter(f=>/^p\d+b?\.js$/.test(f)).sort((a,b)=>parseInt(a.slice(1))-parseInt(b.slice(1))||a.localeCompare(b));
+    const runOne=f=>new Promise(res=>{ cp.execFile(process.execPath,[path.join(dir,f)],{env:{...process.env,MURL:`http://127.0.0.1:${port}/${rel}`},timeout:15*60*1000,maxBuffer:32*1024*1024},(e,out,err)=>res({f,e,out:String(out||''),err:String(err||'')})); });
+    const results=[]; const queue=scripts.slice();
+    await Promise.all([0,1].map(async()=>{ while(queue.length){ results.push(await runOne(queue.shift())); } }));
+    srv.close();
+    const bad=[]; let okN=0;
+    for(const r of results){ const lines=r.out.split('\n').filter(l=>l.trim()); const oks=lines.filter(l=>/^OK\s/.test(l)).length; okN+=oks;
+      lines.filter(l=>/^(FAULT|ERROR)\s/.test(l)).forEach(l=>bad.push(r.f+': '+l.slice(0,220)));   /* NOTE lines and test details are information, not faults */
+      if(r.e) bad.push(r.f+': stopped early ('+(r.e.killed?'took too long':(r.err.split('\n').find(Boolean)||r.e.message).slice(0,200))+')');
+      if(!oks) bad.push(r.f+': printed no checks'); }
+    if(bad.length) throw new Error(bad.length+' problem(s), '+okN+' claims OK: '+bad.slice(0,6).join(' | '));
+    return true;
+  });
+
   const fails = res.filter(r=>r[0]==='FAIL').length;
   res.forEach(r=>console.log(r[0].padEnd(5), r[1].padEnd(58), r[2]));
   console.log('\n'+(res.length-fails)+'/'+res.length+' steps passed, '+errs.length+' page error(s)'); errs.forEach(e=>console.log('  '+e));
