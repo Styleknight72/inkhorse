@@ -2442,7 +2442,7 @@ const path = require('path');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
   });
-  await step("F3.5, F3.7 and F2.5 in Safari's engine: WebKit, the engine inside Safari on every iPhone, puts the same words on the same lines as the test browser at four text sizes, except where a word fits or misses a line by less than one pixel; and on a left-aligned page in WebKit no word is split except at its own hyphen, every word space is the same width, and no page runs over (rev 249); every chapter of the built-in books opens with the same words in small capitals in both (rev 251)", async () => {
+  await step("F3.5, F3.7, F2.5 and F3.10 in Safari's engine: WebKit, the engine inside Safari on every iPhone, puts the same words on the same lines as the test browser at four text sizes, except where a word fits or misses a line by less than one pixel; and on a left-aligned page in WebKit no word is split except at its own hyphen, every word space is the same width, and no page runs over (rev 249); every chapter of the built-in books opens with the same words in small capitals in both (rev 251); and on left-aligned pages, where Inkhorse ends every line itself, every line of two whole built-in books is the same in both (rev 252)", async () => {
     if(!(await page.evaluate(()=>typeof cplOf==='function'))) return 'SKIP: before rev 248 Justify was a checkbox';
     let webkit; try{ webkit=require('playwright').webkit; }catch(e){ return 'SKIP: no WebKit'; }
     const memo=JSON.parse(require('fs').readFileSync(path.join(__dirname,'fixtures/model-books/memoir.json'),'utf8'));
@@ -2479,6 +2479,8 @@ const path = require('path');
         const where='size '+fsz+' line "'+st.t.slice(-40)+'"'; if(!lo.t.startsWith(st.t)||!nx) return where+': the two browsers set different words: test browser "'+x.t+'" but WebKit "'+y.t+'"';
         const miss=(st.f.sp+nx.f.first)-st.f.slack; if(!(miss>-0.5&&miss<1)) return where+': the next word misses the line by '+miss.toFixed(2)+' px in '+(shortIsC?'the test browser':'WebKit')+' yet fits in the other; only a miss of under one pixel is allowed';
         near++; }
+      /* rev 252 (F3.10, first part): on a left-aligned page Inkhorse ends every line itself, so there the two browsers must agree on every line, with no allowance at all */
+      if(near&&w.pages.every(P=>P.ta!=='justify')&&await page.evaluate(()=>typeof lpPlan==='function')) return 'size '+fsz+': the pages are left-aligned, where Inkhorse ends every line itself, yet '+near+' line(s) end differently in the two browsers';
       for(let i=0;i<w.pages.length;i++){
         const P=w.pages[i]; if(P.over>1) return 'size '+fsz+' page '+(i+1)+': text runs '+P.over+'px over the page in WebKit';
         if(P.ta==='left'||P.ta==='start'){ if(P.split.length) return 'size '+fsz+' page '+(i+1)+': left-aligned but WebKit split '+P.split.join(', '); if(P.gmax-P.gmin>1.5) return 'size '+fsz+' page '+(i+1)+': left-aligned but word spaces run from '+P.gmin.toFixed(1)+' to '+P.gmax.toFixed(1)+'px in WebKit'; } }
@@ -2490,6 +2492,18 @@ const path = require('path');
             for(const id of rOrder().filter(x=>!isCover(x))){ goTo({ch:id,i:0}); drawView(); const p=document.querySelector('#spread .face:not(.gone) .ptext:not(.front) h2.cht + p:not(.li):not(.bq)'); if(!p) continue; const ws=[...p.querySelectorAll('span[data-w]')]; if(!ws.length) continue;
               const top=x=>{ const r=x.getClientRects(); return Math.round(r[r.length-1].top); }, y0=top(ws[0]); out.push(book+' · '+RB.ch.get(id).title.slice(0,30)+': '+ws.filter(x=>Math.abs(top(x)-y0)<10).map(x=>x.textContent.replace(/­/g,'')+(x.querySelector('.scw')?'':'(plain)')).join(' ')); } }
           return out; }); } finally{ await b.close(); } };
+    /* rev 252 (F3.10, first part): two whole built-in books, left-aligned at two text sizes: every line of every page is the same in both browsers */
+    if(await page.evaluate(()=>typeof lpPlan==='function')){
+      const whole=async eng=>{ const b=await eng.launch(); try{ const cx=await b.newContext({...devices['iPhone 15 Pro Max']}); const pg=await cx.newPage(); await pg.goto(eng===PW.chromium?'file://'+file:APPURL.startsWith('http')?APPURL:'file://'+file); await pg.waitForTimeout(2500); await pg.evaluate(()=>document.fonts.ready);
+          return await pg.evaluate(async()=>{ const out=[]; for(const [book,fz] of [['publishing',18],['standard',18],['publishing',24]]){ S.tips=false; S.dev='phone'; S.fs=fz; S.justMode='auto'; applyType(); relayout(); await openLibBook(book,true); setTab('read'); await new Promise(r=>setTimeout(r,300));
+              let planned=0, paras=0; for(const id of rOrder().filter(x=>!isCover(x))){ const n=pag(id).pages.length; for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); const pt=document.querySelector('#spread .face:not(.gone) .ptext'); if(!pt) continue; const body=pt.querySelector('p:not(.sb):not(.toc)'); if(body&&getComputedStyle(body).textAlign==='justify') return {err:book+' at size '+fz+' is justified on the Phone page, so the test is not reading left-aligned pages'};
+                    planned+=pt.querySelectorAll('p.lp').length; paras+=pt.querySelectorAll('p:not(.sb):not(.toc)').length; const L=[]; for(const w of pt.querySelectorAll('span[data-w]')){ const r=w.getClientRects(); if(!r.length) continue; const y=Math.round(r[0].top); let l=L.find(z=>Math.abs(z.y-y)<6); if(!l){ l={y,t:[]}; L.push(l); } l.t.push(w.textContent.replace(/­/g,'')); }
+                    out.push(book+' '+fz+' · '+RB.ch.get(id).title.slice(0,24)+' p'+(i+1)+': '+L.map(l=>l.t.join(' ')).join(' / ')+' | '+Math.max(0,pt.scrollHeight-pt.clientHeight-1)); } }
+              if(planned<paras*0.8) return {err:book+' at size '+fz+': Inkhorse ended the lines of only '+planned+' of '+paras+' paragraphs itself'}; }
+            return {out}; }); } finally{ await b.close(); } };
+      const wc=await whole(PW.chromium), ww=await whole(webkit); if(wc.err||ww.err) return wc.err||ww.err; if(wc.out.length<80) return 'only '+wc.out.length+' pages of the built-in books were read'; if(wc.out.length!==ww.out.length) return 'the built-in books have '+wc.out.length+' pages in the test browser and '+ww.out.length+' in WebKit';
+      for(let i=0;i<wc.out.length;i++){ if(wc.out[i]!==ww.out[i]) return 'a left-aligned page differs between the browsers: test browser "'+wc.out[i].slice(0,200)+'" but WebKit "'+ww.out[i].slice(0,200)+'"'; if(!/\| 0$/.test(ww.out[i])) return 'text runs over the page in WebKit: '+ww.out[i].slice(0,80); }
+      seen.push(wc.out.length+' whole pages alike'); }
     const oc=await openers(PW.chromium), ow=await openers(webkit); if(oc.length<12) return 'only '+oc.length+' chapter openings were read'; if(oc.length!==ow.length) return oc.length+' chapter openings in the test browser, '+ow.length+' in WebKit';
     for(let i=0;i<oc.length;i++) if(oc[i]!==ow[i]) return 'a chapter opens differently: test browser "'+oc[i]+'" but WebKit "'+ow[i]+'"';
     seen.push(oc.length+' openings alike');
