@@ -45,7 +45,7 @@ const click=async(pg,sel,wait)=>{ await pg.evaluate(s=>document.querySelector(s)
    await pg.evaluate(()=>{ const c=CH.get(S.cur); c.text='The draft line about the lighthouse.'; touchChapter(c); loadEditor(); }); await pg.waitForTimeout(400);
    await lib(pg); const id=await pg.evaluate(()=>document.querySelector('[data-dread]').dataset.dread);
    await click(pg,`[data-dread="${id}"]`,1200); const rd=await pg.evaluate(()=>({tab:S.tab,txt:document.querySelector('#spread').innerText}));
-   ok(rd.tab==='read'&&/lighthouse/.test(rd.txt),'BD-07a','Read shows the draft as pages: '+rd.tab);
+   ok(rd.tab==='read'&&/lighthouse/i.test(rd.txt),'BD-07a','Read shows the draft as pages: '+rd.tab);
    await lib(pg); await click(pg,`[data-dwrite="${id}"]`,1200); const wr=await pg.evaluate(()=>({tab:S.tab,v:document.querySelector('#manuscript').value}));
    ok(wr.tab==='write'&&/lighthouse/.test(wr.v),'BD-07b','Write opens it in Write');
    await lib(pg); await click(pg,`[data-dadd="${id}"]`,500); const q1=await shelf(pg);

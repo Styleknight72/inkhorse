@@ -1405,7 +1405,7 @@ const path = require('path');
       const r=await pg.evaluate(async()=>{ const dflt=S.lh; await openLibBook('standard',true); setTab('read'); await new Promise(r=>setTimeout(r,800)); const body=rOrder().find(id=>!isCover(id)&&!isFront(id)); goTo({ch:body,i:0}); drawView(); await new Promise(r=>setTimeout(r,600));
         const ps=[...document.querySelectorAll('#spread .face:not(.gone) .ptext p')].filter(p=>{ const rg=document.createRange(); rg.selectNodeContents(p); return new Set([...rg.getClientRects()].map(x=>Math.round(x.top))).size>=4; });
         if(!ps.length) return {dflt,none:true}; const p=ps[0], cs=getComputedStyle(p), ratio=parseFloat(cs.lineHeight)/parseFloat(cs.fontSize);
-        const rg=document.createRange(); rg.selectNodeContents(p); const tops=[...new Set([...rg.getClientRects()].map(x=>Math.round(x.top*2)/2))].sort((a,b)=>a-b), gaps=tops.slice(1).map((t,i)=>t-tops[i]).filter(g=>g>2);
+        /* rev 251: a line's place is read from its words' own boxes; the smaller letters of small capitals sit in shorter boxes inside them and are not lines */ const tops=[...new Set([...p.querySelectorAll('span[data-w]')].flatMap(w=>[...w.getClientRects()]).filter(x=>x.width>0).map(x=>Math.round(x.top*2)/2))].sort((a,b)=>a-b), gaps=tops.slice(1).map((t,i)=>t-tops[i]).filter(g=>g>2);
         return {dflt,ratio,spread:gaps.length?Math.max(...gaps)-Math.min(...gaps):0,n:gaps.length}; });
       if(r.none) throw new Error('no paragraph to measure');
       if(String(r.dflt)!=='1.55') throw new Error('Normal spacing is '+r.dflt);
@@ -2234,7 +2234,15 @@ const path = require('path');
     const titles=await page.evaluate(()=>rOrder().map(i=>getCh(i).title));
     const pages=[];
     for(let i=0;i<12;i++){ pages.push(await page.evaluate(()=>{ const pg=document.querySelector('#spread .face:not(.left) .ptext')||document.querySelector('#spread .ptext'); if(!pg) return null; const rh=pg.querySelector('.ck')||pg.parentElement.querySelector('.rh');   /* since rev 198 the opener's label sits in the page (F2.3 + F2.6) */ const h=pg.querySelector('h2.cht'), fp=h&&h.nextElementSibling, sb=pg.querySelector('p.sb');
-      return {front:pg.classList.contains('front'),label:rh?rh.innerText.trim():'',title:h?h.innerText:'',drop:h?(h.getBoundingClientRect().top-pg.getBoundingClientRect().top)/pg.clientHeight:null,firstIndent:fp?parseFloat(getComputedStyle(fp).textIndent):null,smallCaps:fp?getComputedStyle(fp,'::first-line').fontVariantCaps||getComputedStyle(fp,'::first-line').fontVariant:null,
+      return {front:pg.classList.contains('front'),label:rh?rh.innerText.trim():'',title:h?h.innerText:'',drop:h?(h.getBoundingClientRect().top-pg.getBoundingClientRect().top)/pg.clientHeight:null,firstIndent:fp?parseFloat(getComputedStyle(fp).textIndent):null,smallCaps:fp?(()=>{ /* rev 251: the small capitals are Inkhorse's own. Every word on the opening line is marked, no word on a later line is, and the small letters are drawn as capitals at 78% of the text size */
+          if(pg.classList.contains('front')||fp.matches('.li,.bq')) return 'small-caps (not for this kind of opening)'; const ws=[...fp.querySelectorAll('span[data-w]')]; if(!ws.length) return 'no words';
+          const top=x=>{ const r=x.getClientRects(); return Math.round(r[r.length-1].top); }, y0=top(ws[0]), fz=parseFloat(getComputedStyle(fp).fontSize), on=x=>!!x.querySelector('.scw');
+          const first=ws.filter(x=>Math.abs(top(x)-y0)<fz*0.6), rest=ws.filter(x=>Math.abs(top(x)-y0)>=fz*0.6);
+          if(!on(ws[0])) return 'the opening word is not in small capitals'; if(rest.some(on)) return 'small capitals run on past the first line';
+          const plain=first.filter(x=>!on(x)); if(plain.length>1) return plain.length+' words on the first line are not in small capitals';
+          const l=fp.querySelector('.scl'); if(l){ const c=getComputedStyle(l); if(c.textTransform!=='uppercase'||Math.abs(parseFloat(c.fontSize)/fz-0.78)>0.01) return 'small letters are not capitals at 78%: '+c.textTransform+' '+(parseFloat(c.fontSize)/fz).toFixed(2); }
+          if(/small-caps/.test(getComputedStyle(fp,'::first-line').fontVariantCaps||'')) return 'the browser is still asked for its own small capitals';
+          return 'small-caps (own)'; })():null,
         sb:sb?{txt:sb.innerText.replace(/\s+/g,''),center:getComputedStyle(sb).textAlign,nextIndent:sb.nextElementSibling?parseFloat(getComputedStyle(sb.nextElementSibling).textIndent):null}:null}; }));
       await page.click('#next').catch(()=>{}); await page.waitForTimeout(450); }
     await page.evaluate(()=>{ try{ leaveLibrary(); }catch(_){ } });
@@ -2289,7 +2297,7 @@ const path = require('path');
     const hits=await page.evaluate(()=>{ const txt=MANUAL.chapters.map(c=>c.text).join('\n'); return [/\bStop\b/,/\bMark:/,/\bErase\b/,/Edit tab/,/This is my book/,/\b[Pp]inch/].filter(r=>r.test(txt)).map(String); });
     return !hits.length || (()=>{ throw new Error('found '+hits.join(', ')); })();
   });
-  await step('Manual opens with a Contents page and page numbers', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1500); let all=''; for(let i=0;i<12;i++){ all+=await page.evaluate(()=>document.querySelector('#spread').innerText); await page.click('#next').catch(()=>{}); await page.waitForTimeout(450);} await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return /(^|\n)Welcome to Inkhorse\s+\d/.test(all) && /Chapter 1 · The big picture\s+\d/.test(all); });   /* rev 158: front pages carry no number in the Contents, like on their own pages */
+  await step('Manual opens with a Contents page and page numbers', async () => { await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1500); let all=''; for(let i=0;i<12;i++){ all+=await page.evaluate(()=>document.querySelector('#spread').innerText); await page.click('#next').catch(()=>{}); await page.waitForTimeout(450);} await page.evaluate(()=>leaveLibraryBook()); await page.waitForTimeout(400); return /(^|\n)Welcome to Inkhorse\s+\d/i.test(all) && /Chapter 1 · The big picture\s+\d/i.test(all); });   /* rev 251: read without regard to capitals: chapter lines are drawn in small capitals */   /* rev 158: front pages carry no number in the Contents, like on their own pages */
   await step('Full screen: quick side taps turn one page each, in order, and leaving full screen mid-turn keeps the place (rev 193)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=193))) return 'SKIP: before rev 193';
     await page.waitForFunction(()=>!turning && !turnQ.length,null,{timeout:8000}).catch(()=>{});   /* earlier steps' page turns finish first */
@@ -2420,7 +2428,21 @@ const path = require('path');
     if(r.back.resumed<1||r.back.state!=='running') throw new Error('coming back to Inkhorse did not wake the sound: '+JSON.stringify(r.back));
     return true;
   });
-  await step("F3.5 and F3.7 in Safari's engine: WebKit, the engine inside Safari on every iPhone, puts the same words on the same lines and the same pages as the test browser at four text sizes; and on a left-aligned page in WebKit no word is split except at its own hyphen, every word space is the same width, and no page runs over (rev 249)", async () => {
+  await step('F2.5 Small capitals are only how the words are drawn: copying a chapter\'s opening line gives the words as the writer wrote them, and the page still holds them that way for Find and reading aloud (rev 251)', async () => {
+    if(!(await page.evaluate(()=>typeof scWord==='function'))) return 'SKIP: before rev 251 the browser made the small capitals';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const r=await pg.evaluate(async()=>{ S.tips=false; BOOK.order.slice().forEach(id=>{ CH.delete(id); deleted.add(id); }); BOOK.order=[]; BOOK.sample=false; const id=addChapter('Harbor','The quiet harbor woke before Marta did, and the gulls said so loudly.\nSecond paragraph here.'); dirty.add(id); S.cur=id; S.rch=id; S.anchor=0; touchIndex(); PCACHE.clear(); loadEditor(); setTab('read'); await new Promise(r=>setTimeout(r,700));
+        const p=document.querySelector('#spread .ptext h2.cht + p'); if(!p) return {err:'no opening paragraph'}; const rg=document.createRange(); rg.selectNodeContents(p); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(rg);
+        const dt=new DataTransfer(), ev=new ClipboardEvent('copy',{clipboardData:dt,bubbles:true,cancelable:true}); p.dispatchEvent(ev);
+        return {copied:dt.getData('text/plain'),held:p.textContent.replace(/[­⁠]/g,''),marked:p.querySelectorAll('.scw').length,drawn:p.querySelector('.scl')?getComputedStyle(p.querySelector('.scl')).textTransform:''}; });
+      if(r.err) throw new Error(r.err); if(!r.marked||r.drawn!=='uppercase') throw new Error('the opening line is not in Inkhorse\'s small capitals: '+JSON.stringify(r));
+      if(!r.held.startsWith('The quiet harbor woke')) throw new Error('the page no longer holds the words as written: '+r.held.slice(0,40));
+      if(!r.copied.startsWith('The quiet harbor woke before Marta did')) throw new Error('copying the opening line gave: '+JSON.stringify(r.copied.slice(0,60)));
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx.close(); }
+  });
+  await step("F3.5, F3.7 and F2.5 in Safari's engine: WebKit, the engine inside Safari on every iPhone, puts the same words on the same lines as the test browser at four text sizes, except where a word fits or misses a line by less than one pixel; and on a left-aligned page in WebKit no word is split except at its own hyphen, every word space is the same width, and no page runs over (rev 249); every chapter of the built-in books opens with the same words in small capitals in both (rev 251)", async () => {
     if(!(await page.evaluate(()=>typeof cplOf==='function'))) return 'SKIP: before rev 248 Justify was a checkbox';
     let webkit; try{ webkit=require('playwright').webkit; }catch(e){ return 'SKIP: no WebKit'; }
     const memo=JSON.parse(require('fs').readFileSync(path.join(__dirname,'fixtures/model-books/memoir.json'),'utf8'));
@@ -2438,18 +2460,39 @@ const path = require('path');
             while(n=tw.nextNode()){ const re=/\S+/g; let m; while(m=re.exec(n.nodeValue)){ rg.setStart(n,m.index); rg.setEnd(n,m.index+m[0].length); const rs=[...rg.getClientRects()].filter(q=>q.width>0); if(!rs.length) continue;
               const ys=[...new Set(rs.map(q=>Math.round(q.top/4)))]; if(ys.length>1){ const w=m[0]; /* a break at the word's own hyphen (fifty-four) is allowed; a break at a hidden hyphenation point is a split */ const first=rg.cloneRange(); let cut=0; for(let k=1;k<=w.length;k++){ first.setEnd(n,m.index+k); const fr=[...first.getClientRects()].filter(q=>q.width>0); if(new Set(fr.map(q=>Math.round(q.top/4))).size>1){ cut=k-1; break; } } if(!/[-‐–—]$/.test(w.slice(0,cut).replace(/­/g,''))) split.push(w.replace(/­/g,'')); }
               const q=rs[0], y=Math.round(q.top); let Ln=lines.find(l=>Math.abs(l.y-y)<6); if(!Ln){ Ln={y,ws:[],el:n.parentElement.closest('p,h1,h2,h3,div')}; lines.push(Ln); } Ln.ws.push({l:q.left,r:q.right,w:m[0].replace(/­/g,'')}); } }
-            lines.sort((a,b)=>a.y-b.y); const gaps=[]; for(const Ln of lines){ if(!Ln.el||!Ln.el.matches('p:not(.sb):not(.toc)')||Ln.el.querySelector('.sc,.lead')&&Ln===lines.find(z=>z.el===Ln.el)) continue; Ln.ws.sort((a,b)=>a.l-b.l); for(let k=1;k<Ln.ws.length;k++){ const g=Ln.ws[k].l-Ln.ws[k-1].r; if(g>0.5) gaps.push(g); } }
-            return {ta,split,text:lines.map(l=>l.ws.sort((a,b)=>a.l-b.l).map(w=>w.w).join(' ')),gmin:gaps.length?Math.min(...gaps):0,gmax:gaps.length?Math.max(...gaps):0,over:pt.scrollHeight-pt.clientHeight}; }));
+            lines.sort((a,b)=>a.y-b.y); const gaps=[]; for(const Ln of lines){ if(!Ln.el||!Ln.el.matches('p:not(.sb):not(.toc)')||Ln.el.querySelector('.scw')&&Ln===lines.find(z=>z.el===Ln.el)) continue;   /* a chapter's opening line is in small capitals, spaced a little wider by design */ Ln.ws.sort((a,b)=>a.l-b.l); for(let k=1;k<Ln.ws.length;k++){ const g=Ln.ws[k].l-Ln.ws[k-1].r; if(g>0.5) gaps.push(g); } }
+            const B=pt.getBoundingClientRect(); lines.forEach(l=>l.ws.sort((a,b)=>a.l-b.l)); return {ta,split,text:lines.map(l=>l.ws.map(w=>w.w).join(' ')),/* slack: the room left on the line if its words sat at their natural spacing (a justified line is stretched to the edge, so its drawn right end says nothing) */ fit:lines.map(l=>{ const sp=l.el&&l.el.matches('p')?spaceW(l.el):0, nat=l.ws.reduce((t,w)=>t+(w.r-w.l),0)+(l.ws.length-1)*sp; return {slack:(B.right-l.ws[0].l)-nat,first:l.ws[0].r-l.ws[0].l,sp}; }),gmin:gaps.length?Math.min(...gaps):0,gmax:gaps.length?Math.max(...gaps):0,over:pt.scrollHeight-pt.clientHeight}; }));
+          pages[pages.length-1].ch=[...new Set(refs.map(x=>x.ch))].indexOf(r.ch);   /* which chapter, by its place in the book (each browser gives chapters its own ids) */
         }
         return {pages,errs}; } finally{ await b.close(); } };
     const seen=[];
     for(const fsz of [16,18,20,24]){ const c=await draw(PW.chromium,fsz), w=await draw(webkit,fsz); if(w.skip) return 'SKIP: '+w.skip;
       if(w.errs.length) return 'size '+fsz+': page error in WebKit: '+w.errs[0];
-      if(c.pages.length!==w.pages.length) return 'size '+fsz+': '+c.pages.length+' pages in the test browser, '+w.pages.length+' in WebKit';
-      for(let i=0;i<c.pages.length;i++){ const a=c.pages[i].text, b=w.pages[i].text; for(let k=0;k<Math.max(a.length,b.length);k++) if(a[k]!==b[k]) return 'size '+fsz+' page '+(i+1)+' line '+(k+1)+': test browser "'+a[k]+'" but WebKit "'+b[k]+'"';
+      /* rev 251: what the two browsers may differ by. Each measures a letter to within about a hundredth of a pixel of the other, and over a line
+         that can add up to a tenth of a pixel or so. So a word that fits a line by a hair in one browser can miss it by a hair in the other, and
+         the rest of that chapter then sits differently. That is allowed ONLY where the word fits or misses by less than one pixel; any other
+         difference fails. Each chapter is read line by line to its first difference, which is then measured. (Inkhorse planning its own line
+         breaks, F3.10, would end even these.) */
+      const flat=r=>{ const m=new Map(); for(const P of r.pages){ if(!m.has(P.ch)) m.set(P.ch,[]); P.text.forEach((t,k)=>m.get(P.ch).push({t,f:P.fit[k]})); } return m; }, fc=flat(c), fw=flat(w); let near=0;
+      for(const [ch,A] of fc){ const Bn=fw.get(ch)||[]; const k=A.findIndex((x,n)=>!Bn[n]||x.t!==Bn[n].t); if(k<0){ if(Bn.length!==A.length) return 'size '+fsz+': a chapter has '+A.length+' lines in the test browser and '+Bn.length+' in WebKit'; continue; }
+        const x=A[k], y=Bn[k]; if(!y) return 'size '+fsz+': WebKit has no line where the test browser has "'+x.t+'"'; const shortIsC=y.t.length>x.t.length, sh=shortIsC?A:Bn, lo=shortIsC?y:x, st=sh[k], nx=sh[k+1];
+        const where='size '+fsz+' line "'+st.t.slice(-40)+'"'; if(!lo.t.startsWith(st.t)||!nx) return where+': the two browsers set different words: test browser "'+x.t+'" but WebKit "'+y.t+'"';
+        const miss=(st.f.sp+nx.f.first)-st.f.slack; if(!(miss>-0.5&&miss<1)) return where+': the next word misses the line by '+miss.toFixed(2)+' px in '+(shortIsC?'the test browser':'WebKit')+' yet fits in the other; only a miss of under one pixel is allowed';
+        near++; }
+      for(let i=0;i<w.pages.length;i++){
         const P=w.pages[i]; if(P.over>1) return 'size '+fsz+' page '+(i+1)+': text runs '+P.over+'px over the page in WebKit';
         if(P.ta==='left'||P.ta==='start'){ if(P.split.length) return 'size '+fsz+' page '+(i+1)+': left-aligned but WebKit split '+P.split.join(', '); if(P.gmax-P.gmin>1.5) return 'size '+fsz+' page '+(i+1)+': left-aligned but word spaces run from '+P.gmin.toFixed(1)+' to '+P.gmax.toFixed(1)+'px in WebKit'; } }
-      seen.push(fsz+':'+w.pages.length+'p '+[...new Set(w.pages.map(p=>p.ta))].filter(t=>t!=='none'&&t!=='center').join('/')); }
+      seen.push(fsz+':'+w.pages.length+'p '+[...new Set(w.pages.map(p=>p.ta))].filter(t=>t!=='none'&&t!=='center').join('/')+(near?' ('+near+' hair-width line)':'')); }
+    /* rev 251 (F2.5): the opening line of every chapter of the three built-in books holds the same words in both browsers. Before Inkhorse set
+       its own small capitals, every opening read here differed, because each browser made small capitals at its own width. */
+    const openers=async eng=>{ const b=await eng.launch(); try{ const cx=await b.newContext({...devices['iPhone 15 Pro Max']}); const pg=await cx.newPage(); await pg.goto(eng===PW.chromium?'file://'+file:APPURL.startsWith('http')?APPURL:'file://'+file); await pg.waitForTimeout(2500); await pg.evaluate(()=>document.fonts.ready);
+        return await pg.evaluate(async()=>{ const out=[]; for(const book of ['publishing','standard','manual']){ S.tips=false; S.dev='phone'; S.fs=18; S.justMode='auto'; applyType(); relayout(); await openLibBook(book,true); setTab('read'); await new Promise(r=>setTimeout(r,300));
+            for(const id of rOrder().filter(x=>!isCover(x))){ goTo({ch:id,i:0}); drawView(); const p=document.querySelector('#spread .face:not(.gone) .ptext:not(.front) h2.cht + p:not(.li):not(.bq)'); if(!p) continue; const ws=[...p.querySelectorAll('span[data-w]')]; if(!ws.length) continue;
+              const top=x=>{ const r=x.getClientRects(); return Math.round(r[r.length-1].top); }, y0=top(ws[0]); out.push(book+' · '+RB.ch.get(id).title.slice(0,30)+': '+ws.filter(x=>Math.abs(top(x)-y0)<10).map(x=>x.textContent.replace(/­/g,'')+(x.querySelector('.scw')?'':'(plain)')).join(' ')); } }
+          return out; }); } finally{ await b.close(); } };
+    const oc=await openers(PW.chromium), ow=await openers(webkit); if(oc.length<12) return 'only '+oc.length+' chapter openings were read'; if(oc.length!==ow.length) return oc.length+' chapter openings in the test browser, '+ow.length+' in WebKit';
+    for(let i=0;i<oc.length;i++) if(oc[i]!==ow[i]) return 'a chapter opens differently: test browser "'+oc[i]+'" but WebKit "'+ow[i]+'"';
+    seen.push(oc.length+' openings alike');
     if(!seen.some(s=>/left/.test(s))||!seen.some(s=>/justify/.test(s))) return 'the four sizes did not cover both a left-aligned and a justified book: '+seen.join(', ');
     return 'OK '+seen.join(', ');
   });
