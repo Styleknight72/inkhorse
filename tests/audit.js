@@ -680,7 +680,7 @@ const path = require('path');
   const r214 = async () => page.evaluate(()=>(window.INK_VERSION||{}).rev>=214);
   const p214 = ['First paragraph "quoted" here -- an aside -- then more words, and here--there too. The years 1980-1981 and a phone 555-1234 and dots... end of a long line that wraps across the page so it shows several lines.','***','After the break this paragraph has no indent.','A normal paragraph that is long enough to wrap onto a second line, so both edges show.'].join('\n');
   const toFirstPage = async () => { await page.click('#tab-read'); await page.waitForTimeout(900); await page.evaluate(()=>{ try{ goTo({ch:S.cur,i:0}); refreshReader(); }catch(_){ } }); await page.waitForTimeout(600); };
-  await step('F3.5 Justify Auto, On and Off: Auto (the start) justifies a line of at least 52 letters and sets shorter lines left-aligned with every word space the same; Auto says which; On justifies with hyphenation at every size; Off is left-aligned; an old Justify-off setting becomes Off (rev 248)', async () => {
+  await step('F3.5 Justify Auto, On and Off: Auto (the start) justifies a line of at least 52 letters and sets shorter lines left-aligned with every word space the same and no word split by a hyphen (rev 249); Auto says which; On justifies with hyphenation at every size; Off is left-aligned; an old Justify-off setting becomes Off (rev 248)', async () => {
     if(!(await page.evaluate(()=>typeof cplOf==='function'))) return 'SKIP: before rev 248 Justify was a checkbox';
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
     const look=()=>page.evaluate(()=>{ const p=[...document.querySelectorAll('#spread .ptext p:not(.sb):not(.toc)')].sort((x,y)=>y.querySelectorAll('span[data-w]').length-x.querySelectorAll('span[data-w]').length)[0]; if(!p) return {ta:'none',note:'',cpl:0,sw:0,gmin:0,gmax:0,n:0}; const cs=getComputedStyle(p);
@@ -690,7 +690,8 @@ const path = require('path');
       /* the chapter's opening line is set in small capitals, whose spaces are wider by design: it is not counted */
       const opener=!!(p.previousElementSibling&&p.previousElementSibling.matches('h2.cht')); const gaps=[], at=[];
       [...lines.values()].slice(opener?1:0,-1).forEach(ls=>{ for(let i=1;i<ls.length;i++){ gaps.push(ls[i].left-ls[i-1].right); at.push(Math.round(ls[i].top)); } });
-      return {ta:cs.textAlign, hy:cs.hyphens||cs.webkitHyphens, mode:S.justMode, note:document.querySelector('#justNote').textContent, cpl:cplOf(curDev()), sw, gmin:Math.min(...gaps), gmax:Math.max(...gaps), n:gaps.length, low:at[gaps.indexOf(Math.min(...gaps))]}; });
+      const split=[...p.querySelectorAll('span[data-w]')].filter(sp=>new Set([...sp.getClientRects()].filter(q=>q.width>0).map(q=>Math.round(q.top))).size>1 && !/[-–—\/]/.test(sp.textContent.replace(/\u00ad/g,''))).map(sp=>sp.textContent.replace(/\u00ad/g,'·'));
+      return {split, ta:cs.textAlign, hy:cs.hyphens||cs.webkitHyphens, mode:S.justMode, note:document.querySelector('#justNote').textContent, cpl:cplOf(curDev()), sw, gmin:Math.min(...gaps), gmax:Math.max(...gaps), n:gaps.length, low:at[gaps.indexOf(Math.min(...gaps))]}; });
     try{
       await page.fill('#manuscript',Array.from({length:3},(_,k)=>'The harbor lights were steady that evening, and nobody on the long pier spoke about the weather, the boats, or the strange quiet that had settled over the water since the storm passed through the town two nights before, leaving the nets torn and the gulls unusually silent along the breakwater where the old men usually sat and argued about baseball until it was too dark to see the cards. '+k).join('\n')); await page.waitForTimeout(600);
       const start=await page.evaluate(()=>{ const o=S.justMode; return o; }); if(start!=='auto') throw new Error('Justify does not start on Auto: '+start);
@@ -700,13 +701,15 @@ const path = require('path');
         await page.evaluate(fs=>{ S.fs=fs; applyType(); relayout(); },fs); await page.waitForTimeout(700); await toFirstPage(); const L=await look();
         const exp=want||(L.cpl>=52?'justify':'left'); if(L.ta!==exp) throw new Error(`Auto at ${fs}px (${L.cpl.toFixed(1)} letters a line) shows ${L.ta}, expected ${exp}`);
         if(L.note!==(exp==='justify'?'justified at this size':'left-aligned at this size')) throw new Error('Auto says '+JSON.stringify(L.note)+' at '+fs+'px');
+        if(exp==='left' && L.split.length) throw new Error(`left-aligned at ${fs}px, but a word is split at the end of a line: ${L.split.join(', ')}`);
+        if(exp==='left' && L.hy!=='none') throw new Error(`left-aligned at ${fs}px, but hyphenation is ${L.hy}`);
         if(exp==='left' && (L.gmax-L.gmin>1.5 || Math.abs(L.gmax-L.sw)>1.5)) throw new Error(`left-aligned at ${fs}px, but the word spaces run from ${L.gmin.toFixed(1)} to ${L.gmax.toFixed(1)} px (a normal space is ${L.sw.toFixed(1)}; smallest on the line at y=${L.low})`); }
       await page.evaluate(()=>{ S.fs=24; S.justMode='on'; applyType(); relayout(); }); await page.waitForTimeout(700); await toFirstPage(); const on=await look();
       if(on.ta!=='justify') throw new Error('On at 24px shows '+on.ta);
       const own=await page.evaluate(()=>typeof OWNHY!=='undefined'&&OWNHY); if(own ? on.hy!=='manual' : on.hy!=='auto') throw new Error('hyphenation is '+on.hy);
       if(on.note) throw new Error('On still shows an Auto note: '+on.note);
       await page.evaluate(()=>{ S.justMode='off'; applyType(); relayout(); }); await page.waitForTimeout(700); await toFirstPage(); const off=await look();
-      if(off.ta!=='left') throw new Error('Off shows '+off.ta);
+      if(off.ta!=='left') throw new Error('Off shows '+off.ta); if(off.hy!=='none'||off.split.length) throw new Error('Off still splits words: '+off.hy+' '+off.split.join(', '));
       const mig=await page.evaluate(()=>{ const f=new Function('S',"if(!['auto','on','off'].includes(S.justMode)) S.justMode=S.just===false?'off':'auto'; return S.justMode;"); return [f({just:false}),f({just:true}),f({})].join(','); });
       const real=await page.evaluate(()=>/if\(!\['auto','on','off'\]\.includes\(S\.justMode\)\) S\.justMode=S\.just===false\?'off':'auto';/.test(document.documentElement.innerHTML));
       if(mig!=='off,auto,auto'||!real) throw new Error('an old Justify setting is not carried over: '+mig);
@@ -973,7 +976,7 @@ const path = require('path');
       if(own.std.indexOf('­')<0||own.cap.indexOf('­')<0) throw new Error('a long word (or a capitalized one) is not broken: '+JSON.stringify([own.std,own.cap]));
       if(own.last!=='book') throw new Error('a short word was broken: '+JSON.stringify(own.last));
       if(!/zendesk<wbr>\.com\/<wbr>help/.test(own.url)) throw new Error('a web address cannot break after a slash and before a dot: '+own.url);
-      if(own.css!=='manual') throw new Error('the browser may still add hyphens of its own (hyphens: '+own.css+')');
+      /* rev 249: a left-aligned page says none (no word is split at all), a justified one says manual (only Inkhorse's own breaks); auto would let the browser add its own */ if(own.css!=='manual'&&own.css!=='none') throw new Error('the browser may still add hyphens of its own (hyphens: '+own.css+')');
       const sweep=(book,fs,maxPages)=>pg.evaluate(async({book,fs,maxPages})=>{
         S.tips=false; S.justMode='on'; S.just=true; S.fs=fs; applyType(); relayout(); await openLibBook(book,true); setTab('read'); await new Promise(r=>setTimeout(r,300));
         const cv=document.createElement('canvas').getContext('2d'), T=x=>RB.ch.get(x).title;
@@ -2379,6 +2382,58 @@ const path = require('path');
     if(r.err) throw new Error(r.err);
     if(r.secs<.3 || r.secs>1 || r.peak<.1 || r.peak>1.01) throw new Error('the recording looks wrong: '+JSON.stringify(r));
     return 'OK: '+JSON.stringify(r);
+  });
+  await step('Page sound wakes up: after the phone has put the sound to sleep (leaving Inkhorse and coming back), the first touch wakes it, and a turn made while it is still asleep plays once it is awake (rev 249)', async () => {
+    if(!(await page.evaluate(()=>typeof turnAudioWake==='function'))) return 'SKIP: before rev 249';
+    const r=await page.evaluate(async()=>{ turnAudioWarm(); for(let k=0;k<40&&!turnBuf;k++) await new Promise(z=>setTimeout(z,100)); if(!turnBuf) return 'the sound never loaded';
+      const real=turnAC; let state='interrupted', resumed=0, started=0;
+      const fake={ get state(){ return state; }, resume(){ resumed++; return new Promise(res=>setTimeout(()=>{ state='running'; res(); },60)); }, destination:real.destination,
+        createBufferSource(){ return {buffer:null,playbackRate:{value:1},connect(){},start(){ started++; }}; }, createGain(){ return {gain:{value:1},connect(){}}; } };
+      turnAC=fake; const snd=S.snd; S.snd=true; noTurnSound=false;
+      try{
+        turnSound(); const during=started; await new Promise(z=>setTimeout(z,200)); const afterTurn={resumed,started};      /* a turn while asleep: wakes, then plays */
+        state='suspended'; resumed=0; document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})); await new Promise(z=>setTimeout(z,150)); const touch={resumed,state};
+        state='interrupted'; resumed=0; document.dispatchEvent(new Event('visibilitychange')); await new Promise(z=>setTimeout(z,150)); const back={resumed,state};
+        return {during,afterTurn,touch,back};
+      } finally { turnAC=real; S.snd=snd; } });
+    if(typeof r==='string') throw new Error(r);
+    if(r.during!==0||r.afterTurn.resumed<1||r.afterTurn.started!==1) throw new Error('a turn made while the sound was asleep did not wake it and then play once: '+JSON.stringify(r));
+    if(r.touch.resumed<1||r.touch.state!=='running') throw new Error('a touch did not wake the sound: '+JSON.stringify(r.touch));
+    if(r.back.resumed<1||r.back.state!=='running') throw new Error('coming back to Inkhorse did not wake the sound: '+JSON.stringify(r.back));
+    return true;
+  });
+  await step("F3.5 and F3.7 in Safari's engine: WebKit, the engine inside Safari on every iPhone, puts the same words on the same lines and the same pages as the test browser at four text sizes; and on a left-aligned page in WebKit no word is split except at its own hyphen, every word space is the same width, and no page runs over (rev 249)", async () => {
+    if(!(await page.evaluate(()=>typeof cplOf==='function'))) return 'SKIP: before rev 248 Justify was a checkbox';
+    let webkit; try{ webkit=require('playwright').webkit; }catch(e){ return 'SKIP: no WebKit'; }
+    const memo=JSON.parse(require('fs').readFileSync(path.join(__dirname,'fixtures/model-books/memoir.json'),'utf8'));
+    const draw=async(eng,fsz)=>{ let b; try{ b=await eng.launch(); }catch(e){ return {skip:'WebKit is not installed here (npx playwright install webkit)'}; }
+      try{ const cx=await b.newContext({...devices['iPhone 15 Pro Max']}); const pg=await cx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+        await pg.goto('file://'+file); await pg.waitForTimeout(2500);
+        await pg.evaluate(([m,fsz])=>{ BOOK.order.slice().forEach(id=>{ CH.delete(id); deleted.add(id); }); BOOK.order=[]; BOOK.sample=false; BOOK.title=m.title; for(const [t,x] of m.chapters){ const id=addChapter(t,x); dirty.add(id); }
+          S.fs=fsz; S.justMode='auto'; S.tips=false; S.cur=BOOK.order[0]; S.rch=S.cur; S.anchor=0; touchIndex(); PCACHE.clear(); applyType(); loadEditor(); setTab('read'); setImmersive(true); },[memo,fsz]);
+        await pg.waitForTimeout(1500); await pg.evaluate(()=>document.fonts.ready);
+        const refs=await pg.evaluate(()=>{ const o=[]; for(const ch of BOOK.order){ const n=pag(ch).pages.length; for(let i=0;i<n;i++) o.push({ch,i}); } return o; }); const pages=[];
+        for(const r of refs){ await pg.evaluate(r=>jumpTo(r),r); await pg.waitForTimeout(350);
+          pages.push(await pg.evaluate(()=>{ const pt=document.querySelector('#spread .ptext'); const body=pt.querySelector('p:not(.sb):not(.toc)'); const ta=body?getComputedStyle(body).textAlign:'none';
+            /* every word on the page, by the line it sits on; a word drawn in two pieces on two lines has been split */
+            const lines=[], rg=document.createRange(), tw=document.createTreeWalker(pt,NodeFilter.SHOW_TEXT); let n, split=[];
+            while(n=tw.nextNode()){ const re=/\S+/g; let m; while(m=re.exec(n.nodeValue)){ rg.setStart(n,m.index); rg.setEnd(n,m.index+m[0].length); const rs=[...rg.getClientRects()].filter(q=>q.width>0); if(!rs.length) continue;
+              const ys=[...new Set(rs.map(q=>Math.round(q.top/4)))]; if(ys.length>1){ const w=m[0]; /* a break at the word's own hyphen (fifty-four) is allowed; a break at a hidden hyphenation point is a split */ const first=rg.cloneRange(); let cut=0; for(let k=1;k<=w.length;k++){ first.setEnd(n,m.index+k); const fr=[...first.getClientRects()].filter(q=>q.width>0); if(new Set(fr.map(q=>Math.round(q.top/4))).size>1){ cut=k-1; break; } } if(!/[-‐–—]$/.test(w.slice(0,cut).replace(/­/g,''))) split.push(w.replace(/­/g,'')); }
+              const q=rs[0], y=Math.round(q.top); let Ln=lines.find(l=>Math.abs(l.y-y)<6); if(!Ln){ Ln={y,ws:[],el:n.parentElement.closest('p,h1,h2,h3,div')}; lines.push(Ln); } Ln.ws.push({l:q.left,r:q.right,w:m[0].replace(/­/g,'')}); } }
+            lines.sort((a,b)=>a.y-b.y); const gaps=[]; for(const Ln of lines){ if(!Ln.el||!Ln.el.matches('p:not(.sb):not(.toc)')||Ln.el.querySelector('.sc,.lead')&&Ln===lines.find(z=>z.el===Ln.el)) continue; Ln.ws.sort((a,b)=>a.l-b.l); for(let k=1;k<Ln.ws.length;k++){ const g=Ln.ws[k].l-Ln.ws[k-1].r; if(g>0.5) gaps.push(g); } }
+            return {ta,split,text:lines.map(l=>l.ws.sort((a,b)=>a.l-b.l).map(w=>w.w).join(' ')),gmin:gaps.length?Math.min(...gaps):0,gmax:gaps.length?Math.max(...gaps):0,over:pt.scrollHeight-pt.clientHeight}; }));
+        }
+        return {pages,errs}; } finally{ await b.close(); } };
+    const seen=[];
+    for(const fsz of [16,18,20,24]){ const c=await draw(chromium,fsz), w=await draw(webkit,fsz); if(w.skip) return 'SKIP: '+w.skip;
+      if(w.errs.length) return 'size '+fsz+': page error in WebKit: '+w.errs[0];
+      if(c.pages.length!==w.pages.length) return 'size '+fsz+': '+c.pages.length+' pages in the test browser, '+w.pages.length+' in WebKit';
+      for(let i=0;i<c.pages.length;i++){ const a=c.pages[i].text, b=w.pages[i].text; for(let k=0;k<Math.max(a.length,b.length);k++) if(a[k]!==b[k]) return 'size '+fsz+' page '+(i+1)+' line '+(k+1)+': test browser "'+a[k]+'" but WebKit "'+b[k]+'"';
+        const P=w.pages[i]; if(P.over>1) return 'size '+fsz+' page '+(i+1)+': text runs '+P.over+'px over the page in WebKit';
+        if(P.ta==='left'||P.ta==='start'){ if(P.split.length) return 'size '+fsz+' page '+(i+1)+': left-aligned but WebKit split '+P.split.join(', '); if(P.gmax-P.gmin>1.5) return 'size '+fsz+' page '+(i+1)+': left-aligned but word spaces run from '+P.gmin.toFixed(1)+' to '+P.gmax.toFixed(1)+'px in WebKit'; } }
+      seen.push(fsz+':'+w.pages.length+'p '+[...new Set(w.pages.map(p=>p.ta))].filter(t=>t!=='none'&&t!=='center').join('/')); }
+    if(!seen.some(s=>/left/.test(s))||!seen.some(s=>/justify/.test(s))) return 'the four sizes did not cover both a left-aligned and a justified book: '+seen.join(', ');
+    return 'OK '+seen.join(', ');
   });
   await step('Page sound: plays when you turn a page (curl and slide), not when read-aloud turns it, and the Aa switch turns it off (rev 176)', async () => {
     await page.click('#tab-read').catch(()=>{}); await page.evaluate(async()=>{ await openLibBook('manual'); }); await page.waitForTimeout(1200);
