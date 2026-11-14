@@ -181,14 +181,14 @@ Some services take one EPUB and send it to many stores at once, for a share of e
 
 # Part 11 · Where Inkhorse stands today
 
-## P11 · Scorecard, November 12, 2026
+## P11 · Scorecard, November 13, 2026
 
-An automatic test checks each line of the first list before every change goes out, by opening the real EPUB and print PDF that Inkhorse exports. The two lines marked "no test of its own yet" are the exceptions.
+An automatic test checks each line of the first list before every change goes out, by opening the real EPUB and print PDF that Inkhorse exports, or by doing what the line says in Inkhorse itself.
 
 What Inkhorse does for you:
 
-- P2.1 Read aloud reads the whole book to you, and you can fix a word right on the page where you heard it. Both features have tests, but no test of its own yet follows a whole book from start to finish.
-- P1.3 Find searches the chapter you are in, and the Book Hub lists every highlight and note in the whole book so none is left behind. No test of its own yet.
+- P2.1 Read aloud reads the whole book to you, from chapter one to the last word of the last chapter, every word once, through headings and scene breaks, and says “The end.” when it is done. You can fix a word right on the page where you heard it.
+- P1.3 Find searches the chapter you are in, whatever the capitals, and steps through every match. The Book Hub lists every highlight and its note in the whole book, with its page, so none is left behind, and Clear all removes them all.
 - P3.1 to P3.5 Inkhorse builds the title page, copyright page, dedication and Contents from what you type in Book settings, in the right order, each one once. A book with its own typed front pages keeps them and gets no second copy.
 - P3.6 The credit line is blank unless you fill it in.
 - P4.1 Every cover in Inkhorse is shown at the same tall 2:3 shape, and the whole cover is always shown.

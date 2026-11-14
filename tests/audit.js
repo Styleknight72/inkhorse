@@ -2560,6 +2560,66 @@ const path = require('path');
   await step('tablet width shows Side by side', async () => { await page.setViewportSize({width:900,height:1200}); await page.waitForTimeout(800); await page.click('#tab-write'); await page.waitForTimeout(300); await tools(); return page.isVisible('#splitBtn'); });
   await step('phone sideways does not break', async () => { await page.setViewportSize({width:932,height:430}); await page.waitForTimeout(800); await page.click('#tab-read').catch(()=>{}); await page.waitForTimeout(500); });
 
+  /* rev 247: the Publishing Standard's two rules that had no test of their own (P11 scorecard). Each runs on a fresh book of its own. */
+  const pubBook=async(pg,chs)=>pg.evaluate(chs=>{ BOOK.order.slice().forEach(id=>{ CH.delete(id); deleted.add(id); }); BOOK.order=[]; BOOK.sample=false; BOOK.title='Lantern Book'; BOOK.author='Ada Tester';
+    for(const [t,x] of chs){ const id=addChapter(t,x); dirty.add(id); } S.cur=BOOK.order[0]; S.rch=S.cur; S.anchor=0; touchIndex(); PCACHE.clear(); loadEditor(); renderChapterUI(); renderDrawer(); refreshReader(); return BOOK.order; },chs);
+  await step('P2.1 Read aloud follows a whole book from start to finish: from chapter one it reads every word of every chapter, in order, once each, through headings and scene breaks, and stops with “The end.” after the last (rev 247)', async () => {
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const perr=[]; pg.on('pageerror',e=>perr.push(e.message));
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const chs=[['The Dock','Mara walked to the end of the dock before sunrise. The boats were still.\n\nShe counted seven lanterns, then eight.'],
+                 ['The Boat','The engine coughed twice.\n# Out Past the Point\nWater slapped the hull, and the gulls followed.\n* * *\nBy noon the harbor was a line of light behind them.'],
+                 ['Home','They came back after dark.']];
+      await pubBook(pg,chs);
+      const r=await pg.evaluate(async()=>{ const said=[]; window.kokOn=()=>false;
+        speechSynthesis.cancel=()=>{}; speechSynthesis.speak=u=>{ said.push(u.text); setTimeout(()=>{ try{ u.onstart&&u.onstart({}); }catch(_){ } u.dispatchEvent(new Event('end')); try{ u.onend&&u.onend({}); }catch(_){ } },5); };
+        setTab('read'); jumpTo({ch:BOOK.order[0],i:0}); await new Promise(z=>setTimeout(z,400));
+        document.querySelector('#listenBtn').click(); const t0=Date.now();
+        while(TTS.on && Date.now()-t0<20000) await new Promise(z=>setTimeout(z,50));
+        const t=document.querySelector('#toast'); return {said,on:TTS.on,toast:t&&!t.hidden?t.textContent:''}; });
+      const norm=s=>s.replace(/­/g,'').replace(/[“”"’'.,!?;:—–]/g,' ').toLowerCase().split(/\s+/).filter(w=>w&&!/^\*+$/.test(w)&&w!=='#');
+      const heard=norm(r.said.join(' ')), want=norm(chs.map(([t,x])=>t+' '+x).join(' '));
+      if(r.on) throw new Error('still reading after 20 seconds: '+r.said.length+' sentences');
+      if(!/The end\./.test(r.toast)) throw new Error('did not say “The end.” after the last chapter: '+JSON.stringify(r.toast));
+      /* every word, in order, once: the heard words are exactly the book's words (titles included), nothing missed, nothing twice */
+      if(heard.join(' ')!==want.join(' ')){ let i=0; while(i<heard.length&&heard[i]===want[i]) i++;
+        throw new Error('heard differs from the book at word '+i+': heard '+JSON.stringify(heard.slice(i,i+6))+', book '+JSON.stringify(want.slice(i,i+6))); }
+      if(perr.length) throw new Error('page error: '+perr[0]);
+      return true;
+    } finally { await ctx.close(); }
+  });
+  await step('P1.3 Notes to yourself can be found: Find shows every “TODO” or “???” in the chapter and steps through them; the Book Hub lists every highlight and its note in the whole book, with its page, and Clear all empties it (rev 247)', async () => {
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max'],permissions:['clipboard-read','clipboard-write']}); const pg=await ctx.newPage(); const perr=[]; pg.on('pageerror',e=>perr.push(e.message));
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      await pubBook(pg,[['The Dock','Mara walked to the dock TODO check the date. The boats were still ???\n\nShe counted the lanterns. todo: name the boat.\n\nA last line with ??? in it.'],
+                         ['The Boat','The engine coughed twice and the gulls followed them out past the point.'],
+                         ['Home','They came back after dark, and the lanterns were still lit.']]);
+      const f=await pg.evaluate(async()=>{ setTab('write'); await new Promise(z=>setTimeout(z,300)); const out={};
+        for(const q of ['TODO','???']){ openFind(); const i=document.querySelector('#findIn'); i.value=q; i.dispatchEvent(new Event('input',{bubbles:true}));
+          const found=[]; for(let k=0;k<FIND.hits.length+1;k++){ document.querySelector('#findNext').click(); found.push(ta.value.slice(ta.selectionStart,ta.selectionEnd)); }
+          out[q]={n:document.querySelector('#findN').textContent,count:FIND.hits.length,found}; closeFind(); }
+        return out; });
+      if(f.TODO.count!==2||!/of 2$/.test(f.TODO.n)||!f.TODO.found.slice(0,2).every(x=>x.toLowerCase()==='todo')) throw new Error('Find did not show both TODO notes (any capitals): '+JSON.stringify(f.TODO));
+      if(f['???'].count!==2||!f['???'].found.every(x=>x==='???')) throw new Error('Find did not step through both ??? marks: '+JSON.stringify(f['???']));
+      const h=await pg.evaluate(async()=>{ setTab('read'); await new Promise(z=>setTimeout(z,300));
+        BOOK.order.forEach((id,k)=>addMark(id,2,5)); const m=marksOf(BOOK.order[2])[0]; m.note='add the date the lanterns were lit'; touchIndex(); refreshReader();
+        openGoto(); await new Promise(z=>setTimeout(z,300));
+        const rows=[...document.querySelectorAll('#goto .hlrow')].map(r=>r.innerText.replace(/\s+/g,' ')); const pages=GMARKS.map(g=>g.page), chs=GMARKS.map(g=>g.ch);
+        const bi=countAllNow(); const want=BOOK.order.map(id=>(bi.off[id]||0)+1);
+        return {rows,pages,chs,want,order:BOOK.order}; });
+      if(h.rows.length!==3) throw new Error('the Book Hub listed '+h.rows.length+' of the 3 highlights in the book');
+      if(JSON.stringify(h.chs)!==JSON.stringify(h.order)) throw new Error('highlights are not listed in book order: '+JSON.stringify(h.chs));
+      if(!h.rows.every((t,k)=>t.includes('Page '+h.want[k]))) throw new Error('a highlight shows the wrong page: '+JSON.stringify({rows:h.rows,want:h.want}));
+      if(!h.rows.some(t=>/add the date the lanterns were lit/.test(t))) throw new Error('the note on a highlight is not shown in the Book Hub: '+JSON.stringify(h.rows));
+      const c=await pg.evaluate(async()=>{ const b=()=>document.querySelector('#hlAll'); if(!b()) return 'no Clear all button'; b().click(); await new Promise(z=>setTimeout(z,200)); if(!/Tap again/.test(b().textContent)) return 'the first tap did not ask: '+b().textContent; b().click(); await new Promise(z=>setTimeout(z,400));
+        return BOOK.order.reduce((t,id)=>t+marksOf(id).length,0); });
+      if(c!==0) throw new Error('Clear all left highlights behind: '+c);
+      if(perr.length) throw new Error('page error: '+perr[0]);
+      return true;
+    } finally { await ctx.close(); }
+  });
+
   /* rev 246: the User manual's claims (tests/manual-claims, one check per thing the manual says Inkhorse does) run with every audit,
      against the same file, so a change can't break a promise in the manual without this failing. Any FAULT or ERROR line, a script
      that stops early, or one that prints no checks, fails the step (NOTE lines are information). */
