@@ -105,4 +105,13 @@ const wordPt=(pg,n)=>pg.evaluate(n=>{ const sp=[...document.querySelectorAll('#s
    const wm=await pg.evaluate(async()=>{ const w=document.querySelector('#warm'); w.value='0'; w.dispatchEvent(new Event('input',{bubbles:true})); await new Promise(r=>setTimeout(r,100)); const off=document.querySelector('#warmVal').textContent; w.value='40'; w.dispatchEvent(new Event('input',{bubbles:true})); await new Promise(r=>setTimeout(r,100)); return {off,v:document.querySelector('#warmVal').textContent}; });
    ok(/Off/.test(wm.off)&&/40\s*%/.test(wm.v),'RB-32f','Night warmth: 0 is Off, and it shows the percentage next to the slider: '+JSON.stringify(wm));
    await pg.ctx.close(); });
+ await run('RB-33',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',LONG(1)],['Second Wind',LONG(2)]]); await read(pg); await pg.click('#typeBtn'); await pg.waitForTimeout(300);
+   const r=await pg.evaluate(async()=>{ const sel=document.querySelector('#justSel'), note=()=>document.querySelector('#justNote').textContent, ta=()=>getComputedStyle(document.querySelector('#spread .ptext p')).textAlign;
+     const set=async(fs,mode)=>{ if(mode){ sel.value=mode; sel.dispatchEvent(new Event('change',{bubbles:true})); } const f=document.querySelector('#fs'); f.value=fs; f.dispatchEvent(new Event('input',{bubbles:true})); f.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(z=>setTimeout(z,700)); return {note:note(),ta:ta()}; };
+     const o={opts:[...sel.options].map(o=>o.textContent).join(','),start:sel.value};
+     o.big=await set(24); o.small=await set(12); o.on=await set(24,'on'); o.off=await set(12,'off'); await set(18,'auto'); return o; });
+   ok(r.opts==='Auto,On,Off'&&r.start==='auto','RB-33a','Justify offers Auto, On and Off, and starts on Auto: '+r.opts+' / '+r.start);
+   ok(r.big.ta==='left'&&r.big.note==='left-aligned at this size'&&r.small.ta==='justify'&&r.small.note==='justified at this size','RB-33b','Auto: big text left-aligned, small text justified, and it says which next to the menu: '+JSON.stringify({big:r.big,small:r.small}));
+   ok(r.on.ta==='justify'&&r.off.ta==='left'&&!r.on.note&&!r.off.note,'RB-33c','On justifies at every size; Off is always left-aligned: '+JSON.stringify({on:r.on,off:r.off}));
+   await pg.ctx.close(); });
  await b.close(); })();

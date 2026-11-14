@@ -528,7 +528,7 @@ const path = require('path');
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=206))) return 'SKIP: before rev 206';
     /* When a panel's buttons or labels change, its picture in the manual is out of date (Steve, Nov 8: the manual still showed "Jump to").
        Retake that picture from the app, then copy the new fingerprint printed in the error into PICS below. */
-    const PICS={"toolbar": "Auto | Device | Full screen reading | Highlighter | Library | One page | Read aloud | Two-page spread | Type settings", "sizeMenu": "Fit my screen", "counter": "Book Hub ⌃", "hub": "Book Hub", "aa": "At night Don't switchStyleKnightSepiaSkyLightMy own colors | Colors Match my deviceLightStyleKnightSepiaSkyChoose my own… | H | Justify | Margin | New page for each section | Night warmth Off | Page | Page sound | Page turn CurlSlideInstant | Paper texture | Show tips | Spacing TightSnugNormalRelaxedDouble | Text | Typeface GaramondCaslonBaskervilleCrimson ProSource SerifLiterata (e-reader)MerriweatherLoraTimes New RomanGeorgiaPalatinoCourier (submission format)Plex Sans | W | from | to", "highlighter": "Clear page | Copy", "chapters": "Add back | Add front | Author | Book title | Chapter opening | Contents page in the EPUB and PDF | Copyright year | Credit line | Dedication | ISBN | Import a file | More copyright-page notes | Publisher or imprint | Restore from file | Subtitle"};
+    const PICS={"toolbar": "Auto | Device | Full screen reading | Highlighter | Library | One page | Read aloud | Two-page spread | Type settings", "sizeMenu": "Fit my screen", "counter": "Book Hub ⌃", "hub": "Book Hub", "aa": "At night Don't switchStyleKnightSepiaSkyLightMy own colors | Colors Match my deviceLightStyleKnightSepiaSkyChoose my own… | H | Justify AutoOnOff left-aligned at this size | Margin | New page for each section | Night warmth Off | Page | Page sound | Page turn CurlSlideInstant | Paper texture | Show tips | Spacing TightSnugNormalRelaxedDouble | Text | Typeface GaramondCaslonBaskervilleCrimson ProSource SerifLiterata (e-reader)MerriweatherLoraTimes New RomanGeorgiaPalatinoCourier (submission format)Plex Sans | W | from | to", "highlighter": "Clear page | Copy", "chapters": "Add back | Add front | Author | Book title | Chapter opening | Contents page in the EPUB and PDF | Copyright year | Credit line | Dedication | ISBN | Import a file | More copyright-page notes | Publisher or imprint | Restore from file | Subtitle"};
     const now=await page.evaluate(()=>{ const norm=t=>String(t||'').replace(/\s+/g,' ').trim();
       const sig=(sel,q)=>{ const el=document.querySelector(sel); if(!el) return 'MISSING'; return [...new Set([...el.querySelectorAll(q)].map(x=>norm(x.getAttribute('aria-label')||x.textContent)).filter(t=>t&&!/\d/.test(t)))].sort().join(' | '); };
       return { toolbar:sig('#read .bar','button,select'), sizeMenu:norm([...document.querySelectorAll('#deviceSel option')].find(o=>o.value==='screen')?.textContent),
@@ -680,19 +680,37 @@ const path = require('path');
   const r214 = async () => page.evaluate(()=>(window.INK_VERSION||{}).rev>=214);
   const p214 = ['First paragraph "quoted" here -- an aside -- then more words, and here--there too. The years 1980-1981 and a phone 555-1234 and dots... end of a long line that wraps across the page so it shows several lines.','***','After the break this paragraph has no indent.','A normal paragraph that is long enough to wrap onto a second line, so both edges show.'].join('\n');
   const toFirstPage = async () => { await page.click('#tab-read'); await page.waitForTimeout(900); await page.evaluate(()=>{ try{ goTo({ch:S.cur,i:0}); refreshReader(); }catch(_){ } }); await page.waitForTimeout(600); };
-  await step('F3.5 Justify on a phone: with Justify on, the page is justified at phone width with hyphenation; off gives a ragged edge (rev 214)', async () => {
-    if(!(await r214())) return 'SKIP: before rev 214 a phone quietly fell back to a ragged edge';
+  await step('F3.5 Justify Auto, On and Off: Auto (the start) justifies a line of at least 52 letters and sets shorter lines left-aligned with every word space the same; Auto says which; On justifies with hyphenation at every size; Off is left-aligned; an old Justify-off setting becomes Off (rev 248)', async () => {
+    if(!(await page.evaluate(()=>typeof cplOf==='function'))) return 'SKIP: before rev 248 Justify was a checkbox';
     await page.click('#tab-write'); await page.waitForTimeout(300); const keep=await T();
+    const look=()=>page.evaluate(()=>{ const p=[...document.querySelectorAll('#spread .ptext p:not(.sb):not(.toc)')].sort((x,y)=>y.querySelectorAll('span[data-w]').length-x.querySelectorAll('span[data-w]').length)[0]; if(!p) return {ta:'none',note:'',cpl:0,sw:0,gmin:0,gmax:0,n:0}; const cs=getComputedStyle(p);
+      /* a word with a hyphenation point can come back as two boxes on the same line: they are one word, so they are joined */
+      const sw=spaceW(p), lines=new Map(); for(const sp of p.querySelectorAll('span[data-w]')) for(const q of sp.getClientRects()){ if(!(q.width>0)) continue; const k=Math.round(q.top); if(!lines.has(k)) lines.set(k,[]); const L=lines.get(k), last=L[L.length-1];
+        if(last&&last.sp===sp) last.right=Math.max(last.right,q.right); else L.push({left:q.left,right:q.right,top:q.top,sp}); }
+      /* the chapter's opening line is set in small capitals, whose spaces are wider by design: it is not counted */
+      const opener=!!(p.previousElementSibling&&p.previousElementSibling.matches('h2.cht')); const gaps=[], at=[];
+      [...lines.values()].slice(opener?1:0,-1).forEach(ls=>{ for(let i=1;i<ls.length;i++){ gaps.push(ls[i].left-ls[i-1].right); at.push(Math.round(ls[i].top)); } });
+      return {ta:cs.textAlign, hy:cs.hyphens||cs.webkitHyphens, mode:S.justMode, note:document.querySelector('#justNote').textContent, cpl:cplOf(curDev()), sw, gmin:Math.min(...gaps), gmax:Math.max(...gaps), n:gaps.length, low:at[gaps.indexOf(Math.min(...gaps))]}; });
     try{
-      await page.fill('#manuscript',p214); await page.waitForTimeout(600); await toFirstPage();
-      const on=await page.evaluate(()=>{ const p=document.querySelector('#spread .ptext p:not(.sb)'); const cs=getComputedStyle(p); return {ta:cs.textAlign, hy:cs.hyphens||cs.webkitHyphens, own:typeof OWNHY!=='undefined'&&OWNHY&&typeof hyWord==='function'&&hyWord('standard').indexOf('\u00ad')>0, just:S.just, w:innerWidth}; });
-      if(!on.just) throw new Error('Justify is not on by default');
-      if(on.ta!=='justify') throw new Error('at '+on.w+' px wide, Justify on shows text-align '+on.ta);
-      if(on.own ? on.hy!=='manual' : on.hy!=='auto') throw new Error('hyphenation is '+on.hy+(on.own?' while Inkhorse breaks the words itself, so a device could add breaks of its own':', so justified lines can open wide gaps'));
-      await page.evaluate(()=>{ S.just=false; applyType(); relayout(); }); await page.waitForTimeout(700);
-      const off=await page.evaluate(()=>getComputedStyle(document.querySelector('#spread .ptext p:not(.sb)')).textAlign);
-      if(off!=='left') throw new Error('Justify off still shows '+off);
-    } finally { await page.evaluate(()=>{ S.just=true; applyType(); relayout(); }); await page.click('#tab-write'); await page.waitForTimeout(300); await page.fill('#manuscript',keep); await page.waitForTimeout(300); }
+      await page.fill('#manuscript',Array.from({length:3},(_,k)=>'The harbor lights were steady that evening, and nobody on the long pier spoke about the weather, the boats, or the strange quiet that had settled over the water since the storm passed through the town two nights before, leaving the nets torn and the gulls unusually silent along the breakwater where the old men usually sat and argued about baseball until it was too dark to see the cards. '+k).join('\n')); await page.waitForTimeout(600);
+      const start=await page.evaluate(()=>{ const o=S.justMode; return o; }); if(start!=='auto') throw new Error('Justify does not start on Auto: '+start);
+      const opts=await page.evaluate(()=>[...document.querySelectorAll('#justSel option')].map(o=>o.textContent).join(','));
+      if(opts!=='Auto,On,Off') throw new Error('the Justify menu offers '+opts);
+      for(const [fs,want] of [[24,'left'],[18,null],[12,'justify']]){
+        await page.evaluate(fs=>{ S.fs=fs; applyType(); relayout(); },fs); await page.waitForTimeout(700); await toFirstPage(); const L=await look();
+        const exp=want||(L.cpl>=52?'justify':'left'); if(L.ta!==exp) throw new Error(`Auto at ${fs}px (${L.cpl.toFixed(1)} letters a line) shows ${L.ta}, expected ${exp}`);
+        if(L.note!==(exp==='justify'?'justified at this size':'left-aligned at this size')) throw new Error('Auto says '+JSON.stringify(L.note)+' at '+fs+'px');
+        if(exp==='left' && (L.gmax-L.gmin>1.5 || Math.abs(L.gmax-L.sw)>1.5)) throw new Error(`left-aligned at ${fs}px, but the word spaces run from ${L.gmin.toFixed(1)} to ${L.gmax.toFixed(1)} px (a normal space is ${L.sw.toFixed(1)}; smallest on the line at y=${L.low})`); }
+      await page.evaluate(()=>{ S.fs=24; S.justMode='on'; applyType(); relayout(); }); await page.waitForTimeout(700); await toFirstPage(); const on=await look();
+      if(on.ta!=='justify') throw new Error('On at 24px shows '+on.ta);
+      const own=await page.evaluate(()=>typeof OWNHY!=='undefined'&&OWNHY); if(own ? on.hy!=='manual' : on.hy!=='auto') throw new Error('hyphenation is '+on.hy);
+      if(on.note) throw new Error('On still shows an Auto note: '+on.note);
+      await page.evaluate(()=>{ S.justMode='off'; applyType(); relayout(); }); await page.waitForTimeout(700); await toFirstPage(); const off=await look();
+      if(off.ta!=='left') throw new Error('Off shows '+off.ta);
+      const mig=await page.evaluate(()=>{ const f=new Function('S',"if(!['auto','on','off'].includes(S.justMode)) S.justMode=S.just===false?'off':'auto'; return S.justMode;"); return [f({just:false}),f({just:true}),f({})].join(','); });
+      const real=await page.evaluate(()=>/if\(!\['auto','on','off'\]\.includes\(S\.justMode\)\) S\.justMode=S\.just===false\?'off':'auto';/.test(document.documentElement.innerHTML));
+      if(mig!=='off,auto,auto'||!real) throw new Error('an old Justify setting is not carried over: '+mig);
+    } finally { await page.evaluate(()=>{ S.fs=18; S.justMode='auto'; S.just=true; applyType(); relayout(); }); await page.click('#tab-write'); await page.waitForTimeout(300); await page.fill('#manuscript',keep); await page.waitForTimeout(300); }
   });
   await step('F4.1 F4.2 F4.3 F4.4 on the page: curly quotes, -- becomes a closed em dash, ... one ellipsis, 1980-1981 a range dash, a phone number untouched, no line starts with a dash, the writing itself unchanged (rev 214)', async () => {
     if(!(await r214())) return 'SKIP: before rev 214 only quotes were set';
@@ -957,7 +975,7 @@ const path = require('path');
       if(!/zendesk<wbr>\.com\/<wbr>help/.test(own.url)) throw new Error('a web address cannot break after a slash and before a dot: '+own.url);
       if(own.css!=='manual') throw new Error('the browser may still add hyphens of its own (hyphens: '+own.css+')');
       const sweep=(book,fs,maxPages)=>pg.evaluate(async({book,fs,maxPages})=>{
-        S.tips=false; S.just=true; S.fs=fs; applyType(); relayout(); await openLibBook(book,true); setTab('read'); await new Promise(r=>setTimeout(r,300));
+        S.tips=false; S.justMode='on'; S.just=true; S.fs=fs; applyType(); relayout(); await openLibBook(book,true); setTab('read'); await new Promise(r=>setTimeout(r,300));
         const cv=document.createElement('canvas').getContext('2d'), T=x=>RB.ch.get(x).title;
         const res={book,fs,pages:0,lines:0,just:0,loose:[],hyEnd:0,ragged:0,past:[],cut:[],shyBody:0,shyElse:0};
         outer: for(const id of rOrder().filter(x=>!isCover(x))){ const n=pag(id).pages.length;
@@ -1518,11 +1536,11 @@ const path = require('path');
       return out; });
     const same=(what,a,b)=>{ if(a.length!==b.length) throw new Error(what+': the book went from '+a.length+' pages to '+b.length); const k=a.findIndex((x,i)=>x!==b[i]); if(k>=0) throw new Error(what+': the lines changed on '+a[k].split(':')[0]); };
     try{ await pg.goto(page.url()); await pg.waitForTimeout(2500); await pg.evaluate(()=>document.fonts.ready); const vp=pg.viewportSize();
-      await pg.evaluate(()=>{ S.tips=false; S.just=true; S.fs=18; S.face='garamond'; applyType(); relayout(); saveSettings(); }); await pg.waitForTimeout(2500);
+      await pg.evaluate(()=>{ S.tips=false; S.justMode='on'; S.just=true; S.fs=18; S.face='garamond'; applyType(); relayout(); saveSettings(); }); await pg.waitForTimeout(2500);
       const base=await snap(); if(base.length<30) throw new Error('only '+base.length+' pages were read');
       same('drawn a second time',base,await snap());
       for(const v of [28,12,18]){ await pg.evaluate(v=>{ S.fs=v; applyType(); relayout(); },v); if(v!==18) await snap(); } await pg.waitForTimeout(2500); same('text size to the biggest, the smallest and back',base,await snap());
-      await pg.evaluate(()=>{ S.just=false; applyType(); relayout(); S.just=true; applyType(); relayout(); S.face='literata'; applyType(); relayout(); S.face='garamond'; applyType(); relayout(); }); await pg.waitForTimeout(2500); same('Justify off and on, typeface changed and changed back',base,await snap());
+      await pg.evaluate(()=>{ S.justMode='off'; S.just=false; applyType(); relayout(); S.justMode='on'; S.just=true; applyType(); relayout(); S.face='literata'; applyType(); relayout(); S.face='garamond'; applyType(); relayout(); }); await pg.waitForTimeout(2500); same('Justify off and on, typeface changed and changed back',base,await snap());
       await pg.setViewportSize({width:vp.height+190,height:vp.width}); await pg.waitForTimeout(1200); const side=await snap(); if(side.length===base.length&&side.join()===base.join()) throw new Error('turning the phone sideways changed nothing, so the test is not turning it');
       await pg.setViewportSize(vp); await pg.waitForTimeout(3000); same('phone turned sideways and back upright',base,await snap());
       await pg.reload(); await pg.waitForTimeout(2500); await pg.evaluate(()=>document.fonts.ready); await pg.evaluate(()=>{ S.tips=false; }); await pg.waitForTimeout(2500); same('Inkhorse closed and opened again',base,await snap());
@@ -1667,7 +1685,7 @@ const path = require('path');
     const got={chrome:String(browser.version()).split('.')[0], screen:{}, print:{}, word:{}, epub:{}}, pics={}, tpSeen={}, runOnSeen={}, LOOSE_T=await page.evaluate(()=>LOOSE);
     try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
       /* the same settings and the book typeface built into Inkhorse for print, as in the Layout lock, so the pages do not depend on the test machine's fonts */
-      const fontOk=await pg.evaluate(async()=>{ S.tips=false; S.just=true; S.fs=18; S.lh='1.55';
+      const fontOk=await pg.evaluate(async()=>{ S.tips=false; S.justMode='on'; S.just=true; S.fs=18; S.lh='1.55';
         const bin=atob(PDFFONT.r), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); const ff=new FontFace('InkLock',u.buffer); await ff.load(); document.fonts.add(ff); FACES.inklock="'InkLock'"; S.face='inklock'; applyType(); return document.fonts.check('18px InkLock'); });
       if(!fontOk) throw new Error('the lock typeface did not load');
       const shootAll=async (name,max=300)=>{ const list=[];   // max: the PDF model book is a whole book; its first 40 pages (front matter and opening chapters) are locked
@@ -1725,7 +1743,7 @@ const path = require('path');
         await pg.setInputFiles('#libIn',file); await pg.waitForTimeout(800);
         if(/\.pdf$/.test(file)) await pg.click('#libAsk [data-way="text"]');
         await pg.waitForFunction(b=>LIB.some(x=>!b.includes(x.id))||/couldn|Could/.test(document.querySelector('#libNote').textContent),before,{timeout:120000});
-        const ok=await pg.evaluate(async b=>{ const bk=LIB.find(x=>!b.includes(x.id)); if(!bk) return false; await openLibBook(bk.id,true); S.fs=18; S.just=true; S.face='inklock'; applyType(); relayout(); return bk.title; },before);
+        const ok=await pg.evaluate(async b=>{ const bk=LIB.find(x=>!b.includes(x.id)); if(!bk) return false; await openLibBook(bk.id,true); S.fs=18; S.justMode='on'; S.just=true; S.face='inklock'; applyType(); relayout(); return bk.title; },before);
         if(!ok) throw new Error(name+': the book was not added: '+await pg.textContent('#libNote'));
         await pg.evaluate(()=>{ const d=document.querySelector('#libDone'); if(d&&d.offsetParent) d.click(); });
         if(name==='4-pdf'){ const leak=await pg.evaluate(()=>{ const all=rOrder().map(id=>RB.ch.get(id).text).join('\n'); const m=/(?:^|\n)[^\n]{0,40}\b\d{1,3} Blendworks For Learners\b[^\n]{0,20}/.exec(all); return m?m[0].trim():''; });
@@ -1756,7 +1774,7 @@ const path = require('path');
     const fs=require('fs'), file=require('path').join(__dirname,'fixtures','layout-lock.json');
     const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
     try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
-      const got=await pg.evaluate(async()=>{ S.tips=false; S.just=true; S.fs=18; S.lh='1.55';
+      const got=await pg.evaluate(async()=>{ S.tips=false; S.justMode='on'; S.just=true; S.fs=18; S.lh='1.55';
         /* the book typeface built into Inkhorse for print is used here, so the lock does not depend on which fonts a test machine has */
         const bin=atob(PDFFONT.r), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); const ff=new FontFace('InkLock',u.buffer); await ff.load(); document.fonts.add(ff); FACES.inklock="'InkLock'"; S.face='inklock'; applyType(); relayout();
         const W='the harbor lights were steady that evening and nobody on the long pier spoke about the weather or the boats while a patient writer counted every remarkable page of an extraordinarily long manuscript'.split(' '), para=k=>Array.from({length:55+(k%5)*14},(_,i)=>W[(i*7+k*3)%W.length]).join(' ')+'.';
@@ -1786,7 +1804,7 @@ const path = require('path');
       await pg.evaluate(()=>{ S.tips=false; setTab('read'); document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(400);
       await pg.setInputFiles('#libIn',require('path').join(__dirname,'fixtures','import','foreign.epub'));
       await pg.waitForFunction(()=>/Added|couldn|Could/.test(document.querySelector('#libNote').textContent),null,{timeout:60000});
-      const r=await pg.evaluate(async()=>{ const bk=LIB.filter(x=>!['manual','standard','publishing'].includes(x.id)).pop(); if(!bk) return null; await openLibBook(bk.id,true); S.fs=18; S.just=true; applyType(); relayout(); setTab('read'); await new Promise(r=>setTimeout(r,400));
+      const r=await pg.evaluate(async()=>{ const bk=LIB.filter(x=>!['manual','standard','publishing'].includes(x.id)).pop(); if(!bk) return null; await openLibBook(bk.id,true); S.fs=18; S.justMode='on'; S.just=true; applyType(); relayout(); setTab('read'); await new Promise(r=>setTimeout(r,400));
         const ids=rOrder().filter(x=>!isCover(x)), T=id=>RB.ch.get(id).title, all=ids.map(id=>RB.ch.get(id).text).join('\n'), out={titles:ids.map(T),front:ids.filter(isFront).length,cover:!!RB.coverFront,author:RB.author,book:RB.title,text:all,cut:[],past:[],left:[],sb:0,figs:0,ck:[]};
         for(const id of ids){ const n=pag(id).pages.length; for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); const pt=document.querySelector('#spread .face:not(.gone) .ptext'); if(!pt) continue; const B=pt.getBoundingClientRect(), w=T(id).slice(0,20)+' p'+(i+1);
             if(!pt.querySelector('img,figure')&&pt.scrollHeight>pt.clientHeight+1) out.cut.push(w); pt.querySelectorAll('span[data-w]').forEach(s=>{ for(const q of s.getClientRects()) if(q.right>B.right+1) out.past.push(w); });
@@ -1819,7 +1837,7 @@ const path = require('path');
         await pg.waitForFunction(()=>/Added|couldn|Could/.test(document.querySelector('#libNote').textContent),null,{timeout:60000});
         if(!(await pg.evaluate(async()=>{ const bk=LIB.filter(x=>!['manual','standard','publishing'].includes(x.id)).pop(); if(!bk) return false; await openLibBook(bk.id,true); return true; }))) throw new Error(file+' was not added to read: '+await pg.textContent('#libNote')); }
       else { await pg.evaluate(()=>{ S.tips=false; setTab('write'); }); await pg.setInputFiles('#fileIn',full); await pg.waitForFunction(()=>/Imported|couldn|Could/.test((document.querySelector('#exportNote')||{}).textContent||''),null,{timeout:60000}); }
-      const r=await pg.evaluate(async()=>{ S.fs=18; S.just=true; applyType(); relayout(); setTab('read'); await new Promise(r=>setTimeout(r,400)); const B=rBook(), get=id=>(RB?RB.ch.get(id):CH.get(id)), all=rOrder().filter(x=>!isCover(x)), ix=all.findIndex(id=>/^%%front\s+Harbor Stories|^A Collection/.test(get(id).text)||get(id).title==='Harbor Stories'), ids=all.slice(Math.max(0,ix));   /* in a writing book the sample chapters come first; start at the imported book */
+      const r=await pg.evaluate(async()=>{ S.fs=18; S.justMode='on'; S.just=true; applyType(); relayout(); setTab('read'); await new Promise(r=>setTimeout(r,400)); const B=rBook(), get=id=>(RB?RB.ch.get(id):CH.get(id)), all=rOrder().filter(x=>!isCover(x)), ix=all.findIndex(id=>/^%%front\s+Harbor Stories|^A Collection/.test(get(id).text)||get(id).title==='Harbor Stories'), ids=all.slice(Math.max(0,ix));   /* in a writing book the sample chapters come first; start at the imported book */
         const out={book:B.title,author:B.author||'',titles:ids.map(id=>get(id).title),front:ids.filter(isFront).map(id=>get(id).text.split('\n').filter(l=>l!=='%%front').slice(0,3).join(' / ')),text:ids.map(id=>get(id).text).join('\n'),open:[],cut:[],past:[],left:[],sb:0,toc:[],nums:ids.map(id=>fmtChapterNo(id,-1))};
         for(const id of ids){ const n=pag(id).pages.length; for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); const pt=document.querySelector('#spread .face:not(.gone) .ptext'); if(!pt) continue; const R=pt.getBoundingClientRect(), w=(get(id).title||'front page').slice(0,20)+' p'+(i+1);
             if(!pt.querySelector('img,figure')&&pt.scrollHeight>pt.clientHeight+1) out.cut.push(w); pt.querySelectorAll('span[data-w]').forEach(s=>{ for(const q of s.getClientRects()) if(q.right>R.right+1) out.past.push(w); });

@@ -84,7 +84,7 @@ F3.3 The indent is small: about one to one and a half times the size of the type
 
 F3.4 The first paragraph after a chapter title, a section heading or a scene break is not indented.
 
-F3.5 Lines are justified, meaning both edges are straight, with hyphenation turned on so the spaces between words stay even. A paragraph should never show wide rivers of white space.
+F3.5 The spaces between words stay even. Long lines are justified, meaning both edges are straight, with hyphenation turned on, as in a printed book. Short lines are not: when a line holds fewer than about 52 letters, as on a phone at a large text size, the text is set left-aligned, with the same normal space between every pair of words and an uneven right edge. Kindle does the same at large text sizes, and Amazon's own guidance calls a ragged right margin more natural to read. On screen this is Justify: Auto, where Inkhorse starts; a reader can choose On (justified at every size) or Off (always left-aligned). The print PDF is always justified. A paragraph should never show wide rivers of white space.
 
 F3.6 Line spacing is comfortable and even. In print, about 1.3 to 1.5 times the type size. On a screen, at least 1.5 times, because a little more room between lines is easier to read on a phone (the web's accessibility guidelines, WCAG, ask for at least 1.5). Inkhorse's standard spacing on screen, Normal in Aa, is 1.55. A reader may choose tighter or looser spacing in Aa; that is the reader's choice, not the book's.
 
@@ -230,7 +230,7 @@ F10.9 A section is never mistaken for a chapter. A section heading that starts w
 
 # Part 11 · Where Inkhorse stands today
 
-## F11 · Scorecard, November 12, 2026
+## F11 · Scorecard, November 13, 2026
 
 Every rule in this book is on this scorecard, in one of five lists: proven by a test, checked by eye, yours to check, not done yet, or waiting on a decision. A rule counts as met only when a test proves it.
 
@@ -255,7 +255,7 @@ Proven: an automatic test checks it before every change goes out. For the print 
 - F2.8 A book's own chapter numbers win: the Introduction and other unnumbered pages get no number of Inkhorse's own.
 - F3.1 The body type is a serif book typeface; in print it is 11 point, and the typeface is built into the PDF file.
 - F3.2 and F3.3 A small first-line indent, 1 to 1.5 times the type size, with no blank lines and no empty paragraphs, on the page and in the EPUB.
-- F3.5 Justified text with hyphenation on every screen, phones included.
+- F3.5 Justify: Auto justifies a line of at least 52 letters and sets shorter lines left-aligned with every word space the same, and says which it is using; On justifies with hyphenation at every size; Off is left-aligned. The test measures every word space on the page at three text sizes.
 - F3.6 Line spacing in print (1.4 times the type size) and in the EPUB (1.5), even from line to line, and on screen at Normal (1.55), the same on every line of a page.
 - F3.7 No widows or orphans on screen. The test checks every page break in the User manual. Every page of the four model books (see How we keep the standard) that stops part-way through a paragraph ends at the end of a full line, never on one word alone, and that line reaches the right margin unless filling it would open gaps wider than F3.10 allows.
 - F3.8 and F4.5 Blank lines and double spaces a writer types never reach the book: no empty paragraphs, and one space after a period, on the page and in the EPUB.
@@ -303,6 +303,7 @@ Yours to check:
 Not done yet. Inkhorse does not meet these rules today:
 
 - F8.6 Footnotes. Inkhorse has no footnotes yet.
+- F3.10 Even spacing in justified text. When text is justified (long lines, or Justify: On), Inkhorse still breaks each line on its own, one at a time, so neighbouring lines can be spaced differently, and a line that would stretch too far is left a little short. Professional typesetting plans the breaks of a whole paragraph together and keeps every word space between 80% and 133% of normal; Inkhorse does not do that yet.
 - F4.6 Italics in a book brought in from a PDF. A PDF's italic words come in upright for now.
 - F5.5 Lists and quoted passages in a book brought in from a PDF. A PDF's bulleted or numbered lines are not yet tested on their own.
 
