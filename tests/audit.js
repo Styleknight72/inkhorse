@@ -2571,6 +2571,59 @@ const path = require('path');
     const back=await st(); if(!back.tex || back.bg.indexOf('url(')<0) throw new Error('texture did not come back on');
     return 'OK: on, off, on again; page and word counts identical' + (saved?'':' (saved-setting key not seen)');
   });
+  await step('Boost: a sentence the server does not answer is given up after 12 s and asked again, a failed one is asked again, a recording\'s length is read from the file itself with no second player, and sound the phone refuses or interrupts is started again (rev 256)', async () => {
+    if(!(await page.evaluate(()=>typeof clipSecs==='function'))) return 'SKIP: before rev 256';
+    const b64=require('fs').readFileSync(require('path').join(__dirname,'fixtures','boost-3s.mp3')).toString('base64');
+    const r=await page.evaluate(async b64=>{ const out={}; const bin=atob(b64), u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
+      const keep={fetch:window.fetch,Audio:window.Audio,voice:S.ttsVoice,boost:S.boost,audio:KOK.audio,key:localStorage.getItem(BOOST_KEY),on:TTS.on,playing:TTS.playing,q:TTS.q,k:TTS.k,cur:KOK.cur,down:KOK.boostDown,ch:TTS.ch,unl:KOK.unlocked,ahead:S.kokAhead};
+      const good=()=>new Response(new Blob([u8],{type:'audio/mpeg'}),{status:200,headers:{'content-type':'audio/mpeg'}});
+      let players=0; const texts=[];
+      try{
+        out.secs=clipSecs(u8);
+        window.Audio=function(){ players++; return new keep.Audio(); };
+        localStorage.setItem(BOOST_KEY,'test-key-0123456789abcdefghij'); S.boost=true; KOK.boostDown=false; S.ttsVoice='kokoro:af_bella'; S.kokAhead=false; /* no working ahead during the test, so every request counted is the test's own */
+        /* 1. no answer: given up after the limit, asked again */
+        let calls=0; BOOST.again=0; BOOST.slow=0;
+        window.fetch=(u,o)=>{ calls++; if(calls===1) return new Promise((res,rej)=>{ o.signal.addEventListener('abort',()=>rej(new DOMException('aborted','AbortError'))); }); return Promise.resolve(good()); };
+        const t0=performance.now(); const x=await boostFetch('A sentence the server is slow to answer, asked for twice.','af_bella');
+        out.stall={calls,waited:Math.round((performance.now()-t0)/1000),again:BOOST.again,slow:BOOST.slow,secs:x.secs,players};
+        /* 2. a failed answer: asked again at the same address, not sent to the device */
+        calls=0; const urls=[]; window.fetch=(u,o)=>{ calls++; urls.push(String(u).includes('/openai/')?'A':'B'); return Promise.resolve(calls===1?new Response('busy',{status:503}):good()); };
+        const y=await boostFetch('A sentence that fails once and then arrives.','af_bella'); out.fail={urls:urls.join(''),secs:y.secs,boost:y.boost};
+        /* 3. the phone refuses the start once: she tries again and keeps reading */
+        window.fetch=()=>Promise.resolve(good());
+        const fake={plays:0,paused:true,ended:false,currentTime:0,src:'',error:null,duration:3,pause(){ this.paused=true; },setAttribute(){},play(){ this.plays++; if(this.plays===1) return Promise.reject(new DOMException('The operation was aborted.','AbortError')); this.paused=false; return Promise.resolve(); }};
+        KOK.audio=fake; KOK.unlocked=true; KOK.replays=0; KOK.resumed=0; TTS.ch=BOOK.order[0];
+        const c={start:0,end:7,p:0,text:'She reads this line after one refusal.'};   /* short enough to fit the 3-second test recording at her pace */ c.words=c.text.split(' '); texts.push(c.text);
+        TTS.on=true; TTS.playing=true; TTS.q=[c]; TTS.k=0; const g=++TTS.gen;
+        await kokSpeak(c,g);
+        out.refused={plays:fake.plays,stillPlaying:TTS.playing,replays:KOK.replays,cur:!!KOK.cur,gen:g===TTS.gen};
+        /* 4. the phone stops the sound mid-sentence: started again from the same spot */
+        fake.paused=true; fake.currentTime=1.2; const before=fake.plays;
+        await new Promise(r=>setTimeout(r,1500));
+        out.interrupted={restarts:fake.plays-before,resumed:KOK.resumed,stillPlaying:TTS.playing};
+        /* a Pause the reader asked for is left alone */
+        TTS.playing=false; fake.paused=true; const b2=fake.plays; await new Promise(r=>setTimeout(r,1200)); out.pausedLeft=fake.plays===b2;
+        out.status=(boostUI(),document.querySelector('#boostStatus').textContent);
+      } finally {
+        window.fetch=keep.fetch; window.Audio=keep.Audio; S.ttsVoice=keep.voice; S.boost=keep.boost; KOK.audio=keep.audio; KOK.boostDown=keep.down; KOK.cur=null; TTS.gen++; TTS.on=keep.on; TTS.playing=keep.playing; TTS.q=keep.q; TTS.k=keep.k; TTS.ch=keep.ch; KOK.unlocked=keep.unl; S.kokAhead=keep.ahead;
+        if(keep.key==null) localStorage.removeItem(BOOST_KEY); else localStorage.setItem(BOOST_KEY,keep.key);
+        for(const t of texts){ const k='af_bella|1|'+t; KOK.clips.delete(k); try{ kokBank.del(k); }catch(_){ } }
+        BOOST.again=0; BOOST.slow=0; BOOST.made=0; BOOST.last=''; KOK.replays=0; KOK.resumed=0; try{ boostUI(); ttsUI(); }catch(_){ }
+      }
+      return out; },b64);
+    const bad=[];
+    if(!(r.secs>2.9&&r.secs<3.15)) bad.push('a 3-second recording was measured as '+r.secs);
+    if(!(r.stall.calls===2&&r.stall.waited>=11&&r.stall.waited<=14&&r.stall.again===1&&r.stall.slow===1&&r.stall.secs>2.9)) bad.push('no answer: '+JSON.stringify(r.stall));
+    if(r.stall.players!==0) bad.push('a second player was made to ask the length ('+r.stall.players+')');
+    if(!(r.fail.urls==='AA'&&r.fail.boost&&r.fail.secs>2.9)) bad.push('failed answer: '+JSON.stringify(r.fail));
+    if(!(r.refused.plays===2&&r.refused.stillPlaying&&r.refused.replays===1)) bad.push('refused start: '+JSON.stringify(r.refused));
+    if(!(r.interrupted.restarts>=1&&r.interrupted.stillPlaying)) bad.push('interrupted: '+JSON.stringify(r.interrupted));
+    if(!r.pausedLeft) bad.push('a Pause the reader asked for was undone');
+    if(!/Asked again/.test(r.status)||!/Sound restarted/.test(r.status)) bad.push('the status line does not say it: '+r.status);
+    if(bad.length) throw new Error(bad.join(' | '));
+    return 'OK waited '+r.stall.waited+' s then asked again; 503 then '+r.fail.urls+'; refused once, played on try '+r.refused.plays+'; interrupted, restarted '+r.interrupted.restarts+'; status: '+r.status;
+  });
   await step('Natural voice: a recording that stops early is remade by sentence, no words skipped (rev 141)', async () => {
     await page.click('#tab-write'); await page.evaluate(()=>newChapter&&0).catch(()=>{});
     const ok=await page.evaluate(async()=>{
