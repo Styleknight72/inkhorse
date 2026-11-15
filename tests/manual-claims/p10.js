@@ -5,7 +5,7 @@ const ok=(c,id,msg)=>say(c?'OK':'FAULT',id,msg);
 const LONG=k=>[1,2,3,4,5,6,7,8].map(j=>para(k*10+j,90)).join('\n');
 const lib=async pg=>{ await pg.evaluate(()=>{ setTab('read'); }); await pg.waitForTimeout(300); await pg.evaluate(()=>{ document.querySelector('#library').hidden=true; document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(500); };
 const shelf=pg=>pg.evaluate(()=>document.querySelector('#shelf').innerText.replace(/[ \t]+/g,' '));
-const click=async(pg,sel,wait)=>{ /* rev 254: wait for the thing to be there before pressing it */ await pg.waitForFunction(s=>!!document.querySelector(s),sel,{timeout:10000}).catch(()=>{}); await pg.evaluate(s=>document.querySelector(s).click(),sel); await pg.waitForTimeout(wait||700); };
+const click=async(pg,sel,wait)=>{ /* rev 255: find the button and press it in the same breath, trying for up to 10 s; the Library redraws itself as it loads, and a button found a moment ago can be gone by the time it is pressed */ await pg.evaluate(async s=>{ for(let k=0;k<100;k++){ const e=document.querySelector(s); if(e){ e.click(); return; } await new Promise(r=>setTimeout(r,100)); } throw new Error('nothing to press: '+s); },sel); await pg.waitForTimeout(wait||700); };
 (async()=>{ const b=await chromium.launch();
  // ---------- Your books
  await run('BD-01',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',LONG(1)]]); await pg.evaluate(()=>{ BOOK.title='The Harbor Book'; touchIndex(); }); await pg.waitForTimeout(400);

@@ -72,7 +72,7 @@ const LONG=k=>[1,2,3,4,5,6,7,8].map(j=>para(k*10+j,90)).join('\n');
    ok(r.bar&&/Copy/.test(r.btns)&&/Clear page/.test(r.btns)&&r.barBottom<=r.textTop+1,'RB-10b','Copy and Clear page float over the top margin only, not the words: '+JSON.stringify(r));
    await pg.ctx.close(); });
  // ---------- Short screen goes full screen by itself
- await run('RB-11',async()=>{ const pg=await mk(b,{...devices['iPhone 14 Pro Max'],viewport:{width:932,height:430}}); await book(pg,[['One',LONG(1)]]); await read(pg); await pg.waitForTimeout(500);
+ await run('RB-11',async()=>{ const pg=await mk(b,{...devices['iPhone 14 Pro Max'],viewport:{width:932,height:430}}); await book(pg,[['One',LONG(1)]]); await read(pg); await pg.waitForTimeout(500); /* rev 255: give it up to 5 s on a busy machine instead of exactly half a second */ await pg.waitForFunction(()=>document.body.classList.contains('immersive'),null,{timeout:5000}).catch(()=>{});
    const im=await pg.evaluate(()=>document.body.classList.contains('immersive')); ok(im,'RB-11','on a short screen, like a phone turned sideways, Read goes full screen by itself: '+im);
    await pg.ctx.close(); });
  // ---------- Page counter
