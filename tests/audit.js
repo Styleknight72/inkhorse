@@ -2012,7 +2012,7 @@ const path = require('path');
       await page.evaluate(()=>setImmersive(true)); await page.waitForTimeout(600);
       const st=await page.evaluate(()=>{ const r=document.querySelector('#stage').getBoundingClientRect(); return {l:r.left,w:r.width,y:r.top+r.height/2}; });
       const pos=()=>page.evaluate(()=>S.rch+'@'+S.anchor), playing=()=>page.evaluate(()=>!!TTS.playing);
-      const dbl=async fx=>{ await page.touchscreen.tap(st.l+st.w*fx,st.y); await page.waitForTimeout(140); await page.touchscreen.tap(st.l+st.w*fx,st.y); await page.waitForTimeout(700); };
+      /* rev 254: after the two taps the test waits until the page has stopped turning (a second turn waits its turn behind the first), not a fixed 0.7 s, which a slower browser sometimes had not finished in */ const dbl=async fx=>{ await page.touchscreen.tap(st.l+st.w*fx,st.y); await page.waitForTimeout(140); await page.touchscreen.tap(st.l+st.w*fx,st.y); await page.waitForTimeout(700); await page.waitForFunction(()=>typeof turning==='undefined'||!turning,null,{timeout:4000}).catch(()=>{}); await page.waitForTimeout(350); await page.waitForFunction(()=>typeof turning==='undefined'||!turning,null,{timeout:4000}).catch(()=>{}); await page.waitForTimeout(150); };
       const p0=await pos(), rev193=await page.evaluate(()=>(window.INK_VERSION||{}).rev>=193);
       /* rev 193 (F3.7, Steve Nov 7): double-tap play/pause lives in the middle; quick taps on the sides each turn one page and never start the voice */
       for(const [fx,name] of (rev193?[[0.5,'middle']]:[[0.85,'right'],[0.5,'middle'],[0.15,'left']])){
@@ -2165,7 +2165,7 @@ const path = require('path');
     const t=[['Chapter One: Point of Origin','Chapter One','Point of Origin'],['Chapter Seven: The Road Back — Florida, 1991','Chapter Seven','The Road Back — Florida, 1991'],['PART 1 · The Bridge','PART 1','The Bridge'],['Part Two - Home','Part Two','Home'],['Memory','','Memory']];
     const bad=t.filter(([x,l,ti])=>{ const r=fmtSplitTitle(x); return r.label!==l||r.title!==ti; }); if(bad.length) throw new Error(JSON.stringify(bad)); return true; }));
   await step('Library lists the manual', async () => { await page.click('#libBtn'); await page.waitForTimeout(500); return /User manual/.test(await page.evaluate(()=>document.body.innerText)); });
-  await step('F1.2 The Inkhorse hardback: every small cover in the Library and the Book Hub is drawn as a bound book (a binding band on its left edge and a shadow under it) laid over the cover, and the cover picture under it is still whole and the same 2:3 size (rev 253)', async () => {
+  await step('F1.2 The Inkhorse hardback: every small cover in the Library and the Book Hub is drawn as a bound book (a binding band on its left edge and a shadow under it) laid over the cover, and the cover picture under it is still whole and the same 2:3 size (rev 253); the big cover in Read is bound the same way, front and back (rev 254)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=253))) return 'SKIP: before rev 253 covers were flat';
     const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
     try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
@@ -2175,6 +2175,15 @@ const path = require('path');
       const lib=await look('#library .thumb'); if(lib.length<3) throw new Error('only '+lib.length+' covers in the Library');
       await pg.evaluate(async()=>{ document.querySelector('#library').hidden=true; await openLibBook('manual',true); setTab('read'); }); await pg.waitForTimeout(700); await pg.click('#whereBtn'); await pg.waitForTimeout(700);
       const hub=await look('#goto .gt.cvbox'); if(!hub.length) throw new Error('no cover in the Book Hub');
+      /* rev 254: the big cover in Read is bound too: the binding lies over the whole cover page, on the spine edge, and the picture under it keeps its place and size */
+      const big=await pg.evaluate(async()=>{ document.querySelector('#goto').hidden=true; if((window.INK_VERSION||{}).rev<254) return {skip:true}; const out={};
+          /* a built-in book's own drawn cover is bound */ jumpTo({ch:'__front',i:0}); await new Promise(r=>setTimeout(r,700)); out.builtin=!!document.querySelector('#spread .face:not(.gone) .mcov ~ .hb');
+          /* and so is a writer's own cover picture, front and back */ leaveLibraryBook(); await new Promise(r=>setTimeout(r,400)); const cv=document.createElement('canvas'); cv.width=400; cv.height=600; const x=cv.getContext('2d'); x.fillStyle='#234'; x.fillRect(0,0,400,600); const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.9)); const cid='ab'.repeat(16); await __picPut(cid,blob,'image/jpeg'); BOOK.coverFront=cid; BOOK.coverBack=cid; PCACHE.clear(); setTab('read'); await new Promise(r=>setTimeout(r,500));
+          for(const side of ['__front','__back']){ jumpTo({ch:side,i:0}); await new Promise(r=>setTimeout(r,700)); const f=document.querySelector('#spread .face:not(.gone)'), hb=f&&f.querySelector('.hb'), im=f&&f.querySelector('img'); if(!f||!im){ out[side]='no cover page'; continue; } if(!hb){ out[side]='no binding'; continue; }
+            const c=getComputedStyle(hb), fr=f.getBoundingClientRect(), hr=hb.getBoundingClientRect(), ir=im.getBoundingClientRect(); out[side]=(!/gradient/.test(c.backgroundImage)||c.pointerEvents!=='none')?'the binding is not drawn':(Math.abs(hr.width-fr.width)>1||Math.abs(hr.height-fr.height)>1)?'the binding does not cover the page':(ir.width<fr.width*0.5||ir.left<fr.left-1||ir.right>fr.right+1)?'the cover picture moved':(side==='__back')!==hb.classList.contains('back')?'the binding is on the wrong edge':'ok'; }
+          return out; });
+      if(!big.skip&&!big.builtin) throw new Error('the User manual\'s own cover in Read has no binding');
+      if(!big.skip) for(const side of ['__front','__back']) if(big[side]!=='ok') throw new Error('the '+(side==='__front'?'front':'back')+' cover in Read: '+big[side]);
       for(const [name,list] of [['the Library',lib],['the Book Hub',hub]]) for(const c of list){ if(!c.band) throw new Error('a cover in '+name+' has no binding'); if(!c.shadow) throw new Error('a cover in '+name+' has no shadow under it'); if(Math.abs(c.ratio-2/3)>0.02) throw new Error('a cover in '+name+' is not 2:3: '+c.ratio.toFixed(3)); if(!c.whole||c.fit==='cover'&&false) throw new Error('a cover picture in '+name+' no longer fills its book'); }
       if(errs.length) throw new Error('page error: '+errs[0]);
       return 'OK '+lib.length+' Library covers, '+hub.length+' Book Hub cover(s)';
