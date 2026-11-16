@@ -2866,7 +2866,8 @@ const path = require('path');
     const scripts=fs.readdirSync(dir).filter(f=>/^p\d+b?\.js$/.test(f)).sort((a,b)=>parseInt(a.slice(1))-parseInt(b.slice(1))||a.localeCompare(b));
     const runOne=f=>new Promise(res=>{ cp.execFile(process.execPath,[path.join(dir,f)],{env:{...process.env,MURL:`http://127.0.0.1:${port}/${rel}`},timeout:15*60*1000,maxBuffer:32*1024*1024},(e,out,err)=>res({f,e,out:String(out||''),err:String(err||'')})); });
     const results=[]; const queue=scripts.slice();
-    await Promise.all([0,1].map(async()=>{ while(queue.length){ results.push(await runOne(queue.shift())); } }));
+    /* rev 257: two files at a time in Chromium; one at a time in WebKit, where two at once made the test machine slow enough that a button press or a page turn was sometimes not finished when the check looked (three such false failures on Nov 15, a different check each time) */
+    await Promise.all(((process.env.AUDIT_ENGINE||'chromium')==='chromium'?[0,1]:[0]).map(async()=>{ while(queue.length){ results.push(await runOne(queue.shift())); } }));
     srv.close();
     const bad=[]; let okN=0;
     for(const r of results){ const lines=r.out.split('\n').filter(l=>l.trim()); const oks=lines.filter(l=>/^OK\s/.test(l)).length; okN+=oks;

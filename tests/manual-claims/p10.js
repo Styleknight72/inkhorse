@@ -26,7 +26,8 @@ const click=async(pg,sel,wait)=>{ /* rev 255: find the button and press it in th
    ok(armed==='Delete?'&&/Recently deleted[\s\S]*Other Book[\s\S]*deleted [A-Z][a-z]{2} \d+/i.test(after)&&!/Recently deleted/i.test(once),'BD-03c','Delete (tap twice) moves the book to Recently deleted, with the date: armed "'+armed+'"');
    await click(pg,`[data-wrest="${other}"]`,1200); await lib(pg); const rest=await shelf(pg);
    ok(!/Recently deleted/i.test(rest)&&/Other Book/.test(rest),'BD-27a','Restore puts it back in Your books, and the Recently deleted heading goes when nothing is in it');
-   await click(pg,`[data-wdel="${other}"]`,300); await click(pg,`[data-wdel="${other}"]`,900);
+   /* rev 257: the two taps on Delete must land within the five seconds the button stays armed; on a busy test machine they once did not, the book stayed where it was, and the next step found nothing to press. Tap the pair again (up to three times) until the book is in Recently deleted. */
+   for(let n=0;n<3;n++){ await click(pg,`[data-wdel="${other}"]`,300); await click(pg,`[data-wdel="${other}"]`,900); if(await pg.evaluate(o=>!!document.querySelector(`[data-wkill="${o}"]`),other)) break; await pg.waitForTimeout(5200); }
    await click(pg,`[data-wkill="${other}"]`,300); const k1=await pg.evaluate(o=>document.querySelector(`[data-wkill="${o}"]`).textContent,other); await click(pg,`[data-wkill="${other}"]`,1200);
    const gone=await pg.evaluate(o=>({shelf:document.querySelector('#shelf').innerText.includes('Other Book'),store:Object.keys(localStorage).filter(k=>k.includes(o)).length}),other);
    ok(k1==='Delete forever?'&&!gone.shelf&&gone.store===0,'BD-27b','Delete forever (tap twice) erases the book and its backups: '+JSON.stringify({k1,...gone}));
