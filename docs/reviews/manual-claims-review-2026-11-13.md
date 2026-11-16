@@ -102,6 +102,8 @@ Not a manual claim: **BD-10d** checks that a draft disappears from Drafts once a
 
 ## MISSING
 
+**Progress, rev 258 (Nov 15, 2026):** tests/manual-claims/p12.js (and M-27 in p10.js) now check 6, 8, 9, 11, 14, 15, 16, 17, 23, 24, 25, 27, 28 (opens with no signal; NOT the "picks up the newest version" half), 29 and F11 from 3. Two faults found and fixed: settings changed within a quarter second of closing were lost (check RS-01, and M-11 in WebKit), and "1 sentences made online". Still with no check: 22 (Meilin's start-up on the device) and the second half of 28. The 61 WEAK checks above are untouched.
+
 **Progress, rev 257 (Nov 15, 2026):** tests/manual-claims/p11.js now checks numbers 1, 2, 3 (all but F11), 4, 5, 7, 10, 12, 13, 18, 19, 20, 21, 26 and 30 below (ids M-01 … M-30). One fault found and fixed: 4, words dictated mid-sentence ran into the next word. Still with no check: 6, 8, 9, 11, 14, 15, 16, 17, 22, 23, 24 (partly covered by the audit step "Boost: a sentence the server does not answer…"), 25, 27, 28, 29, and F11 in 3. The 61 WEAK checks above are untouched.
 
 These are checkable promises with no check in p1–p10 and no audit step found for them (audit.js was searched for the key words in each case).

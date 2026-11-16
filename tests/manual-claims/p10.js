@@ -53,6 +53,9 @@ const click=async(pg,sel,wait)=>{ /* rev 255: find the button and press it in th
    ok(/Which book\?/.test(q1)&&/The Harbor Book/.test(q1),'BD-08','1. Which book?: tap the book the draft belongs in');
    await click(pg,`[data-dbook="${home}"]`,1500); const q2=await shelf(pg);
    ok(/Where in “The Harbor Book”\?/.test(q2)&&/As a new chapter at the end/.test(q2)&&/Titled “Draft · /.test(q2)&&/1\. First Light/.test(q2)&&/2\. Second Wind/.test(q2)&&/Back/.test(q2),'BD-09','2. Where in the book?: a new chapter at the end, titled after the draft, or a chapter to add inside, and Back: '+JSON.stringify(q2.slice(q2.indexOf('Where'),q2.indexOf('Where')+200)));
+   /* rev 258 (M-27): Back really goes one question back, and the answer can be given again */
+   await click(pg,'[data-dback]',900); const qb=await shelf(pg); ok(/Which book\?/.test(qb)&&!/Where in “The Harbor Book”\?/.test(qb),'M-27','Back goes one question back, to "Which book?": '+JSON.stringify(qb.slice(qb.indexOf('Which'),qb.indexOf('Which')+60)));
+   await click(pg,`[data-dbook="${home}"]`,1500);
    const fl=await pg.evaluate(()=>[...document.querySelectorAll('[data-dch]')].find(b=>/First Light/.test(b.innerText)).dataset.dch);
    await click(pg,`[data-dch="${fl}"]`,1200); const q3=await shelf(pg);
    ok(/Where in chapter “First Light”\?/.test(q3)&&/At the end of the chapter/.test(q3)&&/After paragraph 1\s*One\./.test(q3)&&/After paragraph 3\s*Three\./.test(q3),'BD-10a','3. Where in the chapter?: At the end, or After paragraph…, each showing its first words: '+JSON.stringify(q3.slice(q3.indexOf('Where in chapter'),q3.indexOf('Where in chapter')+220)));
