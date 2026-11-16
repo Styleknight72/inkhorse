@@ -48,6 +48,9 @@ const {chromium,say,mk,book,para,toastText,vis,toolsOpen}=require('./common.js')
    await pg.fill('#hpWordIn','Rimmon Club'); await pg.click('#hpWordAdd'); await pg.waitForTimeout(100); await pg.fill('#hpHeardIn','rim and club'); await pg.fill('#hpMeansIn','Rimmon Club'); await pg.click('#hpFixAdd'); await pg.waitForTimeout(150);
    const pan=await pg.evaluate(()=>({words:[...document.querySelectorAll('#hpWords span')].map(x=>x.textContent.replace('×','').trim()),fixes:[...document.querySelectorAll('#hpFixes .hpfix')].map(x=>x.innerText.replace(/\s+/g,' '))}));
    say(pan.words.includes('Rimmon Club')&&pan.fixes.some(f=>/rim and club → Rimmon Club/.test(f))?'OK':'FAULT','HP-88a','the panel adds your own words and your own fixes: '+JSON.stringify(pan));
+   /* rev 259: and the fix you added really works the next time it hears that */
+   { const before=await pg.inputValue('#manuscript'); await pg.evaluate(()=>{ window.__sr.said=['we met at the rim and club']; const ta=document.querySelector('#manuscript'); ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); document.querySelector('#micBtn').click(); }); await pg.waitForTimeout(900); await pg.evaluate(()=>{ try{ micStop(); }catch(_){ } }); await pg.waitForTimeout(400); const got=(await pg.inputValue('#manuscript')).slice(before.length);
+     say(/Rimmon Club/.test(got)&&!/rim and club/i.test(got)?'OK':'FAULT','HP-88d','a fix added by hand is used: saying "rim and club" writes "Rimmon Club": '+JSON.stringify(got)); }
    await pg.evaluate(()=>{ document.querySelector('#hpFixes [data-hpf]').click(); }); await pg.waitForTimeout(100); const after=await pg.evaluate(()=>Object.keys(S.hp.fixes).length);
    say(after===0?'OK':'FAULT','HP-90','Remove takes a learned fix out: '+after+' left');
    await pg.click('#hpOn'); await pg.waitForTimeout(100); await pg.click('#hpDone'); await type(pg,' Another bold duck walked in.'); const b10=await bar(pg); const off=await pg.evaluate(()=>S.hp.on);
@@ -56,7 +59,7 @@ const {chromium,say,mk,book,para,toastText,vis,toolsOpen}=require('./common.js')
    // your words in every book on this device; book words come with the book
    const other=await pg.evaluate(async()=>{ BOOK.order.slice().forEach(id=>{ CH.delete(id); }); BOOK.order=[]; const id=addChapter('X','A plain chapter with no names at all.'); S.cur=id; loadEditor(); HP.vk=''; return hpVocab().map(v=>v.w); });
    const keepWords=await pg.evaluate(()=>S.hp.words.slice());
-   say(keepWords.includes('Rimmon Club')&&!other.includes('Sherbrooke')?'OK':'FAULT','HP-85','your own words stay for every book on this device, and words found in one book belong to that book: yours '+keepWords.join(',')+'; this book knows '+other.slice(0,6).join(','));
+   say(keepWords.includes('Rimmon Club')&&other.includes('Rimmon Club')&&!other.includes('Sherbrooke')?'OK':'FAULT','HP-85','your own words are known in every book on this device (the other book knows Rimmon Club), and words found in one book belong to that book: yours '+keepWords.join(',')+'; this book knows '+other.slice(0,6).join(','));
    await pg.reload(); await pg.waitForTimeout(2200); const kept=await pg.evaluate(()=>S.hp.words.slice());
    say(kept.includes('Rimmon Club')?'OK':'FAULT','HP-91','your words are kept on this device after closing and opening: '+kept.join(','));
    // new paragraph starts with a capital

@@ -41,20 +41,21 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
  await run('BP-12',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One','Hello there.']]); await pg.waitForTimeout(600);
    const r=await pg.evaluate(()=>{ const s=document.querySelector('#status'), t=document.querySelector('#statusText'), tb=document.querySelector('#toolsBtn'); const sr=s.getBoundingClientRect(), br=tb.getBoundingClientRect(), tcs=getComputedStyle(t), dot=getComputedStyle(s,'::before');
      const tv=t.getBoundingClientRect().width>2&&tcs.display!=='none'&&tcs.visibility!=='hidden'&&tcs.opacity!=='0'&&!/rect\(0/.test(tcs.clip);
-     const col=[dot.backgroundColor,getComputedStyle(s).color,getComputedStyle(s.querySelector('i,.dot')||s).backgroundColor]; return {s:s.dataset.s,near:Math.abs((sr.top+sr.bottom)/2-(br.top+br.bottom)/2)<20&&Math.abs(sr.right-br.left)<120,textVisible:tv,col}; });
+     const col=[dot.backgroundColor,getComputedStyle(s).color,getComputedStyle(s.querySelector('i')).backgroundColor]; return {s:s.dataset.s,near:Math.abs((sr.top+sr.bottom)/2-(br.top+br.bottom)/2)<20&&Math.abs(sr.right-br.left)<120,textVisible:tv,col}; });
    await pg.click('#status'); await pg.waitForTimeout(200); const tt=await toastText(pg);
    say(r.near?'OK':'FAULT','BP-12a','the save dot sits next to Tools in Write\'s top row');
    say(!r.textVisible?'OK':'FAULT','BP-12b','on a phone only the dot shows'+(r.textVisible?' (the words show too)':''));
    const gray=c=>{ const m=/rgba?\((\d+), (\d+), (\d+)/.exec(c||''); if(!m) return false; const [x,y,z]=[+m[1],+m[2],+m[3]]; return Math.max(x,y,z)-Math.min(x,y,z)<30 && x>60 && x<200; };
-   say(r.s==='local'&&r.col.some(gray)?'OK':'FAULT','BP-12c','the dot is gray when saved on this device only: state '+r.s+', colours '+r.col.join(' / '));
+   /* rev 259: the dot's own colour only (before, the always-gray words beside it could pass this) */
+   say(r.s==='local'&&gray(r.col[2])?'OK':'FAULT','BP-12c','the dot itself is gray when saved on this device only: state '+r.s+', dot colour '+r.col[2]);
    say(/^Gray: Saved on this device only/.test(tt)?'OK':'FAULT','BP-12d','tapping the dot explains it: "'+tt+'"');
    await pg.ctx.close(); });
  // ---------- BP-16 Chapters button label
  await run('BP-16',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['','%%front\nCopyright © 2026 Ada'],['First Light','One two.'],['Second Wind','Three four.']]);
-   const labs=await pg.evaluate(async()=>{ const o=[]; for(const id of BOOK.order){ selectChapter(id); await new Promise(r=>setTimeout(r,80)); o.push(document.querySelector('#chBtnLabel').textContent); } return o; });
-   say(/^Ch 1 of 2/.test(labs[1])&&/^Ch 2 of 2/.test(labs[2])&&!/Ch \d/.test(labs[0])&&labs[0].trim()?'OK':'FAULT','BP-16a','Chapters shows "Ch 1 of 2", a front page shows its name: '+labs.join(' | '));
+   const labs=await pg.evaluate(async()=>{ const o=[]; for(const id of BOOK.order){ selectChapter(id); await new Promise(r=>setTimeout(r,80)); o.push(document.querySelector('#chBtnLabel').textContent); } o.push(chListName(BOOK.order[0])); return o; });
+   say(/^Ch 1 of 2/.test(labs[1])&&/^Ch 2 of 2/.test(labs[2])&&labs[3]==='Copyright page'&&labs[0].trim()===labs[3]?'OK':'FAULT','BP-16a','Chapters shows "Ch 1 of 2", and on the copyright page it shows "Copyright page": '+labs.join(' | '));
    await pg.click('#chBtn'); await pg.waitForTimeout(400);
-   const parts=await pg.evaluate(()=>['#bookTitle','#fmSub','#covFrontLbl','#chList','#expEpub','#bkNow','#fbkSave'].map(s=>{ const e=document.querySelector(s); return s+':'+(!!e&&!!e.closest('#drawer')); }));
+   const parts=await pg.evaluate(()=>['#bookTitle','#fmSub','#covFrontLbl','#chList','#expEpub','#bkNow','#fbkSave'].map(s=>{ const e=document.querySelector(s); if(!e||!e.closest('#drawer')) return s+':false'; const r=e.getBoundingClientRect(), cs=getComputedStyle(e); return s+':'+(r.width>0&&r.height>0&&cs.display!=='none'&&cs.visibility!=='hidden'); }));
    say(parts.every(p=>/true$/.test(p))&&!(await pg.evaluate(()=>document.querySelector('#drawer').hidden))?'OK':'FAULT','BP-16b','tapping it opens the Chapters panel with title, front pages, covers, chapter list, export and backups: '+parts.join(' '));
    await pg.ctx.close(); });
  // ---------- BP-18 Tools panel
@@ -64,7 +65,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
    const want=['Dictate','Hoofprint','Word count','Focus','Picture','Import','Paste','Copy','Top of chapter'];
    const miss=want.filter(w=>!names.some(n=>n===w||n.startsWith(w))); say(miss.length?'FAULT':'OK','BP-18a','the Tools panel holds '+want.join(', ')+(miss.length?'; missing: '+miss.join(', '):'')+'  [shown: '+names.join(', ')+']');
    say(names.some(n=>/Side by side/.test(n))?'FAULT':'OK','BP-18b','Side by side is not offered on a phone');
-   say(names.some(n=>/Spelling/.test(n))?'NOTE':'OK','BP-18c','Spelling '+(names.some(n=>/Spelling/.test(n))?'IS shown here, though the manual\'s Tools list does not name it':'is not shown'));
+   say(names.some(n=>/Spelling/.test(n))?'FAULT':'OK','BP-18c','outside Claude, Spelling is not offered in Tools: '+(names.some(n=>/Spelling/.test(n))?'it IS shown':'not shown'));
    const closes={};
    for(const [id,label] of [['#copyBtn','Copy'],['#pgTop','Top of chapter'],['#focusBtn','Focus'],['#hpBtn','Hoofprint'],['#pasteBtn','Paste'],['#micBtn','Dictate']]){ await pg.evaluate(()=>{ setTools(true); }); await pg.waitForTimeout(100); await pg.click(id); await pg.waitForTimeout(250); closes[label]=!(await toolsOpen(pg));
      await pg.evaluate(()=>{ try{ if(focusOn) setFocus(false); }catch(_){ } const h=document.querySelector('#hpPanel'); if(h&&!h.hidden) document.querySelector('#hpDone').click(); try{ micStop&&micStop(); }catch(_){ } }); await pg.waitForTimeout(150); }
@@ -77,18 +78,18 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
  await run('BP-23',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One',Array.from({length:30},(_,k)=>para(k,80)).join('\n')],['Empty','']]);
    const r=await pg.evaluate(async()=>{ const o={}; const n=+document.querySelector('#pgOfW').textContent.replace(/\D+/g,''); o.n=n; o.label=document.querySelector('#pgOfW').textContent;
      const set=v=>{ const i=document.querySelector('#pgNum'); i.value=v; i.dispatchEvent(new Event('change',{bubbles:true})); i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})); };
-     set(3); await new Promise(r=>setTimeout(r,300)); o.after3=+document.querySelector('#pgNum').value; const p3=writePageIndex(); o.idx3=p3.k||p3.i||p3.cur||JSON.stringify(p3);
+     set(3); await new Promise(r=>setTimeout(r,300)); o.after3=+document.querySelector('#pgNum').value; const p3=writePageIndex(); o.idx3=p3.i; { const ta3=document.querySelector('#manuscript'), c3=CH.get(S.cur), w3=pag(S.cur).pages[2][0]-wHead(c3); o.caret3=ta3.selectionStart; o.want3=charAtWord(c3.text,w3); o.scroll3=ta3.scrollTop; }
      document.querySelector('#pgNext').click(); await new Promise(r=>setTimeout(r,250)); o.next=+document.querySelector('#pgNum').value;
      document.querySelector('#pgPrev').click(); await new Promise(r=>setTimeout(r,250)); o.prev=+document.querySelector('#pgNum').value;
      document.querySelector('#pgResume').click(); await new Promise(r=>setTimeout(r,300)); const ta=document.querySelector('#manuscript'); o.resumeAt=ta.selectionStart===ta.value.length&&document.activeElement===ta; o.resumePage=+document.querySelector('#pgNum').value;
      setTools(true); document.querySelector('#pgTop').click(); await new Promise(r=>setTimeout(r,300)); o.top=ta.selectionStart===0; o.topPage=+document.querySelector('#pgNum').value;
-     selectChapter(BOOK.order[1]); await new Promise(r=>setTimeout(r,200)); setTools(true); let err=''; try{ document.querySelector('#pgTop').click(); }catch(e){ err=e.message; } await new Promise(r=>setTimeout(r,200)); o.emptyTop=!err; return o; });
+     selectChapter(BOOK.order[1]); await new Promise(r=>setTimeout(r,200)); setTools(true); const e0={cur:S.cur,sel:ta.selectionStart,scr:ta.scrollTop,val:ta.value}; document.querySelector('#pgTop').click(); await new Promise(r=>setTimeout(r,300)); o.emptyTop=S.cur===e0.cur&&ta.selectionStart===e0.sel&&ta.scrollTop===e0.scr&&ta.value===e0.val&&e0.val===''; return o; });
    say(r.n>=3&&/of \d+/.test(r.label)?'OK':'FAULT','BP-23a','the page bar shows the page of the chapter and how many: "'+r.label+'"');
-   say(r.after3===3?'OK':'FAULT','BP-23b','typing a page number jumps there: typed 3, now on '+r.after3);
+   say(r.after3===3&&r.idx3===2&&r.caret3===r.want3&&r.caret3>0&&r.scroll3>0?'OK':'FAULT','BP-23b','typing a page number jumps there: typed 3, the cursor is at the first word of page 3 (at '+r.caret3+', wanted '+r.want3+') and the writing has scrolled to it ('+Math.round(r.scroll3)+')');
    say(r.next===4&&r.prev===3?'OK':'FAULT','BP-23c','‹ › step one page: '+r.after3+' → '+r.next+' → '+r.prev);
    say(r.resumeAt&&r.resumePage===r.n?'OK':'FAULT','BP-25','Resume goes to the very end with the cursor ready: cursor at end '+r.resumeAt+', page '+r.resumePage+' of '+r.n);
    say(r.top&&r.topPage===1?'OK':'FAULT','BP-27a','Top of chapter jumps to the first line: '+r.top+', page '+r.topPage);
-   say(r.emptyTop?'OK':'FAULT','BP-27b','on an empty chapter Top of chapter does nothing (no error)');
+   say(r.emptyTop&&!pg.errs.length?'OK':'FAULT','BP-27b','on an empty chapter Top of chapter does nothing: same chapter, cursor and scroll as before, and no error');
    if(pg.errs.length) say('FAULT','BP-23x','page error: '+pg.errs[0]); await pg.ctx.close(); });
  // ---------- BP-30 undo paste / dictation, BP-32 find
  await run('BP-30',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One','Start here.']]);
@@ -100,9 +101,13 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
    say(undone==='Start here.'&&redone===afterPaste?'OK':'FAULT','BP-30a','Undo takes back a paste, Redo puts it back: "'+undone+'" / "'+redone+'"');
    await pg.evaluate(()=>{ window.__sr.said=['and then we walked home']; const ta=document.querySelector('#manuscript'); ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); setTools(true); }); await pg.click('#micBtn'); await pg.waitForTimeout(900); await pg.evaluate(()=>{ try{ if(typeof micStop==='function') micStop(); }catch(_){ } }); await pg.waitForTimeout(400);
    const dict=await pg.inputValue('#manuscript'); await pg.click('#undoBtn'); await pg.waitForTimeout(250); const und2=await pg.inputValue('#manuscript');
-   say(/walked home/.test(dict)&&!/walked home/.test(und2)?'OK':'FAULT','BP-30b','Undo takes back a dictated run: "'+dict+'" → "'+und2+'"');
-   await book(pg,[['One','A cat sat. The cat ran. One more cat here.']]); await pg.click('#findBtn'); await pg.fill('#findIn','cat'); await pg.waitForTimeout(300); const n1=await pg.textContent('#findN'); await pg.click('#findNext'); await pg.waitForTimeout(150); const n2=await pg.textContent('#findN'); await pg.click('#findPrev'); await pg.waitForTimeout(150); const n3=await pg.textContent('#findN'); await pg.click('#findClose'); await pg.waitForTimeout(150); const hid=await pg.evaluate(()=>document.querySelector('#findbar').hidden);
-   say(/of 3/.test(n1)&&/1 of 3/.test(n2)&&/3 of 3/.test(n3)&&hid?'OK':'FAULT','BP-32','Find: count and ‹ › through each match, × closes: "'+n1+'" → "'+n2+'" → "'+n3+'", closed '+hid);
+   say(/walked home/.test(dict)&&und2===redone?'OK':'FAULT','BP-30b','Undo takes back a dictated run and nothing else (the text is exactly what it was before dictating): "'+dict+'" → "'+und2+'"');
+   await book(pg,[['One','A cat sat. The cat ran. One more cat here.'],['Two','A cat in another chapter, and one more cat.']]); await pg.evaluate(()=>setTools(true)); await pg.click('#findBtn'); await pg.fill('#findIn','cat'); await pg.waitForTimeout(300);
+   const at=()=>pg.evaluate(()=>{ const ta=document.querySelector('#manuscript'); return {n:document.querySelector('#findN').textContent,a:ta.selectionStart,len:ta.selectionEnd-ta.selectionStart}; });
+   const want=[2,15,33]; const f1=await at(); await pg.click('#findNext'); await pg.waitForTimeout(150); const f2=await at(); await pg.click('#findNext'); await pg.waitForTimeout(150); const f3=await at(); await pg.click('#findNext'); await pg.waitForTimeout(150); const f4=await at(); await pg.click('#findPrev'); await pg.waitForTimeout(150); const f5=await at();
+   await pg.click('#findClose'); await pg.waitForTimeout(150); const hid=await pg.evaluate(()=>document.querySelector('#findbar').hidden);
+   const seq=[f1,f2,f3,f4,f5]; const idx=seq.map(f=>want.indexOf(f.a));
+   say(seq.every(f=>/of 3/.test(f.n))&&[f2,f3,f4,f5].every(f=>f.len===3)&&idx[1]===0&&idx[2]===1&&idx[3]===2&&idx[4]===1&&/1 of 3/.test(f2.n)&&/2 of 3/.test(f3.n)&&/3 of 3/.test(f4.n)&&/2 of 3/.test(f5.n)&&hid?'OK':'FAULT','BP-32','Find: three matches in this chapter (two more in the next are not counted), › and ‹ select each one in turn, × closes: '+seq.map(f=>f.n+' @'+f.a).join(' → ')+', closed '+hid);
    await pg.ctx.close(); });
  // ---------- BP-35 next mark
  await run('BP-35',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One','First sentence here. Second sentence there. Third one too.'],['Two','Another chapter sentence.']]);

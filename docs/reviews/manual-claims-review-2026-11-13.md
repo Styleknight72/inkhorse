@@ -19,6 +19,8 @@ Problems with the harness itself (these affect several ids):
 
 ## WEAK
 
+**Progress, rev 259 (Nov 16, 2026): 23 of 61 dealt with.** Rewritten strict: BP-12c, BP-16a, BP-16b, BP-18c, BP-23b, BP-27b, BP-30b, BP-32, BP-43a, BP-47b, HP-85, HP-88a (+ new HP-88d), YB-02, YB-23b, YB-36, YB-49b. Covered by stricter new checks: BP-39b (M-04a), YB-20 (M-08), YB-29c (M-09), YB-50c (M-11), YB-51 (M-12), BD-09 (M-27), HS-13 (M-28). One fault found and fixed (HP-88d: a learned fix at the end of a dictated run was not made). STILL WEAK (38): BP-39c, BP-73, YB-38, and everything listed below under p6, p7, p8, p9 and p10 except BD-09 and HS-13.
+
 Each item gives the id, why it is weak, and what a stronger check should do.
 
 ### p1

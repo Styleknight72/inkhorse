@@ -8,7 +8,9 @@ const readZip=async raw=>{ const z=await JSZip.loadAsync(raw), o={files:Object.k
  // ---------- All books, Done, move, New chapter
  await run('YB-02',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One','a.'],['Two','b.'],['Three','c.']]);
    await pg.click('#chBtn'); await pg.waitForTimeout(250); await pg.evaluate(()=>document.querySelector('#allBooks').click()); await pg.waitForTimeout(400); const lib=await pg.evaluate(()=>({tab:S.tab,lib:!!document.querySelector('#libPanel:not([hidden]),#library:not([hidden]),.libpanel:not([hidden])')||/Library/.test(document.body.innerText.slice(0,4000)),drawer:document.querySelector('#drawer').hidden}));
-   say(lib.tab==='read'&&lib.drawer?'OK':'FAULT','YB-02','All books opens the Library: '+JSON.stringify(lib));
+   /* rev 259: the Library itself must be open with its shelf showing */
+   const shelfUp=await pg.evaluate(()=>{ const L=document.querySelector('#library'); return !L.hidden&&L.getBoundingClientRect().height>100&&document.querySelectorAll('#library .bookrow').length>=3; });
+   say(lib.tab==='read'&&lib.drawer&&shelfUp?'OK':'FAULT','YB-02','All books opens the Library, with its books showing: '+JSON.stringify({...lib,shelfUp}));
    await pg.evaluate(()=>setTab('write')); await pg.click('#chBtn'); await pg.waitForTimeout(200); await pg.click('#drawerDone'); await pg.waitForTimeout(150); say(await pg.evaluate(()=>document.querySelector('#drawer').hidden)?'OK':'FAULT','YB-04','Done closes the panel');
    await pg.click('#chBtn'); await pg.waitForTimeout(200); await pg.evaluate(()=>{ document.querySelector(`[data-down="${BOOK.order[0]}"]`).click(); }); await pg.waitForTimeout(150); const o1=await pg.evaluate(()=>BOOK.order.map(id=>CH.get(id).title).join(','));
    await pg.evaluate(()=>{ document.querySelector(`[data-up="${BOOK.order[2]}"]`).click(); }); await pg.waitForTimeout(150); const o2=await pg.evaluate(()=>BOOK.order.map(id=>CH.get(id).title).join(','));
@@ -38,7 +40,8 @@ const readZip=async raw=>{ const z=await JSZip.loadAsync(raw), o={files:Object.k
    say(credit==='Made with Inkhorse · getinkhorse.com'?'OK':'FAULT','YB-23a','Use “Made with Inkhorse” writes the credit line: "'+credit+'"');
    const ep=await readZip(await dl(pg,'#expEpub')); const pdf=await readPdf(await dl(pg,'#expPdf')); const X=allX(ep).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ');
    const t1=pdf[0].text, cp=pdf.find(p=>/All rights reserved/.test(p.text)), dd=pdf.find(p=>/For the keeper of the light/.test(p.text));
-   say(/The Harbor Book.*Stories from the Pier/.test(t1)||/Stories from the Pier/.test(t1)?'OK':'FAULT','YB-23b','the subtitle is a line under the title on the title page: "'+t1.slice(0,90)+'"');
+   { const it=pdf[0].it||[], ty=(it.find(i=>/The Harbor Book/.test(i.s))||{}).y, sy=(it.find(i=>/Stories from the Pier/.test(i.s))||{}).y; const tx=String((Object.entries(ep).find(([n,v])=>typeof v==='string'&&/\.xhtml$/.test(n)&&/The Harbor Book/.test(v)&&/Stories from the Pier/.test(v))||['',''])[1]).replace(/<head[\s\S]*?<\/head>/,'').replace(/<[^>]+>/g,' ');
+   say(ty!=null&&sy!=null&&sy<ty&&ty-sy<120&&tx.indexOf('The Harbor Book')>=0&&tx.indexOf('Stories from the Pier')>tx.indexOf('The Harbor Book')?'OK':'FAULT','YB-23b','the subtitle is a line under the title on the title page, in the print PDF (title at '+Math.round(ty)+', subtitle lower at '+Math.round(sy)+') and in the EPUB (after the title)'); }
    say(dd&&dd.text.trim()==='For the keeper of the light'&&/For the keeper of the light/.test(X)?'OK':'FAULT','YB-23c','the dedication is on its own page: '+(dd?'"'+dd.text.trim()+'"':'not found'));
    const need=['Copyright © 2025 Ada Tester','978-1-23456-789-7','Pier Press','Made with Inkhorse','Some names have been changed.']; const missP=need.filter(n=>!(cp&&cp.text.includes(n))), missE=need.filter(n=>!X.includes(n));
    say(!missP.length&&!missE.length?'OK':'FAULT','YB-23d','year, ISBN, publisher, credit line and notes go on the copyright page: missing in print '+JSON.stringify(missP)+', in EPUB '+JSON.stringify(missE));
@@ -110,7 +113,7 @@ const readZip=async raw=>{ const z=await JSZip.loadAsync(raw), o={files:Object.k
  // ---------- full-bleed picture in print, print sizes listed
  await run('YB-34',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',para(1,90)+'\n'+para(2,90)]]);
    const sizes=await pg.evaluate(()=>[...document.querySelectorAll('#pdfSize option')].map(o=>o.textContent.trim()));
-   say(sizes.join('|').replace(/\s/g,'')==='6×9in|5.5×8.5in|5×8in|8.5×11in'||sizes.length===4?'OK':'FAULT','YB-36','Print size offers 6 × 9, 5.5 × 8.5, 5 × 8 and 8.5 × 11 inches: '+sizes.join(', '));
+   say(sizes.join('|').replace(/\s/g,'')==='6×9in|5.5×8.5in|5×8in|8.5×11in'?'OK':'FAULT','YB-36','Print size offers 6 × 9, 5.5 × 8.5, 5 × 8 and 8.5 × 11 inches: '+sizes.join(', '));
    const pid=await pg.evaluate(async()=>{ const c=document.createElement('canvas'); c.width=800; c.height=1200; const g=c.getContext('2d'); g.fillStyle='#2a5a83'; g.fillRect(0,0,800,1200); const bl=await new Promise(r=>c.toBlob(r,'image/png')); const id='b1b2c3d4e5f60718293a4b5c6d7e8f90'; await __picPut(id,bl,'image/png'); BOOK.images[id]={w:800,h:1200}; const ch=CH.get(BOOK.order[0]); ch.text+='\n[[image '+id+' | bleed | 100% | center]]\n'+'More words after the picture.'; touchChapter(ch); return id; });
    const raw=await dl(pg,'#expPdf'); const doc=await pdfjs.getDocument({data:new Uint8Array(raw),disableFontFace:true}).promise; let found=null;
    for(let n=1;n<=doc.numPages;n++){ const p=await doc.getPage(n), v=p.getViewport({scale:1}), ops=await p.getOperatorList(); let m=[1,0,0,1,0,0]; const stack=[];
@@ -125,7 +128,13 @@ const readZip=async raw=>{ const z=await JSZip.loadAsync(raw), o={files:Object.k
    const raw=await dl(pg,'#fbkSave'); const f=S+'/bk.inkhorse'; fs.writeFileSync(f,raw); await pg.waitForTimeout(300); const after=await pg.evaluate(()=>({t:document.querySelector('#fbkLast').textContent,c:getComputedStyle(document.querySelector('#fbkLast')).color}));
    await pg.setInputFiles('#fbkIn',f); await pg.waitForTimeout(600); const pend=await pg.evaluate(()=>({t:document.querySelector('#fbkPending').innerText.replace(/\s+/g,' '),go:!!document.querySelector('#fbkGo'),no:!!document.querySelector('#fbkNo')}));
    say(/First Light|Test Book/.test(pend.t)&&/Saved \w{3} \d+, \d{4}/.test(pend.t)&&/1 chapter/.test(pend.t)&&/words/.test(pend.t)&&/picture/.test(pend.t)&&pend.go&&pend.no?'OK':'FAULT','YB-49a','Restore from file shows title, date, chapters, words and pictures first, with Restore this and Cancel: "'+pend.t.slice(0,140)+'"');
-   await pg.click('#fbkNo'); await pg.waitForTimeout(200); say(await pg.evaluate(()=>!document.querySelector('#fbkGo'))?'OK':'FAULT','YB-49b','Cancel leaves things as they are');
+   await pg.click('#fbkNo'); await pg.waitForTimeout(200); const gone1=await pg.evaluate(()=>!document.querySelector('#fbkGo'));
+   /* rev 259: change the book first, so a restore that went ahead anyway would show */
+   const st0=await pg.evaluate(async()=>{ BOOK.title='Changed After Saving'; const c=CH.get(BOOK.order[0]); c.text='Only this line is here now.'; touchChapter(c); touchIndex(); loadEditor(); return (await bkAll()).length; });
+   await pg.setInputFiles('#fbkIn',f); await pg.waitForTimeout(600); const offered=await pg.evaluate(()=>!!document.querySelector('#fbkGo')); await pg.click('#fbkNo'); await pg.waitForTimeout(900);
+   const st1=await pg.evaluate(async()=>({t:BOOK.title,x:CH.get(BOOK.order[0]).text,n:(await bkAll()).length,go:!!document.querySelector('#fbkGo')}));
+   say(gone1&&offered&&!st1.go&&st1.t==='Changed After Saving'&&st1.x==='Only this line is here now.'&&st1.n===st0?'OK':'FAULT','YB-49b','Cancel leaves things as they are: the book changed since the file was saved keeps its changes, and no backup is made: '+JSON.stringify(st1));
+   await pg.evaluate(t=>{ BOOK.title='Test Book'; const c=CH.get(BOOK.order[0]); c.text=t; touchChapter(c); touchIndex(); loadEditor(); },Array.from({length:6},(_,k)=>para(k,80)).join('\n'));
    say(/You haven’t saved a backup file yet/.test(before)&&/^Last backup file: /.test(after.t)?'OK':'FAULT','YB-50a','under the buttons Inkhorse shows when you last saved a backup file: "'+before+'" → "'+after.t+'"');
    const old=await pg.evaluate(()=>{ S.fileBk={t:Date.now()-8*864e5,c:1,w:500}; saveSettings(); fbkShow(); const e=document.querySelector('#fbkLast'); return {t:e.textContent,c:getComputedStyle(e).color}; });
    const orange=c=>{ const m=/rgba?\((\d+), (\d+), (\d+)/.exec(c); return m&&+m[1]>150&&+m[2]>60&&+m[2]<140&&+m[3]<60; };

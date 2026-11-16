@@ -25,7 +25,10 @@ const {chromium,say,mk,book,para,toastText,vis,toolsOpen,fs,S,REPO}=require('./c
    await pg.evaluate(()=>{ S.showWC=false; saveSettings(); countWords(); }); await pg.waitForTimeout(100); const off=await pg.evaluate(()=>({btn:getComputedStyle(document.querySelector('#wcBtn')).backgroundColor,shown:!!document.querySelector('#wordCount').offsetParent&&document.querySelector('#wordCount').textContent.trim()!==''}));
    await pg.evaluate(()=>{ setTools(true); }); await pg.click('#wcBtn'); await pg.waitForTimeout(150); const on=await pg.evaluate(()=>({btn:getComputedStyle(document.querySelector('#wcBtn')).backgroundColor,shown:!!document.querySelector('#wordCount').offsetParent&&document.querySelector('#wordCount').textContent.trim()!=='',txt:document.querySelector('#wordCount').textContent}));
    const orange=c=>{ const m=/rgba?\((\d+), (\d+), (\d+)/.exec(c); return m&&+m[1]>=170&&+m[1]>+m[2]+60&&+m[2]>+m[3]+10&&+m[3]<120; };
-   say(!off.shown&&on.shown?'OK':'FAULT','BP-43a','Word count shows or hides the running count: off '+off.shown+', on '+on.shown+' "'+on.txt+'"');
+   /* rev 259: hidden again by a second tap on the button, not by setting it from the test */
+   await pg.evaluate(()=>document.querySelector('#wcBtn').click()); await pg.waitForTimeout(150); const off2=await pg.evaluate(()=>!!document.querySelector('#wordCount').offsetParent&&document.querySelector('#wordCount').textContent.trim()!=='');
+   await pg.evaluate(()=>document.querySelector('#wcBtn').click()); await pg.waitForTimeout(150);
+   say(!off.shown&&on.shown&&!off2&&/\d/.test(on.txt)?'OK':'FAULT','BP-43a','Word count shows the running count on one tap and hides it on the next: off '+off.shown+', tap → '+on.shown+' "'+on.txt+'", tap → '+off2);
    say(orange(on.btn)&&!orange(off.btn)?'OK':'FAULT','BP-43b','Word count is orange when it is on: on '+on.btn+', off '+off.btn);
    await pg.ctx.close(); });
  // ---------- Side by side on a tablet
