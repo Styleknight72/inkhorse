@@ -10,3 +10,9 @@ Steve's own logo files, kept here so they are never lost. Copyright (c) 2026 Ste
 - `sign-day.png`, `sign-night.png` the "Powered By Styleknight & Claude" sign at full size (rev 224), black letters for day and light letters for night.
 - `banner-large-title.png`, `banner-small-title.png` the wide Inkhorse banners (navy, a horse on each side, "Say it · Hear it · Fix it · Publish it"), sized for a social-media cover. Not used in the app or on the website.
 - `sign-before-and-after.png` the comparison Steve approved on November 10, 2026: the old shiny lettering on top, the re-printed solid lettering below.
+
+## The chrome horse (November 16, 2026)
+
+- `horse-chrome-2026-11-16.png` Steve's new horse: brighter chrome, a finer outline, on a see-through background. From rev 260 every horse in Inkhorse is made from this one. The older master above is kept and is no longer used.
+- `sign-day-chrome.png`, `sign-night-chrome.png` the "Powered By Styleknight & Claude" sign with the chrome horse, same size and lettering as `sign-day.png` and `sign-night.png`, which are kept as they were.
+- `tools/brand/apply-horse.py` fits a horse into every picture that carries one (website, icons, launch screens, opening screen, signs, covers, and the pictures built into the app). The new horse is fitted whole inside the exact space the old one had, so nothing around it moves.
