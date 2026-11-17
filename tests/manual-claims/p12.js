@@ -170,6 +170,23 @@ const URL_=process.env.MURL||'http://127.0.0.1:8765/preview/next.html';
      ok(good,'M-08'+st[0],({classic:'Classic: the small chapter label over the title, nothing else',ornament:'Ornament: label, title and a flourish; in the print PDF the flourish is a small gold diamond between two gold rules',bignum:'Big number: a large chapter number over the title, no label',dropcap:'Drop cap: the title between two thin lines and a first letter two lines tall'})[st]+', the same in Read, the EPUB and the print PDF: '+JSON.stringify(facts)); }
    noErr(pg,'M-08'); await pg.context().close(); });
 
+ // ---------- the cover keeps its binding and its own edge colours when Inkhorse is opened on the cover page (rev 262; Steve's iPhone, Nov 17)
+ await run('CV-01',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',Array.from({length:6},(_,k)=>para(k,90)).join('\n')]]);
+   const f=TMP+'/cov-dark.png'; const d=await pg.evaluate(()=>{ const cv=document.createElement('canvas'); cv.width=800; cv.height=800; const g=cv.getContext('2d'); g.fillStyle='rgb(12,18,40)'; g.fillRect(0,0,800,800); g.fillStyle='rgb(230,190,90)'; g.fillRect(250,250,300,300); return cv.toDataURL('image/png').split(',')[1]; }); fs.writeFileSync(f,Buffer.from(d,'base64'));
+   await pg.click('#chBtn'); await pg.waitForTimeout(250); await pg.setInputFiles('#covFrontIn',f); await pg.waitForTimeout(1800);
+   await pg.evaluate(()=>{ document.querySelector('#drawer').hidden=true; setTab('read'); jumpTo({ch:'__front',i:0}); }); await pg.waitForTimeout(3000);
+   const look=()=>pg.evaluate(()=>{ const fc=document.querySelector('#spread .face:not(.gone)'); if(!fc) return {none:true}; const bg=fc.getAttribute('style')||''; const cols=[...bg.matchAll(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/g)].map(m=>(+m[1]+ +m[2]+ +m[3])/3);
+     return {onCover:S.rch==='__front',plainPaper:!!fc.querySelector('img.bleed.cvr'),whole:!!fc.querySelector('img.cvimg'),binding:!!fc.querySelector('i.hb'),bands:/linear-gradient/.test(bg),darkEdges:cols.length>4&&cols.every(c=>c<70)}; });
+   const before=await look();
+   /* a cover added before Inkhorse began keeping its edge colours with the book (Steve's own book is one) has them looked up afresh each visit */
+   const hadEdge=await pg.evaluate(()=>{ const m=BOOK.images[BOOK.coverFront]; const h=!!(m&&m.edge); if(m) delete m.edge; touchIndex(); return h; }); await pg.waitForTimeout(2600);
+   /* on a phone with a long book, the saved pictures come back a moment after the first page is drawn: here they are held back twelve seconds, the same thing made certain */
+   await pg.context().addInitScript(()=>{ let real; Object.defineProperty(window,'__picRestore',{configurable:true,get(){ return real?async function(){ await new Promise(r=>setTimeout(r,12000)); return real.apply(this,arguments); }:undefined; },set(v){ real=v; }}); });
+   await pg.reload(); await pg.waitForFunction(()=>typeof LIB!=='undefined'&&typeof BOOK!=='undefined'&&BOOK.order.length>0,null,{timeout:30000}); await pg.waitForTimeout(3000);
+   const early=await look(); early.pictureHere=await pg.evaluate(()=>!/^\/_blob\//.test(imgSrc(rBook().coverFront))); await pg.waitForTimeout(13000);
+   const after=await look(); const good=x=>x.onCover&&!x.plainPaper&&x.whole&&x.binding&&x.bands&&x.darkEdges;
+   ok(good(before)&&early.pictureHere===false&&good(after),'CV-01','close Inkhorse on the front cover and open it again, with the saved pictures slow to come back: once the picture has arrived the cover shows whole with its own dark edges carried on around it and the binding on it, not on plain paper: '+JSON.stringify({before,whilePictureIsStillComing:early,after})); noErr(pg,'CV-01'); await pg.context().close(); });
+
  // ---------- 28: after the first visit Inkhorse opens and works with no signal
  /* The page under test is served from this check's own little server, which is then shut down: a real loss of connection, the same in both browsers
     (the test WebKit's "offline" switch breaks page loads altogether, with or without Inkhorse's helper). */
