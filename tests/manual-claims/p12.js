@@ -212,7 +212,24 @@ const URL_=process.env.MURL||'http://127.0.0.1:8765/preview/next.html';
    const back=await pg.evaluate(()=>({a:S.anchor,rch:S.rch===BOOK.order[0]}));
    ok(at.i===3&&back.a===at.a&&back.rch,'RS-01','turn to page 4 and close Inkhorse in the same instant: it reopens on page 4, not where you were before: '+JSON.stringify({turnedTo:at,reopened:back})); noErr(pg,'RS-01'); await pg.context().close(); });
 
- // ---------- CV-02 (rev 265): in full screen a cover with plain margins at its sides fills the page from top to bottom by trimming only that plain
+ // ---------- CV-03 (rev 266): in full screen, where the page is much taller than a cover with art to its edges, the space above and below is plain:
+//            one colour per side, the cover's typical edge colour (a bright spot at the very edge does not streak into it), and no blurred copy
+//            of the cover (Steve, Nov 18: rev 265's blurred fill looked "glazed"); the cover picture itself is whole
+ await run('CV-03',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One',Array.from({length:4},(_,k)=>para(k,60)).join('\n')]]); await pg.evaluate(()=>{ S.tips=false; });
+   const f=TMP+'/cv03.png'; const d=await pg.evaluate(()=>{ const cv=document.createElement('canvas'); cv.width=600; cv.height=900; const g=cv.getContext('2d'); g.fillStyle='rgb(10,12,20)'; g.fillRect(0,0,600,900);
+     g.fillStyle='rgb(240,230,200)'; g.fillRect(270,0,60,900); for(let x=0;x<600;x+=20){ g.fillStyle=x%40?'rgb(200,80,60)':'rgb(60,120,220)'; g.fillRect(x,300,20,300); } return cv.toDataURL('image/png').split(',')[1]; });
+   fs.writeFileSync(f,Buffer.from(d,'base64'));
+   await pg.evaluate(()=>{ setImmersive(false); setTab('write'); }); await pg.click('#chBtn'); await pg.waitForTimeout(250); await pg.setInputFiles('#covFrontIn',f); await pg.waitForTimeout(1800);
+   await pg.evaluate(()=>{ document.querySelector('#drawer').hidden=true; setTab('read'); jumpTo({ch:'__front',i:0}); }); await pg.waitForTimeout(2500);
+   await pg.evaluate(()=>{ setImmersive(true); }); await pg.waitForTimeout(2200); await pg.evaluate(()=>jumpTo({ch:'__front',i:0})); await pg.waitForTimeout(1500);
+   const r=await pg.evaluate(()=>{ const fc=document.querySelector('#spread .face:not(.gone)'), im=fc&&fc.querySelector('img.cvimg'); if(!im) return null; const fr=fc.getBoundingClientRect(), ir=im.getBoundingClientRect();
+     return {gapTop:ir.top-fr.top,gapBot:fr.bottom-ir.bottom,fh:fr.height,whole:ir.width<=fr.width+1&&ir.height<=fr.height+1,blur:fc.querySelectorAll('.cvglow,.cvglowbox').length,bg:fc.style.background}; });
+   const top=r?(r.bg.split(/left top/)[0]||''):'', cols=top.match(/rgb\([^)]*\)/g)||[], wide=r&&r.gapTop>r.fh*0.05;
+   const plain=cols.length>0&&new Set(cols).size===1, dark=cols[0]&&/rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(cols[0]).slice(1).every(v=>+v<60);
+   ok(r&&wide&&r.whole&&r.blur===0&&plain&&dark,'CV-03','in full screen the wide space above and below a cover is one plain colour from its edge (the bright stripe at the edge does not streak into it), with no blurred copy of the cover, and the cover is whole: '+JSON.stringify({gapTop:r&&Math.round(r.gapTop),blur:r&&r.blur,whole:r&&r.whole,cols}));
+   noErr(pg,'CV-03'); await pg.context().close(); });
+
+// ---------- CV-02 (rev 265): in full screen a cover with plain margins at its sides fills the page from top to bottom by trimming only that plain
 //            margin, never art; a cover with art to its edges is never trimmed; in the normal view no cover is trimmed (Steve, Nov 18)
 await run('CV-02',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One',Array.from({length:4},(_,k)=>para(k,60)).join('\n')]]); await pg.evaluate(()=>{ S.tips=false; });
   const mkCover=async(name,margin)=>{ const f=TMP+'/'+name+'.png'; const d=await pg.evaluate(m=>{ const cv=document.createElement('canvas'); cv.width=600; cv.height=900; const g=cv.getContext('2d'); g.fillStyle='rgb(6,8,14)'; g.fillRect(0,0,600,900);
