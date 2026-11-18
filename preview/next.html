@@ -344,22 +344,23 @@ body.canfix:not(.immersive):not(.hl-on) .stage .ptext:not(.front) p,body.canfix:
 .face .cvimg{position:absolute;display:block;max-width:none}
 /* rev 265: the cover page shows the book itself, at the shape of its cover, lying on the page with a shadow under it, the binding on its own
    spine (Steve, Nov 17, beside Apple Books). Nothing of the cover is cut off, and no band of filler colour sits between the spine and the picture. */
-.face .cvbook{position:absolute;overflow:hidden;border-radius:2px 5px 5px 2px;background:#17293d;
+.face .cvbook{position:absolute;overflow:hidden;border-radius:6px 6px 6px 6px;background:#17293d;
   box-shadow:0 1px 2px rgba(0,0,0,.30),0 8px 18px rgba(0,0,0,.26),0 24px 44px -10px rgba(0,0,0,.34)}
-.face .cvbook.back{border-radius:5px 2px 2px 5px}
+.face .cvbook.back{border-radius:6px}
 .face .cvbook>img.cvr{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block;max-width:none}
-/* rev 254: the Inkhorse hardback on the big cover in Read. The cover page is drawn as the board of a bound book: a binding band down the spine
-   edge (the left of a front cover, the right of a back cover) with the fine gold line where the cover hinges, and a soft light across it. It is
-   laid over the cover; the picture itself is not changed. */
+/* rev 254: the Inkhorse hardback on the big cover in Read: the binding down the spine edge (the left of a front cover, the right of a back cover).
+   It is laid over the cover; the picture itself is not changed. */
 .face .hb{position:absolute;inset:0;z-index:1;pointer-events:none;
-  /* rev 265: the spine given depth, as a real hardback has (Steve, Nov 17: "make our book binding better, kind of like the Apple one").
-     From the edge in: the dark turned edge of the board, the rounded spine catching the light, the hinge crease where the cover bends, the gold line
-     pressed into that crease (Inkhorse's own mark), a lit lip where the board rises again, and a soft shadow that fades into the cover. */
-  background:linear-gradient(90deg,rgba(0,0,0,.60) 0,rgba(0,0,0,.34) .9%,rgba(255,255,255,.22) 1.7%,rgba(255,255,255,.05) 2.6%,rgba(0,0,0,.32) 3.6%,rgba(0,0,0,.60) 4.5%,
-      rgba(120,92,40,.95) 4.6%,rgba(226,196,128,.95) 4.78%,rgba(201,169,107,.90) 5.05%,rgba(110,84,36,.90) 5.22%,rgba(0,0,0,.42) 5.4%,
-      rgba(255,255,255,.18) 6.1%,rgba(255,255,255,.05) 7%,rgba(0,0,0,.20) 8.1%,rgba(0,0,0,.08) 10%,rgba(0,0,0,0) 12.5%);
-  /* the board's thickness: a fine light line along the top edge, a soft shade along the bottom, a darker fore-edge */
-  box-shadow:inset 0 0 0 1px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.10),inset 0 -3px 4px -1px rgba(0,0,0,.30),inset -3px 0 4px -1px rgba(0,0,0,.26)}
+  /* rev 265: the spine given depth, as a real hardback has (Steve, Nov 17: "make our book binding better, kind of like the Apple one"; then, with a
+     picture of a bound copy of his book: "notice how the entire image carries over to the binding"). The binding is light and shade only, laid over
+     the cover: the picture carries on to the very edge and shows through all of it. From the edge in: the board rounding away (darker), the light on
+     the round of the spine, the fine groove where the cover bends, a lit lip where the board rises again, and a soft fade into the cover. No band,
+     no gold line: nothing covers the art. */
+  background:linear-gradient(90deg,rgba(0,0,0,.62) 0,rgba(255,255,255,.08) .5%,rgba(255,255,255,.42) 1.15%,rgba(255,255,255,.10) 1.8%,rgba(0,0,0,.40) 2.5%,
+      rgba(255,255,255,.06) 3.0%,rgba(255,255,255,.34) 3.55%,rgba(255,255,255,.06) 4.2%,rgba(0,0,0,.30) 4.8%,rgba(0,0,0,.66) 5.3%,rgba(0,0,0,.30) 5.75%,
+      rgba(255,255,255,.24) 6.2%,rgba(255,255,255,.05) 7.1%,rgba(0,0,0,.06) 8.2%,rgba(0,0,0,0) 10%);
+  /* the board's thickness: light catching the top edge and the fore-edge, a soft shade along the bottom */
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.34),inset 0 1.5px 0 rgba(255,255,255,.24),inset -1.5px 0 0 rgba(255,255,255,.16),inset 0 -3px 4px -1px rgba(0,0,0,.28)}
 .face .hb.back{transform:scaleX(-1)}
 /* rev 263: the light that shows on the binding falls across the whole board, as on a real hardback under a lamp: a long soft sheen from the upper
    left down across the cover, and a second, fainter one lower down. It is its own layer (.hs) laid on the page with "overlay", which brightens the
@@ -384,13 +385,13 @@ body.canfix:not(.immersive):not(.hl-on) .stage .ptext:not(.front) p,body.canfix:
 .cvbox{position:relative;overflow:hidden}
 .cvbox.cvbox img.cvbg{position:absolute;inset:-12%;width:124%;height:124%;object-fit:cover;filter:blur(8px) saturate(1.1);opacity:.85}
 .cvbox.cvbox img.cvfg{position:absolute;inset:0;width:100%;height:100%;max-height:none;object-fit:contain;display:block}
-/* rev 253: the Inkhorse hardback. Every small cover (Library, Book Hub, Book settings) is drawn as a bound book: a binding band down its left
-   edge with a fine gold line where the cover hinges, a soft light across the board, and a shadow under it, so a book on the shelf looks like a
+/* rev 253: the Inkhorse hardback. Every small cover (Library, Book Hub, Book settings) is drawn as a bound book: light and shade down its left
+   edge where the spine rounds and the cover hinges (rev 265: no band or gold line, the picture shows through), a soft light across the board, and a shadow under it, so a book on the shelf looks like a
    book and not a flat picture (Steve, Nov 14, after seeing his own book on a shelf of store books). It is drawn over the cover, in Inkhorse's own
    way: the cover picture itself is not changed, cropped or resized (F1.2). */
 .bookrow .thumb,.grow2 .gt.cvbox,.cov-img.has{position:relative;border-radius:2px 4px 4px 2px;box-shadow:0 1px 1px rgba(0,0,0,.28),2px 3px 7px var(--shadow)}
 .bookrow .thumb::after,.grow2 .gt.cvbox::after,.cov-img.has::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;
-  background:linear-gradient(90deg,rgba(0,0,0,.34) 0,rgba(0,0,0,.16) 4.5%,rgba(201,169,107,.85) 5.6%,rgba(201,169,107,.85) 6.6%,rgba(255,255,255,.20) 7.6%,rgba(0,0,0,.12) 9.6%,rgba(0,0,0,0) 14%),
+  background:linear-gradient(90deg,rgba(0,0,0,.42) 0,rgba(0,0,0,.10) 2%,rgba(255,255,255,.12) 3.2%,rgba(0,0,0,.12) 5%,rgba(0,0,0,.36) 5.8%,rgba(0,0,0,.08) 6.6%,rgba(255,255,255,.16) 7.4%,rgba(0,0,0,.04) 10%,rgba(0,0,0,0) 13%),
     linear-gradient(102deg,rgba(255,255,255,0) 38%,rgba(255,255,255,.09) 52%,rgba(255,255,255,0) 68%);
   box-shadow:inset 0 0 0 .5px rgba(0,0,0,.28),inset -1px 0 0 rgba(255,255,255,.10)}
 .bookrow .binfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
@@ -2146,9 +2147,9 @@ function edgeOf(cid){
     try{ refreshReader(); }catch(_){ } });
   return null;
 }
-/* rev 265: where the book lies on its cover page: the cover's own shape, as large as fits with a margin all round, a little above the middle so
+/* rev 265: where the book lies on its cover page: the cover's own shape, as large as fits (full height, Steve: the size the cover used to be), a hairline of page round it, a little above the middle so
    its shadow has room below */
-function bookBox(d,ar){ const m=Math.round(Math.min(d.w,d.h)*0.08), aw=d.w-2*m, ah=d.h-2*m-Math.round(m*0.4); let w=aw, h=aw/ar; if(h>ah){ h=ah; w=ah*ar; }
+function bookBox(d,ar){ const m=Math.max(4,Math.round(Math.min(d.w,d.h)*0.012)), aw=d.w-2*m, ah=d.h-2*m-Math.round(m*0.6); let w=aw, h=aw/ar; if(h>ah){ h=ah; w=ah*ar; }
   return {l:(d.w-w)/2, t:Math.max(m*0.6,(d.h-h)/2-m*0.2), w, h}; }
 const bookStyle=B=>`left:${B.l.toFixed(1)}px;top:${B.t.toFixed(1)}px;width:${B.w.toFixed(1)}px;height:${B.h.toFixed(1)}px`;
 function faceHTML(ref,cls,x){
