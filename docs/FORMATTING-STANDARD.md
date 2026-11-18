@@ -42,7 +42,7 @@ F1.1 A book runs in this order. Any part can be left out, but the order never ch
 - The chapters
 - Afterword, acknowledgments, about the author
 
-F1.2 The cover is a single picture in the standard 2:3 book shape. Every cover in the Library shows at the same 2:3 size, whole, never cut off.
+F1.2 The cover is a single picture in the standard 2:3 book shape. Every cover in the Library shows at the same 2:3 size, whole, never cut off. On the cover page in Read the whole cover shows, never stretched; in full screen on a phone, where the page is taller than the cover, a cover with a plain margin down its sides is shown larger by trimming only part of that plain margin (at most 12% at each side), never its art or words, so it fills the page from top to bottom.
 
 F1.3 The title page carries no page number and no page header, and its lines are centred, also in a book brought in to read.
 
@@ -237,7 +237,7 @@ Every rule in this book is on this scorecard, in one of five lists: proven by a 
 Proven: an automatic test checks it before every change goes out. For the print and e-book rules the test opens the real files Inkhorse exports and reads inside them. Since November 14, 2026 every test runs twice: once in Chromium, the engine inside Chrome and Edge, and once in WebKit, the engine inside Safari on every iPhone and iPad. The two engines measure a letter to within about a hundredth of a pixel of each other, so now and then a word that just fits a line in one just misses it in the other, and that chapter's later lines and pages then differ between an iPhone and another device; the test allows this only where the word fits or misses by less than one pixel. Each device's own pages hold from day to day. The WebKit run is on a test computer, not a phone: sound, the phone's own Copy permission and a real finger on the glass can only be checked on a phone.
 
 - F1.1, F1.3 and F1.4 Title, copyright and dedication pages are front matter: no chapter label, no paragraph indents, not counted as chapters. A book with its own typed title and copyright pages gets each one once in the EPUB, and neither is listed in the Contents.
-- F1.2 Covers: one 2:3 size, the whole cover always shown.
+- F1.2 Covers: one 2:3 size, the whole cover always shown; in full screen only a cover's plain side margin may be trimmed, never its art (test CV-02, in both engines).
 - F4.6 Italics: *words* and _words_ are italic on screen, in the e-book, the print PDF and the Word manuscript (never underlined); e-books and Word files brought in keep their italics; punctuation outside the marks stays upright; a lone star, snake_case and an escaped \* stay as typed; none of the built-in books changes.
 - F2.8 Even chapter numbering in a book you write: the memoir model book's unnumbered second chapter shows as "Chapter Two" on screen, above its title on its first page in the print PDF and the EPUB, in the Contents of both and in the Word manuscript, and never also as "Chapter 2". The test reads each file's own text.
 - F6.3 The page numbers and entries of a contents page are in the same colour as the page's own text, in all four model books.
