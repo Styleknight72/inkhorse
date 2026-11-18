@@ -102,7 +102,7 @@ const URL_=process.env.MURL||'http://127.0.0.1:8765/preview/next.html';
    await pg.setViewportSize({width:1280,height:800}); await pg.waitForTimeout(500); const c2=await pg.evaluate(()=>document.body.classList.contains('immersive'));
    ok(!c0&&c1&&!c2,'M-03j','when the window fills the whole screen (F11) Inkhorse hides its controls, and brings them back when it no longer does: '+JSON.stringify({before:c0,full:c1,after:c2})); noErr(pg,'M-03j'); await pg.context().close(); });
 
- // ---------- 9, 14: every small cover is 2:3; a cover of another shape shows whole on the page, with its own edge colours carried on around it
+ // ---------- 9, 14: every small cover is 2:3; a cover of another shape shows whole on the page, as the book itself at that shape (rev 265)
  await run('M-09',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',Array.from({length:6},(_,k)=>para(k,90)).join('\n')]]);
    const f=TMP+'/cov-two-tone.png'; const d=await pg.evaluate(()=>{ const cv=document.createElement('canvas'); cv.width=1200; cv.height=1200; const g=cv.getContext('2d'); g.fillStyle='rgb(200,30,30)'; g.fillRect(0,0,600,1200); g.fillStyle='rgb(30,40,200)'; g.fillRect(600,0,600,1200); return cv.toDataURL('image/png').split(',')[1]; }); fs.writeFileSync(f,Buffer.from(d,'base64'));
    await pg.click('#chBtn'); await pg.waitForTimeout(250); await pg.setInputFiles('#covFrontIn',f); await pg.waitForTimeout(1800);
@@ -113,11 +113,11 @@ const URL_=process.env.MURL||'http://127.0.0.1:8765/preview/next.html';
    const near=x=>x!=null&&Math.abs(x-2/3)<0.02;
    ok(near(set)&&near(hub)&&libs.length>=3&&libs.every(near),'M-09','with a square cover picture, every small cover is still 2:3: Book settings '+set+', Book Hub '+hub+', Library '+JSON.stringify(libs));
    await pg.evaluate(()=>{ jumpTo({ch:'__front',i:0}); }); await pg.waitForTimeout(1500);
-   const cov=await pg.evaluate(()=>{ const f=document.querySelector('#spread .face:not(.gone)'), fr=f.getBoundingClientRect(); const imgs=[...f.querySelectorAll('img')].map(i=>{ const r=i.getBoundingClientRect(); return {w:r.width,h:r.height,in:r.left>=fr.left-1&&r.right<=fr.right+1&&r.top>=fr.top-1&&r.bottom<=fr.bottom+1,fit:getComputedStyle(i).objectFit}; });
-     const styles=[f,...f.querySelectorAll('*')].map(e=>(e.getAttribute('style')||'')+' '+getComputedStyle(e).backgroundImage).join(' ; '); const grads=styles.match(/linear-gradient\((?:[^()]|\([^()]*\))*\)/g)||[]; const g=grads.find(x=>/90deg/.test(x)&&/rgb/.test(x))||''; const cols=[...g.matchAll(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/g)].map(m=>[+m[1],+m[2],+m[3]]);
-     return {face:[Math.round(fr.width),Math.round(fr.height)],imgs,bands:grads.length,first:cols[0],last:cols[cols.length-1]}; });
-   const whole=cov.imgs.some(i=>i.in&&Math.abs(i.w-i.h)<3&&Math.abs(i.w-cov.face[0])<3);
-   ok(whole&&cov.bands>=2&&cov.first&&cov.last&&cov.first[0]>150&&cov.first[2]<90&&cov.last[2]>150&&cov.last[0]<90,'M-14','on the page the square cover shows whole, and the space above and below carries on the colours of its own edge (red at the left, blue at the right): '+JSON.stringify({face:cov.face,whole,bands:cov.bands,left:cov.first,right:cov.last})); noErr(pg,'M-09'); await pg.context().close(); });
+   const cov=await pg.evaluate(()=>{ const f=document.querySelector('#spread .face:not(.gone)'), fr=f.getBoundingClientRect(), bk=f.querySelector('.cvbook'), im=bk&&bk.querySelector('img.cvr'), hb=bk&&bk.querySelector('.hb'); if(!bk||!im) return {face:[Math.round(fr.width),Math.round(fr.height)],book:!!bk,img:!!im};
+     const R=e=>{ const r=e.getBoundingClientRect(); return [r.left,r.top,r.width,r.height].map(v=>+v.toFixed(1)); }; const b=R(bk), i=R(im);
+     return {face:[Math.round(fr.width),Math.round(fr.height)],book:b,img:i,fit:getComputedStyle(im).objectFit,natural:[im.naturalWidth,im.naturalHeight],inside:b[0]>=fr.left&&b[0]+b[2]<=fr.right&&b[1]>=fr.top&&b[1]+b[3]<=fr.bottom,binding:!!hb,shadow:getComputedStyle(bk).boxShadow!=='none'}; });
+   const same=(a,c)=>a&&c&&a.every((v,k)=>Math.abs(v-c[k])<=1); const whole=!!cov.book&&Array.isArray(cov.book)&&Math.abs(cov.book[2]-cov.book[3])<=1.5&&same(cov.book,cov.img)&&cov.natural[0]===cov.natural[1];
+   ok(whole&&cov.inside&&cov.binding&&cov.shadow,'M-14','on the page the square cover shows whole: the book is drawn square, the same shape as the picture, the picture fills it with nothing cut off, it lies inside the page with a shadow and the binding on it: '+JSON.stringify(cov)); noErr(pg,'M-09'); await pg.context().close(); });
 
  // ---------- 23: Settings shows how much is ready ahead
  await run('M-23',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One',Array.from({length:12},(_,k)=>para(k,60)).join('\n')]]); await read(pg);
@@ -170,22 +170,23 @@ const URL_=process.env.MURL||'http://127.0.0.1:8765/preview/next.html';
      ok(good,'M-08'+st[0],({classic:'Classic: the small chapter label over the title, nothing else',ornament:'Ornament: label, title and a flourish; in the print PDF the flourish is a small gold diamond between two gold rules',bignum:'Big number: a large chapter number over the title, no label',dropcap:'Drop cap: the title between two thin lines and a first letter two lines tall'})[st]+', the same in Read, the EPUB and the print PDF: '+JSON.stringify(facts)); }
    noErr(pg,'M-08'); await pg.context().close(); });
 
- // ---------- the cover keeps its binding and its own edge colours when Inkhorse is opened on the cover page (rev 262; Steve's iPhone, Nov 17)
+ // ---------- the cover keeps its binding and its own shape when Inkhorse is opened on the cover page (rev 262; Steve's iPhone, Nov 17; rev 265: the book lying on the page)
  await run('CV-01',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',Array.from({length:6},(_,k)=>para(k,90)).join('\n')]]);
    const f=TMP+'/cov-dark.png'; const d=await pg.evaluate(()=>{ const cv=document.createElement('canvas'); cv.width=800; cv.height=800; const g=cv.getContext('2d'); g.fillStyle='rgb(12,18,40)'; g.fillRect(0,0,800,800); g.fillStyle='rgb(230,190,90)'; g.fillRect(250,250,300,300); return cv.toDataURL('image/png').split(',')[1]; }); fs.writeFileSync(f,Buffer.from(d,'base64'));
    await pg.click('#chBtn'); await pg.waitForTimeout(250); await pg.setInputFiles('#covFrontIn',f); await pg.waitForTimeout(1800);
    await pg.evaluate(()=>{ document.querySelector('#drawer').hidden=true; setTab('read'); jumpTo({ch:'__front',i:0}); }); await pg.waitForTimeout(3000);
    const look=()=>pg.evaluate(()=>{ const fc=document.querySelector('#spread .face:not(.gone)'); if(!fc) return {none:true}; const bg=fc.getAttribute('style')||''; const cols=[...bg.matchAll(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/g)].map(m=>(+m[1]+ +m[2]+ +m[3])/3);
-     return {onCover:S.rch==='__front',plainPaper:!!fc.querySelector('img.bleed.cvr'),whole:!!fc.querySelector('img.cvimg'),binding:!!fc.querySelector('i.hb'),bands:/linear-gradient/.test(bg),darkEdges:cols.length>4&&cols.every(c=>c<70)}; });
+     const bk=fc.querySelector('.cvbook'), im=bk&&bk.querySelector('img.cvr'), br=bk&&bk.getBoundingClientRect(), ir=im&&im.getBoundingClientRect(), fr=fc.getBoundingClientRect();
+     return {onCover:S.rch==='__front',book:!!bk,square:!!br&&Math.abs(br.width-br.height)<=1.5,whole:!!(ir&&br)&&Math.abs(ir.width-br.width)<=1&&Math.abs(ir.height-br.height)<=1,inside:!!br&&br.left>=fr.left&&br.right<=fr.right&&br.top>=fr.top&&br.bottom<=fr.bottom,binding:!!(bk&&bk.querySelector('i.hb'))}; });
    const before=await look();
-   /* a cover added before Inkhorse began keeping its edge colours with the book (Steve's own book is one) has them looked up afresh each visit */
-   const hadEdge=await pg.evaluate(()=>{ const m=BOOK.images[BOOK.coverFront]; const h=!!(m&&m.edge); if(m) delete m.edge; touchIndex(); return h; }); await pg.waitForTimeout(2600);
+   /* a cover added before Inkhorse began keeping its size and edge colours with the book (Steve's own book is one) has them looked up afresh each visit */
+   const hadEdge=await pg.evaluate(()=>{ const m=BOOK.images[BOOK.coverFront]; const h=!!(m&&m.edge); if(m){ delete m.edge; delete m.w; delete m.h; } touchIndex(); return h; }); await pg.waitForTimeout(2600);
    /* on a phone with a long book, the saved pictures come back a moment after the first page is drawn: here they are held back twelve seconds, the same thing made certain */
    await pg.context().addInitScript(()=>{ let real; Object.defineProperty(window,'__picRestore',{configurable:true,get(){ return real?async function(){ await new Promise(r=>setTimeout(r,12000)); return real.apply(this,arguments); }:undefined; },set(v){ real=v; }}); });
    await pg.reload(); await pg.waitForFunction(()=>typeof LIB!=='undefined'&&typeof BOOK!=='undefined'&&BOOK.order.length>0,null,{timeout:30000}); await pg.waitForTimeout(3000);
    const early=await look(); early.pictureHere=await pg.evaluate(()=>!/^\/_blob\//.test(imgSrc(rBook().coverFront))); await pg.waitForTimeout(13000);
-   const after=await look(); const good=x=>x.onCover&&!x.plainPaper&&x.whole&&x.binding&&x.bands&&x.darkEdges;
-   ok(good(before)&&early.pictureHere===false&&good(after),'CV-01','close Inkhorse on the front cover and open it again, with the saved pictures slow to come back: once the picture has arrived the cover shows whole with its own dark edges carried on around it and the binding on it, not on plain paper: '+JSON.stringify({before,whilePictureIsStillComing:early,after})); noErr(pg,'CV-01'); await pg.context().close(); });
+   const after=await look(); const good=x=>x.onCover&&x.book&&x.square&&x.whole&&x.inside&&x.binding;
+   ok(good(before)&&early.pictureHere===false&&good(after),'CV-01','close Inkhorse on the front cover and open it again, with the saved pictures slow to come back: once the picture has arrived the cover is the book at its own (square) shape, whole, lying on the page with the binding on it: '+JSON.stringify({before,whilePictureIsStillComing:early,after})); noErr(pg,'CV-01'); await pg.context().close(); });
 
  // ---------- 28: after the first visit Inkhorse opens and works with no signal
  /* The page under test is served from this check's own little server, which is then shut down: a real loss of connection, the same in both browsers
