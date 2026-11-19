@@ -190,9 +190,11 @@ const URL_=process.env.MURL||'http://127.0.0.1:8765/preview/next.html';
  // ---------- 28: after the first visit Inkhorse opens and works with no signal
  /* The page under test is served from this check's own little server, which is then shut down: a real loss of connection, the same in both browsers
     (the test WebKit's "offline" switch breaks page loads altogether, with or without Inkhorse's helper). */
+ /* rev 269: run for the page under test AND for /app.html: the preview and the live app have different page helpers (preview/sw.js and sw.js), and the promise is the live app's */
+ for(const under of [...new Set([new URL(URL_).pathname,'/app.html'])]){ const tag=under==='/app.html'&&new URL(URL_).pathname!=='/app.html'?'(live app, sw.js) ':'';
  await run('M-28',async()=>{ const http=require('http'); const types={'.html':'text/html','.js':'text/javascript','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.css':'text/css'};
    const socks=new Set(); const srv=http.createServer((q,r)=>{ const u=decodeURIComponent(q.url.split('?')[0]); const f=path.join(REPO,u.endsWith('/')?u+'index.html':u); if(!f.startsWith(REPO)){ r.writeHead(403); return r.end(); } fs.readFile(f,(e,d)=>{ if(e){ r.writeHead(404); return r.end(); } r.writeHead(200,{'Content-Type':types[path.extname(f)]||'application/octet-stream'}); r.end(d); }); });
-   srv.on('connection',s=>{ socks.add(s); s.on('close',()=>socks.delete(s)); }); await new Promise(r=>srv.listen(0,'127.0.0.1',r)); const here='http://127.0.0.1:'+srv.address().port+new URL(URL_).pathname;
+   srv.on('connection',s=>{ socks.add(s); s.on('close',()=>socks.delete(s)); }); await new Promise(r=>srv.listen(0,'127.0.0.1',r)); const here='http://127.0.0.1:'+srv.address().port+under;
    const ctx=await b.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); pg.errs=[]; let down=false;
    try{
      await pg.goto(here); await pg.waitForFunction(()=>typeof LIB!=='undefined'&&LIB.some(x=>x.id==='manual'),null,{timeout:30000});
@@ -202,8 +204,19 @@ const URL_=process.env.MURL||'http://127.0.0.1:8765/preview/next.html';
      await new Promise(r=>{ srv.close(()=>r()); for(const s of socks) s.destroy(); }); down=true;
      let opened=false, why=''; try{ await pg.reload({timeout:30000}); await pg.waitForFunction(()=>typeof LIB!=='undefined'&&LIB.some(x=>x.id==='manual'),null,{timeout:25000}); opened=true; }catch(e){ why=e.message.split('\n')[0].slice(0,100); }
      const st=opened?await pg.evaluate(async()=>{ const t=BOOK.title, text=(CH.get(BOOK.order[0])||{}).text||''; await openLibBook('manual',true); setTab('read'); await new Promise(r=>setTimeout(r,800)); return {t,text,manualChapters:rOrder().length,face:!!document.querySelector('#spread .face:not(.gone)')}; }):{};
-     ok(helper&&opened&&st.t==='No Signal Book'&&/before the signal went/.test(st.text)&&st.manualChapters>5&&st.face,'M-28','after a first visit, with the server gone (no connection at all), Inkhorse opens again, your book and its words are there, and the manual opens to read: '+JSON.stringify({helper,opened,why,...st}));
-   } finally { if(!down){ try{ srv.close(); for(const s of socks) s.destroy(); }catch(_){ } } await ctx.close(); } });
+     ok(helper&&opened&&st.t==='No Signal Book'&&/before the signal went/.test(st.text)&&st.manualChapters>5&&st.face,'M-28'+(tag?'L':''),tag+'after a first visit, with the server gone (no connection at all), Inkhorse opens again, your book and its words are there, and the manual opens to read: '+JSON.stringify({helper,opened,why,...st}));
+     /* rev 269 (the second half of 28): back online, and a newer Inkhorse is on the site (here: the same file with a new revision number).
+        Opening it again must show the newer one by itself, with no clearing or reinstalling, and the book must still be there. */
+     const port=srv.address&&srv.address()?srv.address().port:+new URL(here).port, me=under;
+     const srv2=http.createServer((q,r)=>{ const u=decodeURIComponent(q.url.split('?')[0]); const f=path.join(REPO,u.endsWith('/')?u+'index.html':u); if(!f.startsWith(REPO)){ r.writeHead(403); return r.end(); }
+       fs.readFile(f,(e,d)=>{ if(e){ r.writeHead(404); return r.end(); } if(u===me) d=Buffer.from(String(d).replace(/(window\.INK_VERSION\s*=\s*\{[^}]*?rev:)\d+/,'$19999')); r.writeHead(200,{'Content-Type':types[path.extname(f)]||'application/octet-stream'}); r.end(d); }); });
+     const socks2=new Set(); srv2.on('connection',x=>{ socks2.add(x); x.on('close',()=>socks2.delete(x)); });
+     await new Promise((r,j)=>{ srv2.once('error',j); srv2.listen(+new URL(here).port,'127.0.0.1',r); });
+     try{ const was=opened?await pg.evaluate(()=>(window.INK_VERSION||{}).rev):null; await pg.reload({timeout:30000}); await pg.waitForFunction(()=>typeof LIB!=='undefined'&&LIB.some(x=>x.id==='manual'),null,{timeout:25000});
+       const nw=await pg.evaluate(()=>({rev:(window.INK_VERSION||{}).rev,book:BOOK.title,text:(CH.get(BOOK.order[0])||{}).text||''}));
+       ok(was!==9999&&nw.rev===9999&&nw.book==='No Signal Book'&&/before the signal went/.test(nw.text),'M-28b'+(tag?'L':''),tag+'back online, Inkhorse picks up the newest version on its own the next time it opens (rev '+was+' → '+nw.rev+'), and your book is still there: '+JSON.stringify({book:nw.book}));
+     } finally { await new Promise(r=>{ srv2.close(()=>r()); for(const x of socks2) x.destroy(); }); }
+   } finally { if(!down){ try{ srv.close(); for(const s of socks) s.destroy(); }catch(_){ } } await ctx.close(); } }); }
 
  // ---------- settings changed just before closing are kept (rev 258; found by M-11 in WebKit)
  await run('RS-01',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One',Array.from({length:14},(_,k)=>para(k,90)).join('\n')]]); await read(pg); await pg.waitForTimeout(2600);
