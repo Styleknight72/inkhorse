@@ -3,7 +3,7 @@
 const {chromium,devices,say,mk,book,para,toastText,vis,fs,path,REPO,S:TMP}=require('./common.js');
 const JSZip=require('jszip');
 let pdfjs; { const w=console.warn,l=console.log; console.warn=console.log=()=>{}; pdfjs=require(path.join(process.env.PDFJS_DIR,'..','legacy','build','pdf.js')); console.warn=w; console.log=l; }
-const run=async(id,fn)=>{ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,240)); } };
+const run=async(id,fn)=>{ if(process.env.ONLY&&!new RegExp(process.env.ONLY).test(id)) return; /* rev 267: ONLY=<pattern> runs just those blocks (for proving a check fails on a broken copy) */ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,240)); } };
 const ok=(c,id,msg)=>say(c?'OK':'FAULT',id,msg);
 const dl=async(pg,sel)=>{ const [d]=await Promise.all([pg.waitForEvent('download',{timeout:90000}), pg.evaluate(s=>document.querySelector(s).click(),sel)]); return fs.readFileSync(await d.path()); };
 const noErr=(pg,id)=>{ if(pg.errs&&pg.errs.length) say('FAULT',id+'x','the page reported an error: '+pg.errs[0].slice(0,160)); };

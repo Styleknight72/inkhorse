@@ -1,6 +1,6 @@
 const {chromium,say,mk,book,para,toastText,vis,toolsOpen}=require('./common.js');
 (async()=>{ const b=await chromium.launch();
- const run=async(id,fn)=>{ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,240)); } };
+ const run=async(id,fn)=>{ if(process.env.ONLY&&!new RegExp(process.env.ONLY).test(id)) return; /* rev 267: ONLY=<pattern> runs just those blocks (for proving a check fails on a broken copy) */ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,240)); } };
  const bar=pg=>pg.evaluate(()=>document.querySelector('#hpBar').hidden?'':document.querySelector('#hpBar').innerText.replace(/\s+/g,' '));
  const settle=async pg=>{ await pg.evaluate(()=>{ HP.waits=2; hpSettle(); }); await pg.waitForTimeout(200); };
  const type=async(pg,t)=>{ await pg.evaluate(t=>{ const ta=document.querySelector('#manuscript'); ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); document.execCommand('insertText',false,t); },t); await pg.waitForTimeout(80); await settle(pg); };

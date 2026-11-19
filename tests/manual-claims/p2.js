@@ -1,6 +1,6 @@
 const {chromium,say,mk,book,para,toastText,vis,toolsOpen,fs,S,REPO}=require('./common.js');
 (async()=>{ const b=await chromium.launch();
- const run=async(id,fn)=>{ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,220)); } };
+ const run=async(id,fn)=>{ if(process.env.ONLY&&!new RegExp(process.env.ONLY).test(id)) return; /* rev 267: ONLY=<pattern> runs just those blocks (for proving a check fails on a broken copy) */ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,220)); } };
  const png=async(pg,w,h)=>{ const f=S+'/pic-'+w+'x'+h+'.png'; if(!fs.existsSync(f)){ const d=await pg.evaluate(async([w,h])=>{ const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'); g.fillStyle='#2a5a83'; g.fillRect(0,0,w,h); return c.toDataURL('image/png').split(',')[1]; },[w,h]); fs.writeFileSync(f,Buffer.from(d,'base64')); } return f; };
  // ---------- Dictate
  await run('BP-39',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One','We met at the dock.']]);
@@ -10,8 +10,27 @@ const {chromium,say,mk,book,para,toastText,vis,toolsOpen,fs,S,REPO}=require('./c
    await pg.evaluate(()=>{ try{ micStop&&micStop(); }catch(_){ } }); await pg.waitForTimeout(400); const v=await pg.inputValue('#manuscript');
    say(/Listening… tap to stop/.test(lab)?'OK':'FAULT','BP-39a','Dictate says "Listening… tap to stop": "'+lab+'"');
    say(/We met at the dock\. And the boat was late\n It was cold\.|We met at the dock\. And the boat was late\nIt was cold\./.test(v)?'OK':'FAULT','BP-39b','spoken "new paragraph" and "period" become a new paragraph and a full stop, at the cursor: '+JSON.stringify(v));
-   say(live?'NOTE':'NOTE','BP-39c','live words box: '+JSON.stringify(live)+' (proven by the existing test "Dictate: the live words sit at the bottom of the writing area")');
    await pg.ctx.close(); });
+ /* rev 267: BP-39c was a NOTE that could never fail (and looked at the wrong box). Now a real Dictate tap with a recognizer the test drives by hand:
+    words still being heard must show in the small live box, in the bottom half of the writing area and inside it, and stay out of the page;
+    once the phone settles on them the box empties and they land at the cursor. */
+ await run('BP-39c',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One','We met at the dock.']]);
+   await pg.evaluate(()=>{ const P=window.SpeechRecognition.prototype; /* the stand-in from common.js, made before Inkhorse loaded; here it waits for the test instead of answering by itself */
+     P.start=function(){ const me=this; window.__rec=me; setTimeout(()=>{ me.onstart&&me.onstart({}); },20); }; P.stop=function(){ const me=this; setTimeout(()=>{ me.onend&&me.onend({}); },10); }; P.abort=P.stop;
+     const ta=document.querySelector('#manuscript'); ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); setTools(true); });
+   await pg.click('#micBtn'); await pg.waitForTimeout(200);
+   const mid=await pg.evaluate(()=>{ const r=[{transcript:'and the boat was'}]; r.isFinal=false; window.__rec.onresult({resultIndex:0,results:[r]});
+     const d=document.querySelector('.dict-live'), ta=document.querySelector('#manuscript'); if(!d||d.hidden) return {shown:false,v:ta.value};
+     const b=d.getBoundingClientRect(), t=ta.getBoundingClientRect(), cs=getComputedStyle(d);
+     return {shown:b.width>0&&b.height>0&&cs.display!=='none'&&cs.visibility!=='hidden',text:d.textContent,top:Math.round(b.top),bottom:Math.round(b.bottom),h:Math.round(b.height),taTop:Math.round(t.top),taBottom:Math.round(t.bottom),v:ta.value}; });
+   const fin=await pg.evaluate(()=>{ const r=[{transcript:'and the boat was late'}]; r.isFinal=true; window.__rec.onresult({resultIndex:0,results:[r]});
+     const d=document.querySelector('.dict-live'); return {gone:!d||d.hidden||!d.textContent,v:document.querySelector('#manuscript').value}; });
+   /* on a phone the tools tuck away while you dictate; the round microphone button (the same thing as Dictate, the manual says) is the one in view */
+   const stopSel=await pg.evaluate(()=>{ const r=document.querySelector('#micBtn').getBoundingClientRect(); return r.width>0?'#micBtn':'#micFab'; });
+   await pg.click(stopSel); await pg.waitForTimeout(300); const lab=await pg.textContent('#micLabel');
+   const ok=mid.shown&&mid.text==='and the boat was'&&mid.top>=mid.taTop+(mid.taBottom-mid.taTop)/2&&mid.bottom<=mid.taBottom+2&&mid.h<(mid.taBottom-mid.taTop)/3&&mid.v==='We met at the dock.'&&fin.gone&&fin.v==='We met at the dock. And the boat was late'&&lab==='Dictate';
+   say(ok?'OK':'FAULT','BP-39c','while you talk the words show in a small box at the bottom of the writing area (not in the page yet), then land at the cursor when you pause; tapping Dictate again stops: '+JSON.stringify({mid,fin,lab}));
+   if(pg.errs.length) say('FAULT','BP-39x','page error: '+pg.errs[0]); await pg.ctx.close(); });
  // ---------- mic button, word count orange
  await run('BP-41',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One','Hello.']]);
    const r=await pg.evaluate(()=>{ setTools(false); const f=document.querySelector('#micFab'), ta=document.querySelector('#manuscript').closest('.ta-wrap')||document.querySelector('#manuscript'); const fr=f.getBoundingClientRect(), tr=ta.getBoundingClientRect(), cs=getComputedStyle(f);
@@ -71,15 +90,22 @@ const {chromium,say,mk,book,para,toastText,vis,toolsOpen,fs,S,REPO}=require('./c
          if(img&&!/cvimg|cvr/.test(img.className)){ const pr=pt?pt.getBoundingClientRect():face.getBoundingClientRect(), fr=face.getBoundingClientRect(), ir=img.getBoundingClientRect(), fg=img.closest('figure,div'), cs=fg?getComputedStyle(fg):{};
            const txt=pt?[...pt.querySelectorAll('p:not(.toc)')].filter(x=>x.textContent.trim()).map(x=>x.getBoundingClientRect()):[];
            const firstTxtTop=txt.length?Math.min(...txt.map(t=>t.top)):null, beside=txt.filter(t=>t.top<ir.bottom-4&&t.bottom>ir.top+4);
-           found={i,cls:(fg&&fg.className)||'',float:cs.cssFloat||cs.float,img:[Math.round(ir.left-fr.left),Math.round(fr.right-ir.right),Math.round(ir.top-fr.top),Math.round(fr.bottom-ir.bottom)],text:[Math.round(pr.left-fr.left),Math.round(fr.right-pr.right)],imgFirst:firstTxtTop==null||ir.top<=firstTxtTop+2,textBeside:beside.length,besideX:beside.slice(0,2).map(t=>[Math.round(t.left-fr.left),Math.round(fr.right-t.right)]),words:pt?pt.textContent.replace(/\s+/g,' ').trim().length:0,pageW:Math.round(fr.width)}; break; } }
+           /* rev 267: also what came before the picture and what shares its page */
+           const prevPara=ta.value.split('\n')[0].trim(), kids=pt?[...pt.children].filter(k=>k.textContent.trim()||k.querySelector('img')):[], figEl=img.closest('figure');
+           let prevEnd=''; if(i>0){ goTo({ch:id,i:i-1}); drawView(); const pf=document.querySelector('#spread .face:not(.gone) .ptext'); prevEnd=pf?pf.textContent.replace(/\s+/g,' ').trim().slice(-40):''; goTo({ch:id,i}); drawView(); }
+           const plain=pt?[...pt.querySelectorAll('p')].filter(x=>!x.closest('figure')).map(x=>x.textContent.trim()).filter(Boolean).join(' '):'';
+           found={i,cls:(fg&&fg.className)||'',prevEnd,prevParaEnd:prevPara.slice(-40),figFirst:!!figEl&&kids[0]===figEl,textAfter:!!figEl&&kids.indexOf(figEl)<kids.length-1&&kids.slice(kids.indexOf(figEl)+1).some(k=>k.tagName==='P'&&k.textContent.trim()),plainWords:plain.split(/\s+/).filter(Boolean).length,float:cs.cssFloat||cs.float,img:[Math.round(ir.left-fr.left),Math.round(fr.right-ir.right),Math.round(ir.top-fr.top),Math.round(fr.bottom-ir.bottom)],text:[Math.round(pr.left-fr.left),Math.round(fr.right-pr.right)],imgFirst:firstTxtTop==null||ir.top<=firstTxtTop+2,textBeside:beside.length,besideX:beside.slice(0,2).map(t=>[Math.round(t.left-fr.left),Math.round(fr.right-t.right)]),words:pt?pt.textContent.replace(/\s+/g,' ').trim().length:0,pageW:Math.round(fr.width)}; break; } }
        setTab('write'); return found; },p);
      shots[p]=r; }
    const s=shots; const ok={inline:s.inline&&s.inline.textBeside===0,
      'wrap-left':s['wrap-left']&&s['wrap-left'].textBeside>0&&s['wrap-left'].img[0]<=s['wrap-left'].text[0]+2,
      'wrap-right':s['wrap-right']&&s['wrap-right'].textBeside>0&&s['wrap-right'].img[1]<=s['wrap-right'].text[1]+2,
-     top:s.top&&s.top.imgFirst,
-     page:s.page&&s.page.words<40&&s.page.img[0]>=s.page.text[0]-2,
-     bleed:s.bleed&&s.bleed.img[0]<=1&&s.bleed.img[1]<=1};
+     /* rev 267: "starts a new page": the page before ends with the paragraph before the picture, and the picture is the first thing on its page with text below it */
+     top:s.top&&s.top.imgFirst&&s.top.figFirst&&s.top.textAfter&&s.top.prevEnd===s.top.prevParaEnd,
+     /* "the whole page, inside the margins": no words of the chapter on that page, the picture within the text margins on both sides */
+     page:s.page&&s.page.plainWords===0&&s.page.img[0]>=s.page.text[0]-1&&s.page.img[1]>=s.page.text[1]-1&&s.page.prevEnd===s.page.prevParaEnd,
+     /* "edge to edge, no margins": all four sides touch the page's edges, and no words share the page */
+     bleed:s.bleed&&s.bleed.img.every(v=>Math.abs(v)<=1)&&s.bleed.plainWords===0};
    for(const [k,v] of Object.entries(ok)) say(v?'OK':'FAULT','BP-73',k+': '+JSON.stringify(s[k]));
    await pg.evaluate(()=>{ setTab('write'); const ta=document.querySelector('#manuscript'), L=ta.value.split('\n'); const pos=L[0].length+3; ta.focus(); ta.setSelectionRange(pos,pos); ta.dispatchEvent(new MouseEvent('click',{bubbles:true})); }); await pg.waitForTimeout(300);
    const ed=await pg.evaluate(()=>({ok:(document.querySelector('#imgOk')||{}).textContent,del:(document.querySelector('#imgDel')||{}).textContent}));

@@ -4,7 +4,7 @@ const dl=async(pg,sel,set)=>{ if(set) await pg.evaluate(set); const [d]=await Pr
 const readPdf=async raw=>{ const doc=await pdfjs.getDocument({data:new Uint8Array(raw),disableFontFace:true}).promise, pages=[]; for(let n=1;n<=doc.numPages;n++){ const p=await doc.getPage(n), v=p.getViewport({scale:1}), tc=await p.getTextContent(), ops=await p.getOperatorList(); pages.push({n,w:v.width,h:v.height,ops,imgs:ops.fnArray.filter(f=>f===pdfjs.OPS.paintImageXObject||f===pdfjs.OPS.paintJpegXObject).length,it:tc.items.filter(i=>i.str.trim()).map(i=>({s:i.str,x:i.transform[4],y:i.transform[5],h:i.height,r:i.transform[4]+i.width})),text:tc.items.map(i=>i.str).join(' ').replace(/\s+/g,' ')}); } return pages; };
 const readZip=async raw=>{ const z=await JSZip.loadAsync(raw), o={files:Object.keys(z.files)}; for(const f of o.files) if(/\.(xhtml|opf|css|xml|rels)$/.test(f)) o[f]=await z.file(f).async('string'); return o; };
 (async()=>{ const b=await chromium.launch();
- const run=async(id,fn)=>{ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,240)); } };
+ const run=async(id,fn)=>{ if(process.env.ONLY&&!new RegExp(process.env.ONLY).test(id)) return; /* rev 267: ONLY=<pattern> runs just those blocks (for proving a check fails on a broken copy) */ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,240)); } };
  // ---------- All books, Done, move, New chapter
  await run('YB-02',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One','a.'],['Two','b.'],['Three','c.']]);
    await pg.click('#chBtn'); await pg.waitForTimeout(250); await pg.evaluate(()=>document.querySelector('#allBooks').click()); await pg.waitForTimeout(400); const lib=await pg.evaluate(()=>({tab:S.tab,lib:!!document.querySelector('#libPanel:not([hidden]),#library:not([hidden]),.libpanel:not([hidden])')||/Library/.test(document.body.innerText.slice(0,4000)),drawer:document.querySelector('#drawer').hidden}));
@@ -54,10 +54,32 @@ const readZip=async raw=>{ const z=await JSZip.loadAsync(raw), o={files:Object.k
    const tocInSpine=/toc|nav/.test(spine(ep2).replace(/\(hidden\)/g,'').split(',').filter(x=>/nav|toc/.test(x)&&!/hidden/.test(x)).join(','));
    say(!pdf2.some(p=>/^Contents/.test(p.text.trim()))&&!tocInSpine?'OK':'FAULT','YB-25b','unchecking Contents leaves it out of the EPUB and the print PDF: EPUB reading order '+spine(ep2)+'; print has a Contents page '+pdf2.some(p=>/^Contents/.test(p.text.trim())));
    // Word manuscript
-   const dx=await readZip(await dl(pg,'#expDocx')); const doc=dx['word/document.xml']||'', sty=dx['word/styles.xml']||'';
+   const dxRaw=await dl(pg,'#expDocx'), dx=await readZip(dxRaw); const doc=dx['word/document.xml']||'', sty=dx['word/styles.xml']||'';
    const hasHeader=dx.files.some(f=>/^word\/header\d*\.xml$/.test(f)), pageNum=/PAGE/.test(Object.keys(dx).filter(f=>/header/.test(f)).map(f=>dx[f]).join('')), wc=/(about|approx\.?|approximately)?\s*[\d,]+\s+words/i.test(doc.replace(/<[^>]+>/g,' '));
-   const facts={tnr:/Times New Roman/.test(sty),pt12:/<w:sz w:val="24"\/>/.test(sty),double:/w:line="480"/.test(sty),margins1in:/w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/.test(doc),indentHalf:/w:firstLine="720"/.test(sty),chapterNewPage:/pageBreakBefore/.test(sty),header:hasHeader,pageNumbers:pageNum,wordCount:wc,byline:/by Ada Tester/.test(doc)};
-   say(Object.values(facts).every(Boolean)?'OK':'FAULT','YB-38','Word manuscript in standard submission format: '+JSON.stringify(facts));
+   /* rev 267: each fact read from the place Word takes it from, not found anywhere in the file: the defaults every paragraph inherits
+      (font, size, double spacing, half-inch indent), Heading 1's own page break, the page margins of the section, and the word count as its own line */
+   const styleOf=id=>(sty.match(new RegExp('<w:style [^>]*w:styleId="'+id+'"[^>]*>[\\s\\S]*?</w:style>'))||[''])[0], defs=(sty.match(/<w:docDefaults>[\s\S]*?<\/w:docDefaults>/)||[''])[0], normal=styleOf('Normal'), h1=styleOf('Heading1');
+   const own=(re)=>re.test(normal)||(!/<w:rPr>|<w:pPr>/.test(normal)&&re.test(defs)), sect=(doc.match(/<w:sectPr>[\s\S]*?<\/w:sectPr>\s*<\/w:body>/)||[''])[0];
+   const paras=doc.split('</w:p>').map(x=>x.replace(/<[^>]+>/g,'').trim()).filter(Boolean);
+   const facts={tnr:own(/<w:rFonts w:ascii="Times New Roman"/),pt12:own(/<w:sz w:val="24"\/>/),double:own(/<w:spacing [^>]*w:line="480" w:lineRule="auto"/),indentHalf:own(/<w:ind w:firstLine="720"\/>/),
+     chapterNewPage:/<w:pageBreakBefore\/>/.test(h1)&&!/w:val="(0|false)"/.test((h1.match(/<w:pageBreakBefore[^>]*>/)||[''])[0]),margins1in:/<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/.test(sect)&&/<w:pgSz w:w="12240" w:h="15840"\/>/.test(sect),
+     header:hasHeader&&/<w:headerReference w:type="default"/.test(sect)&&/<w:titlePg\/>/.test(sect),pageNumbers:pageNum,wordCount:paras.some(t=>/^About [\d,]+ words$/.test(t)),byline:paras.includes('by Ada Tester')};
+   say(Object.values(facts).every(Boolean)?'OK':'FAULT','YB-38','Word manuscript in standard submission format, in its styles: '+JSON.stringify(facts));
+   /* rev 267: and as pages. LibreOffice turns the file into a PDF (as CLAUDE.md asks before Steve sees any export), and the pages are read as a reader would see them */
+   { const {execFileSync}=require('child_process'), dir=fs.mkdtempSync(path.join(S,'yb38-')); fs.writeFileSync(path.join(dir,'m.docx'),dxRaw);
+     execFileSync('soffice',['--headless','--convert-to','pdf','--outdir',dir,path.join(dir,'m.docx')],{stdio:'ignore',timeout:180000});
+     const raw=fs.readFileSync(path.join(dir,'m.pdf')), d=await pdfjs.getDocument({data:new Uint8Array(raw),disableFontFace:true}).promise, pages=[];
+     for(let n=1;n<=d.numPages;n++){ const tc=await (await d.getPage(n)).getTextContent(); pages.push(tc.items.filter(i=>i.str.trim()).map(i=>({s:i.str.trim(),x:i.transform[4],y:i.transform[5],sz:Math.round(i.transform[0])}))); }
+     const fonts=[...raw.toString('latin1').matchAll(/\/BaseFont\s*\/(?:[A-Z]{6}\+)?([A-Za-z-]+)/g)].map(m=>m[1]);
+     const hdrRe=/^Tester \/ THE HARBOR BOOK \/\s*(\d+)$/, hdrOf=pg=>{ const top=Math.max(...pg.map(i=>i.y)), line=pg.filter(i=>Math.abs(i.y-top)<1).sort((a,b)=>a.x-b.x).map(i=>i.s).join(' '); return {top,line}; };
+     const heads=pages.map(pg=>hdrOf(pg)), body=pages.map((pg,k)=>pg.filter(i=>Math.abs(i.y-heads[k].top)>=1));
+     const r={pages:pages.length,fonts:[...new Set(fonts)],p1Header:hdrRe.test(heads[0].line),headers:heads.slice(1).map((h,k)=>{ const m=h.line.match(hdrRe); return m&&+m[1]===k+2; }),
+       chapterPages:['First Light','Second Wind'].map(t=>{ const k=body.findIndex(b=>b.some(i=>i.s===t)); return k<0?null:{page:k+1,first:body[k][0]&&body[k][0].s===t,sunk:body[k][0]&&heads[k].top-body[k][0].y>100}; })};
+     const lines=body.slice(1).flatMap(b=>b.filter(i=>i.sz===12)), ys=[]; for(const b of body.slice(1)){ const L=[...new Set(b.filter(i=>i.sz===12).map(i=>Math.round(i.y)))].sort((a,b)=>b-a); for(let k=1;k<L.length;k++) ys.push(L[k-1]-L[k]); }
+     ys.sort((a,b)=>a-b); r.pitch=ys[ys.length>>1]; r.size12=lines.length>20; r.left=Math.round(Math.min(...lines.map(i=>i.x)));
+     const ok=r.pages>=3&&r.fonts.length&&r.fonts.every(f=>/^(TimesNewRoman|Times|LiberationSerif)/.test(f))&&!r.p1Header&&r.headers.every(Boolean)&&r.chapterPages.every(c=>c&&c.first&&c.sunk)&&r.chapterPages[1].page>r.chapterPages[0].page
+       &&r.pitch>=26&&r.pitch<=29&&r.size12&&Math.abs(r.left-72)<=1;
+     say(ok?'OK':'FAULT','YB-38e','the Word manuscript as pages (LibreOffice): Times New Roman (or its same-size stand-in) 12 pt double-spaced, 1-inch margin, no header on page 1, "Tester / THE HARBOR BOOK / n" on every later page, each chapter starting its own page: '+JSON.stringify(r)); }
    // text file, copy all
    const txt=(await dl(pg,'#expTxt')).toString('utf8'); const ca=await pg.evaluate(async()=>{ document.querySelector('#copyAll').click(); await new Promise(r=>setTimeout(r,300)); return navigator.clipboard.readText(); });
    const whole=s=>/First Light/.test(s)&&/Second Wind/.test(s)&&s.includes((await0=0,'')) ;

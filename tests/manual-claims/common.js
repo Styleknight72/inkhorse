@@ -3,6 +3,9 @@ const PW = require('playwright'); const { devices } = PW; const chromium = PW[pr
 const REPO=path.resolve(__dirname,'..','..'), TMP=require('os').tmpdir(), S=TMP;
 const URL_=process.env.MURL||'http://127.0.0.1:8765/preview/next.html';
 const out=[]; let cur='';
+/* rev 267: every page a check opens is watched to the end; a JavaScript error in any of them is a FAULT, even in blocks that never look at pg.errs themselves (p7–p10 did not) */
+const ALLP=[]; process.once('beforeExit',()=>{ ALLP.forEach((pg,k)=>{ /* WebKit reports a web request the network refused (here: Boost's server, unreachable from the test machine) as a page error ending "due to access control checks"; that is the network's answer, which Inkhorse handles, not an error in its code */
+  const e=pg.errs.filter(m=>!(WK&&/due to access control checks\.?$/.test(m))); if(e.length) say('FAULT','PGERR','page error in page '+(k+1)+' of this script: '+e[0].slice(0,200)); }); });
 const say=(st,id,msg)=>{ out.push({st,id,msg}); console.log(st.padEnd(6)+id.padEnd(8)+(msg||'')); };
 const FAKE=()=>{ window.__sr={said:[],mode:'ok',starts:0};
   function FakeSR(){ } FakeSR.prototype.start=function(){ const me=this; window.__sr.starts++; setTimeout(()=>{
@@ -12,8 +15,8 @@ const FAKE=()=>{ window.__sr={said:[],mode:'ok',starts:0};
       setTimeout(()=>{ me.onend&&me.onend({}); },20); },20); };
   FakeSR.prototype.stop=function(){ const me=this; setTimeout(()=>{ me.onend&&me.onend({}); },10); }; FakeSR.prototype.abort=FakeSR.prototype.stop;
   window.SpeechRecognition=FakeSR; window.webkitSpeechRecognition=FakeSR; };
-async function mk(b,dev,opt={}){ const ctx=await b.newContext({...(typeof dev==='string'?devices[dev]:dev),...((process.env.AUDIT_ENGINE||'chromium')==='chromium'?{permissions:['clipboard-read','clipboard-write']}:{}),acceptDownloads:true,...opt});
-  await ctx.addInitScript(FAKE);
+async function mk(b,dev,opt={}){ const init=opt.init; opt={...opt}; delete opt.init; /* rev 267: opt.init = a script run in the page before Inkhorse loads */ const ctx=await b.newContext({...(typeof dev==='string'?devices[dev]:dev),...((process.env.AUDIT_ENGINE||'chromium')==='chromium'?{permissions:['clipboard-read','clipboard-write']}:{}),acceptDownloads:true,...opt});
+  await ctx.addInitScript(FAKE); if(init) await ctx.addInitScript(init);
   /* rev 250: the WebKit run tells each phone the two things the test WebKit gets wrong or cannot do (see tests/audit.js) */
   if(WK) await ctx.addInitScript(() => { /* a real iPhone says it has five touch points; the test WebKit says none, which made Inkhorse treat the phone as a computer (and go full screen when the window matched the screen) */
       try{ Object.defineProperty(Navigator.prototype,'maxTouchPoints',{get(){ return 5; },configurable:true}); }catch(e){}
@@ -23,7 +26,7 @@ async function mk(b,dev,opt={}){ const ctx=await b.newContext({...(typeof dev===
       try{ const ex=document.execCommand.bind(document); document.execCommand=function(c){ if(String(c).toLowerCase()==='copy'){ try{ let t=''; for(const a of [document.activeElement,...[...document.querySelectorAll('textarea,input')].reverse()]){ try{ if(a&&a.value!=null&&a.selectionEnd>a.selectionStart){ t=a.value.slice(a.selectionStart,a.selectionEnd); break; } }catch(e){} } if(!t) t=String(getSelection()); if(t) clip=t; }catch(e){} } return ex.apply(document,arguments); }; }catch(e){} });
   await ctx.route(/jszip(\.min)?\.js$/, r=>r.fulfill({body:fs.readFileSync(require.resolve('jszip/dist/jszip.min.js')),contentType:'application/javascript'}));
   await ctx.route(/jspdf[^/]*\.js$/, r=>r.fulfill({body:fs.readFileSync(require.resolve('jspdf/dist/jspdf.umd.min.js')),contentType:'application/javascript'}));
-  const pg=await ctx.newPage(); pg.errs=[]; pg.on('pageerror',e=>pg.errs.push(e.message)); await pg.goto(URL_); await pg.waitForTimeout(2200); /* rev 254: and until Inkhorse has really finished starting (its shelf holds the built-in books), however busy the test machine is; a fixed wait was sometimes too short in WebKit, and a check then ran against an app that was not ready */ await pg.waitForFunction(()=>{ try{ return typeof S==='object'&&typeof LIB!=='undefined'&&LIB.some(b=>b.id==='manual')&&!!document.querySelector('#app').dataset.tab; }catch(e){ return false; } },null,{timeout:30000}).catch(()=>{}); await pg.evaluate(()=>{ S.tips=true; }); pg.ctx=ctx; return pg; }
+  const pg=await ctx.newPage(); pg.errs=[]; pg.on('pageerror',e=>pg.errs.push(e.message)); ALLP.push(pg); await pg.goto(URL_); await pg.waitForTimeout(2200); /* rev 254: and until Inkhorse has really finished starting (its shelf holds the built-in books), however busy the test machine is; a fixed wait was sometimes too short in WebKit, and a check then ran against an app that was not ready */ await pg.waitForFunction(()=>{ try{ return typeof S==='object'&&typeof LIB!=='undefined'&&LIB.some(b=>b.id==='manual')&&!!document.querySelector('#app').dataset.tab; }catch(e){ return false; } },null,{timeout:30000}).catch(()=>{}); await pg.evaluate(()=>{ S.tips=true; }); pg.ctx=ctx; return pg; }
 const book=async(pg,chs)=>pg.evaluate(chs=>{ BOOK.order.slice().forEach(id=>{ CH.delete(id); deleted.add(id); }); BOOK.order=[]; BOOK.sample=false; BOOK.title='Test Book';
   for(const [t,x] of chs){ const id=addChapter(t,x); dirty.add(id); } S.cur=BOOK.order[0]; S.rch=S.cur; S.anchor=0; touchIndex(); PCACHE.clear(); loadEditor(); renderChapterUI(); renderDrawer(); refreshReader(); return BOOK.order; },chs);
 const W='the harbor lights were steady that evening and nobody on the long pier spoke about the weather or the boats'.split(' ');

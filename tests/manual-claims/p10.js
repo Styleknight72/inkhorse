@@ -1,6 +1,6 @@
 /* User manual claim checks: "Books, drafts and the safety net", "Compare", "Put Inkhorse on your home screen", "Quick fixes". rev 246 */
 const {chromium,devices,say,mk,book,para,toastText,vis,fs,path,REPO,S:TMP}=require('./common.js');
-const run=async(id,fn)=>{ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,240)); } };
+const run=async(id,fn)=>{ if(process.env.ONLY&&!new RegExp(process.env.ONLY).test(id)) return; /* rev 267: ONLY=<pattern> runs just those blocks (for proving a check fails on a broken copy) */ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,240)); } };
 const ok=(c,id,msg)=>say(c?'OK':'FAULT',id,msg);
 const LONG=k=>[1,2,3,4,5,6,7,8].map(j=>para(k*10+j,90)).join('\n');
 const lib=async pg=>{ await pg.evaluate(()=>{ setTab('read'); }); await pg.waitForTimeout(300); await pg.evaluate(()=>{ document.querySelector('#library').hidden=true; document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(500); };
@@ -15,6 +15,8 @@ const click=async(pg,sel,wait)=>{ /* rev 255: find the button and press it in th
    await click(pg,'[data-wnew]',1500); const nb=await pg.evaluate(()=>({slot:SLOT,n:BOOK.order.length,words:BOOK.order.reduce((t,id)=>t+String(CH.get(id).text||'').split(/\s+/).filter(Boolean).length,0),tab:S.tab}));
    ok(nb.slot!==slot0&&nb.words===0,'BD-01','+ New book starts a book of its own, with its own chapters: '+JSON.stringify(nb));
    await pg.evaluate(()=>{ const id=BOOK.order[0]; CH.get(id).title='Other Start'; CH.get(id).text='Words of the other book.'; touchChapter(CH.get(id)); BOOK.title='Other Book'; touchIndex(); }); await pg.waitForTimeout(400);
+   /* rev 267: the other book gets a backup of its own (as the daily backup would make), so "erases its backups" has something to erase */
+   await pg.evaluate(async()=>{ await writeBackup('daily'); }); await pg.waitForTimeout(300);
    await lib(pg); const two=await shelf(pg);
    ok(/The Harbor Book/.test(two)&&/Other Book/.test(two),'BD-01b','both books are on the shelf: '+JSON.stringify(two.slice(0,300)));
    await pg.evaluate(s=>document.querySelector(`[data-wopen="${s}"]`).click(),slot0); await pg.waitForTimeout(1500);
@@ -28,9 +30,12 @@ const click=async(pg,sel,wait)=>{ /* rev 255: find the button and press it in th
    ok(!/Recently deleted/i.test(rest)&&/Other Book/.test(rest),'BD-27a','Restore puts it back in Your books, and the Recently deleted heading goes when nothing is in it');
    /* rev 257: the two taps on Delete must land within the five seconds the button stays armed; on a busy test machine they once did not, the book stayed where it was, and the next step found nothing to press. Tap the pair again (up to three times) until the book is in Recently deleted. */
    for(let n=0;n<3;n++){ await click(pg,`[data-wdel="${other}"]`,300); await click(pg,`[data-wdel="${other}"]`,900); if(await pg.evaluate(o=>!!document.querySelector(`[data-wkill="${o}"]`),other)) break; await pg.waitForTimeout(5200); }
+   /* rev 267: backups live in IndexedDB, not localStorage: count that book's keys there (and in localStorage) before and after */
+   const keysOf=o=>pg.evaluate(o=>new Promise(res=>{ const r=indexedDB.open('pageproof',1); r.onsuccess=()=>{ const q=r.result.transaction('kv','readonly').objectStore('kv').getAllKeys(); q.onsuccess=()=>res({idb:q.result.map(String).filter(k=>k.startsWith('bk:'+o+':')).length,ls:Object.keys(localStorage).filter(k=>k.includes(o)).length}); q.onerror=()=>res(null); }; r.onerror=()=>res(null); }),o);
+   const had=await keysOf(other);
    await click(pg,`[data-wkill="${other}"]`,300); const k1=await pg.evaluate(o=>document.querySelector(`[data-wkill="${o}"]`).textContent,other); await click(pg,`[data-wkill="${other}"]`,1200);
-   const gone=await pg.evaluate(o=>({shelf:document.querySelector('#shelf').innerText.includes('Other Book'),store:Object.keys(localStorage).filter(k=>k.includes(o)).length}),other);
-   ok(k1==='Delete forever?'&&!gone.shelf&&gone.store===0,'BD-27b','Delete forever (tap twice) erases the book and its backups: '+JSON.stringify({k1,...gone}));
+   const gone=await pg.evaluate(o=>({shelf:document.querySelector('#shelf').innerText.includes('Other Book')}),other), left=await keysOf(other);
+   ok(k1==='Delete forever?'&&!gone.shelf&&had&&had.idb>=2&&left&&left.idb===0&&left.ls===0,'BD-27b','Delete forever (tap twice) erases the book and its backups: '+JSON.stringify({k1,...gone,before:had,after:left}));
    await pg.ctx.close(); });
  await run('BD-02',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',LONG(1)]]); await lib(pg);
    const f=path.join(TMP,'ink-write-in.txt'); fs.writeFileSync(f,'The Lantern Book\nby Ada Tester\n\n# The Dock\nA paragraph on the dock.\n\n# The Boat\nA paragraph in the boat.');
@@ -59,10 +64,12 @@ const click=async(pg,sel,wait)=>{ /* rev 255: find the button and press it in th
    const fl=await pg.evaluate(()=>[...document.querySelectorAll('[data-dch]')].find(b=>/First Light/.test(b.innerText)).dataset.dch);
    await click(pg,`[data-dch="${fl}"]`,1200); const q3=await shelf(pg);
    ok(/Where in chapter “First Light”\?/.test(q3)&&/At the end of the chapter/.test(q3)&&/After paragraph 1\s*One\./.test(q3)&&/After paragraph 3\s*Three\./.test(q3),'BD-10a','3. Where in the chapter?: At the end, or After paragraph…, each showing its first words: '+JSON.stringify(q3.slice(q3.indexOf('Where in chapter'),q3.indexOf('Where in chapter')+220)));
-   await click(pg,'[data-dpara="0"]',3000); const done=await pg.evaluate(()=>({slot:SLOT,text:CH.get(BOOK.order[0]).text,anchor:S.anchor,tab:S.tab,drafts:typeof DR!=='undefined'?DR.filter(d=>d.words>0).length:null}));
+   await click(pg,'[data-dpara="0"]',3000); const done=await pg.evaluate(()=>({slot:SLOT,text:CH.get(BOOK.order[0]).text,anchor:S.anchor,tab:S.tab,drafts:typeof DR!=='undefined'?DR.filter(d=>d.words>0).length:null,
+     ch:(CH.get(S.tab==='read'?S.rch:S.cur)||{}).title,shown:[...document.querySelectorAll('#spread .face:not(.gone) .ptext')].filter(f=>f.getBoundingClientRect().width>0).map(f=>f.textContent).join(' ').replace(/\s+/g,' ')}));
    ok(done.text==='One.\nThe draft line about the lighthouse.\nTwo.\nThree.','BD-10b','tap one and the draft is added there: '+JSON.stringify(done.text));
-   ok(done.slot===home,'BD-10c','the book opens: '+JSON.stringify({slot:done.slot,home,anchor:done.anchor,tab:done.tab}));
-   await lib(pg); const left=await shelf(pg); ok(!/lighthouse/.test(left),'BD-10d','the draft has gone from Drafts once it is in the book');
+   /* rev 267: "the book opens at that spot": the right book, in Read, at chapter "First Light", with the added lines on the page shown */
+   ok(done.slot===home&&done.tab==='read'&&done.ch==='First Light'&&/The draft line about the lighthouse/.test(done.shown),'BD-10c','the book opens at that spot: '+JSON.stringify({slot:done.slot,home,tab:done.tab,ch:done.ch,shown:done.shown.slice(0,80)}));
+   await lib(pg); const left=await shelf(pg); ok(!/lighthouse/.test(left),'BD-10d','the draft has gone from Drafts once it is in the book (the manual says so since rev 267)');
    await click(pg,'[data-dnew]',1500); await pg.evaluate(()=>{ const c=CH.get(S.cur); c.text='Another draft.'; touchChapter(c); }); await lib(pg); const did=await pg.evaluate(()=>document.querySelector('[data-ddel]').dataset.ddel);
    await click(pg,`[data-ddel="${did}"]`,300); const arm=await pg.evaluate(d=>document.querySelector(`[data-ddel="${d}"]`).textContent,did); await click(pg,`[data-ddel="${did}"]`,900);
    ok(arm==='Delete?'&&!/Another draft/.test(await shelf(pg)),'BD-07c','Delete removes the draft (tap twice): '+arm);
@@ -75,11 +82,28 @@ const click=async(pg,sel,wait)=>{ /* rev 255: find the button and press it in th
    ok(/at ch 6\b/.test(r.row),'BD-13b','“at ch N” shows where you left off: '+r.row);
    await pg.ctx.close(); });
  // ---------- Compare
- await run('CP-01',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',LONG(1)],['Second Wind',LONG(2)]]); await pg.evaluate(()=>{ scheduleCompare(); setTab('compare'); }); await pg.waitForTimeout(2000);
+ await run('CP-01',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); /* rev 267: chapters long enough to fill several tablet pages */ await book(pg,[['First Light',LONG(1)+'\n'+LONG(3)+'\n'+LONG(4)],['Second Wind',LONG(2)+'\n'+LONG(5)+'\n'+LONG(6)]]); await pg.evaluate(()=>{ scheduleCompare(); setTab('compare'); }); await pg.waitForTimeout(2000);
    const r=await pg.evaluate(()=>({t:document.querySelector('#compare').innerText.replace(/\s+/g,' '),rows:[...document.querySelectorAll('#compare [data-dev],#rows [data-dev],#rows button')].length}));
    const names=['Phone','Large phone','Small tablet','Tablet','Paperback 6 × 9 in'];
-   ok(names.every(n=>r.t.includes(n))&&/words/i.test(r.t),'CP-01a','Words per page lists each phone, tablet and paperback size: '+r.t.slice(0,300));
-   ok(/Whole book/i.test(r.t)&&/pages/i.test(r.t),'CP-01b','Whole book estimates the pages on a phone, a tablet and a 6 × 9 paperback: '+(r.t.match(/Whole book.{0,200}/i)||[''])[0]);
+   /* rev 267: the numbers themselves. Each row's words per page is held against a real page of the book in Read at that device size,
+      the bars are drawn to one scale, a bigger text size changes the numbers, and the whole-book estimates are held against the real page count in Read */
+   const rowsOf=()=>pg.evaluate(()=>[...document.querySelectorAll('#rows [data-dev]')].map(e=>({dev:e.dataset.dev,name:e.querySelector('.nm').textContent,words:+((e.querySelector('.cap').textContent.match(/[\d,]+/)||['0'])[0].replace(/,/g,'')),meter:parseFloat(e.querySelector('.meter i').style.width)})));
+   const rows1=await rowsOf(), W1=Object.fromEntries(rows1.map(x=>[x.dev,x.words])), max1=Math.max(...rows1.map(x=>x.words));
+   const real=await pg.evaluate(async devs=>{ const w=ms=>new Promise(r=>setTimeout(r,ms)), out={}, sel=document.querySelector('#deviceSel'); setTab('read'); await w(300);
+     for(const d of devs){ sel.value=d; sel.dispatchEvent(new Event('change',{bubbles:true})); await w(600); const id=BOOK.order[0]; jumpTo({ch:id,i:1}); await w(300);
+       /* words on each full page in the middle of the chapter (not its opening page, not its last), one face at a time; the middle value */
+       const id1=BOOK.order[0], n=pag(id1).pages.length, per=[]; for(let i=1;i<n-1;i++){ jumpTo({ch:id1,i}); await w(120); for(const f of document.querySelectorAll('#spread .face:not(.gone)')){ const ref=f.querySelector('.ptext'); if(!ref) continue; const ws=new Set(); f.querySelectorAll('.ptext [data-w]').forEach(e=>ws.add(e.dataset.w)); if(ws.size) per.push(ws.size); } }
+       per.sort((a,b)=>a-b); out[d]={face:per.length?per[per.length>>1]:0,n:per.length,book:BOOK.order.reduce((t,c)=>t+pag(c).pages.length,0)}; }
+     sel.value='screen'; sel.dispatchEvent(new Event('change',{bubbles:true})); await w(400); setTab('compare'); await w(300); return out; },['phone','tablet','print']);
+   const near=(a,b,p)=>Math.abs(a-b)<=Math.max(1,b*p);
+   const fsChange=await pg.evaluate(async()=>{ const f=document.querySelector('#fs'), v0=f.value; f.value=String(+v0+6); f.dispatchEvent(new Event('input',{bubbles:true})); f.dispatchEvent(new Event('change',{bubbles:true})); scheduleCompare(); await new Promise(r=>setTimeout(r,2000)); return v0; });
+   const rows2=await rowsOf(), W2=Object.fromEntries(rows2.map(x=>[x.dev,x.words]));
+   await pg.evaluate(async v0=>{ const f=document.querySelector('#fs'); f.value=v0; f.dispatchEvent(new Event('input',{bubbles:true})); f.dispatchEvent(new Event('change',{bubbles:true})); scheduleCompare(); await new Promise(r=>setTimeout(r,1500)); },fsChange);
+   const okA=names.every(n=>rows1.some(x=>x.name===n))&&W1.phone<W1.phonelg&&W1.phonelg<W1.tabsm&&W1.tabsm<=W1.tablet&&rows1.every(x=>Math.abs(x.meter-Math.round(x.words/max1*100))<=1)
+     &&['phone','tablet','print'].every(d=>near(W1[d],real[d].face,0.12))&&['phone','phonelg','tablet','print'].every(d=>W2[d]<W1[d]);
+   ok(okA,'CP-01a','Words per page lists each phone, tablet and paperback size, measured at your current type settings and drawn to the same scale: '+JSON.stringify({compare:W1,realPage:Object.fromEntries(Object.entries(real).map(([k,v])=>[k,v.face])),bars:rows1.map(x=>x.meter),bigger:W2}));
+   const est=(r.t.match(/≈ (\d+) phone pages ≈ (\d+) tablet pages ≈ (\d+) paperback pages/)||[]).slice(1).map(Number);
+   ok(est.length===3&&near(est[0],real.phone.book,0.15)&&near(est[1],real.tablet.book,0.15)&&near(est[2],real.print.book,0.15)&&est[0]>est[1],'CP-01b','Whole book estimates the pages on a phone, a tablet and a 6 × 9 paperback: '+JSON.stringify({estimate:est,realInRead:[real.phone.book,real.tablet.book,real.print.book]}));
    const tap=await pg.evaluate(async()=>{ const d0=S.dev; const row=[...document.querySelectorAll('#rows [data-dev],#rows button,#compare [data-dev]')].find(e=>/Tablet/.test(e.innerText)&&!/Small/.test(e.innerText)); if(!row) return 'no row'; row.click(); await new Promise(r=>setTimeout(r,800)); return {tab:S.tab,dev:S.dev,d0}; });
    ok(tap&&tap.tab==='read'&&tap.dev==='tablet','CP-01c','tap a device: your book opens in Read at that screen size: '+JSON.stringify(tap));
    const stay=await pg.evaluate(async()=>{ setTab('write'); await new Promise(r=>setTimeout(r,300)); setTab('read'); await new Promise(r=>setTimeout(r,300)); const kept=S.dev;
@@ -87,16 +111,46 @@ const click=async(pg,sel,wait)=>{ /* rev 255: find the button and press it in th
    ok(stay.kept==='tablet'&&stay.back==='screen','CP-01d','the book stays at that size until you pick Fit my screen in the Device menu: '+JSON.stringify(stay));
    await pg.ctx.close(); });
  // ---------- Put Inkhorse on your home screen
- await run('HS-01',async()=>{ const man=JSON.parse(fs.readFileSync(REPO+'/manifest.webmanifest','utf8')); const app=fs.readFileSync(REPO+'/app.html','utf8'), sw=fs.readFileSync(REPO+'/sw.js','utf8');
-   ok(man.display==='standalone'&&man.icons&&man.icons.some(i=>/512/.test(i.sizes))&&/horse|icon/.test(JSON.stringify(man.icons)),'HS-01a','it installs like an app: its own icon, full screen with no browser bars: display '+man.display);
-   ok(/apple-mobile-web-app-capable|mobile-web-app-capable/.test(app)&&/apple-touch-icon/.test(app),'HS-01b','iPhone: Add to Home Screen gets the horse icon and opens without Safari’s bars');
-   ok(/app\.html/.test(sw)&&/caches/.test(sw)&&/fetch/.test(sw),'HS-13','it keeps a copy of the app on the phone, so it opens with no signal');
-   const pv=fs.readFileSync(REPO+'/preview/next.html','utf8'); ok(/HOLD=4000/.test(pv)&&/The power to get it done, and then some!/.test(pv),'HS-01c','the horse and the motto show for about four seconds when opened from the icon'); });
- await run('HS-16',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); const r=await pg.evaluate(()=>/navigator\.storage\.persist/.test(document.documentElement.innerHTML)); ok(r,'HS-16','Inkhorse asks your phone to keep its saved data'); await pg.ctx.close(); });
+ /* rev 267: HS-01a/b read the page under test and the files it points to (before, they read the live app.html from disk and matched any icon);
+    HS-01c watches the opening screen as the Home Screen app shows it; HS-16 catches the call Inkhorse makes at start-up. */
+ await run('HS-01',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max');
+   const r=await pg.evaluate(async()=>{ const q=s=>document.querySelector(s), out={};
+     out.capable=(q('meta[name="apple-mobile-web-app-capable"]')||{}).content||''; out.mcapable=(q('meta[name="mobile-web-app-capable"]')||{}).content||'';
+     /* the page is installed as /app.html (the preview is copied there when Steve approves it), so its links are read as they will be there */
+     const L=q('link[rel="manifest"]'), ml=L?{href:new URL(L.getAttribute('href'),location.origin+'/app.html').href}:null, man=ml?await (await fetch(ml.href,{cache:'no-store'})).json():null; out.display=man&&man.display;
+     const dims=async src=>{ try{ const bl=await (await fetch(src,{cache:'no-store'})).blob(); const im=await createImageBitmap(bl); return [im.width,im.height,bl.type]; }catch(e){ return null; } };
+     out.icons=man?await Promise.all(man.icons.map(async i=>({src:i.src,sizes:i.sizes,got:await dims(new URL(i.src,ml.href).href)}))):[];
+     const at=q('link[rel="apple-touch-icon"]'); out.touch=at?await dims(at.href):null;
+     const b64=async src=>{ const bl=await (await fetch(src,{cache:'no-store'})).blob(); const a=new Uint8Array(await bl.arrayBuffer()); let h=0; for(const x of a) h=(h*31+x)>>>0; return a.length+':'+h; };
+     out.touchSum=at?await b64(at.href):''; out.touchFile=await b64(new URL('/icons/apple-touch-icon.png',location.href).href);
+     /* the same horse on every icon: the 512 icon drawn down to 180 matches the iPhone icon */
+     try{ const A=await createImageBitmap(await (await fetch(new URL(man.icons.find(i=>i.sizes==='512x512'&&i.purpose!=='maskable').src,ml.href).href)).blob()), B=await createImageBitmap(await (await fetch(at.href)).blob());
+       const px=im=>{ const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'); g.drawImage(im,0,0,64,64); return g.getImageData(0,0,64,64).data; }; const a=px(A), bb=px(B); let d=0; for(let k=0;k<a.length;k+=4) d+=Math.abs(a[k]-bb[k])+Math.abs(a[k+1]-bb[k+1])+Math.abs(a[k+2]-bb[k+2]); out.diff=+(d/(64*64*3)).toFixed(1); }catch(e){ out.diff=999; }
+     return out; });
+   const iconsOk=r.icons.length>=2&&r.icons.every(i=>i.got&&i.sizes===i.got[0]+'x'+i.got[1]&&i.got[2]==='image/png')&&r.icons.some(i=>i.sizes==='512x512');
+   ok(r.display==='standalone'&&r.mcapable==='yes'&&iconsOk&&r.diff<25,'HS-01a','it installs like an app: its own icon, full screen with no browser bars: '+JSON.stringify({display:r.display,icons:r.icons.map(i=>i.sizes+'='+(i.got||[]).slice(0,2).join('x')),sameHorse:r.diff}));
+   ok(r.capable==='yes'&&r.touch&&r.touch[0]===180&&r.touch[1]===180&&r.touchSum===r.touchFile,'HS-01b','iPhone: Add to Home Screen gets the horse icon (the approved icons/apple-touch-icon.png, 180 × 180) and opens without Safari’s bars: '+JSON.stringify({capable:r.capable,touch:r.touch,same:r.touchSum===r.touchFile}));
+   await pg.ctx.close(); });
+ await run('HS-01c',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max',{init:()=>{ try{ Object.defineProperty(navigator,'standalone',{get:()=>true,configurable:true}); }catch(_){ }
+       window.__hid=false; try{ Object.defineProperty(document,'hidden',{get:()=>window.__hid,configurable:true}); }catch(_){ }
+       const t0=performance.now(); window.__spl=[]; setInterval(()=>{ const s=document.getElementById('splash'); if(s) window.__spl.push([Math.round(performance.now()-t0),!s.hidden&&getComputedStyle(s).opacity!=='0'&&s.style.opacity!=='0']); },100); } });
+   await pg.waitForTimeout(5500);
+   const first=await pg.evaluate(()=>{ const on=window.__spl.filter(x=>x[1]).map(x=>x[0]); return {from:on[0],to:on[on.length-1],motto:(document.getElementById('splashMotto')||{}).textContent||'',now:window.__spl[window.__spl.length-1]}; });
+   const away=async ms=>{ await pg.evaluate(()=>{ window.__spl=[]; window.__hid=true; document.dispatchEvent(new Event('visibilitychange')); }); await pg.waitForTimeout(ms);
+     await pg.evaluate(()=>{ window.__hid=false; document.dispatchEvent(new Event('visibilitychange')); }); await pg.waitForTimeout(5000);
+     return pg.evaluate(()=>{ const s=window.__spl, back=s.findIndex((x,k)=>k>0&&x[1]&&!s[k-1][1]); const on=s.filter(x=>x[1]).map(x=>x[0]); return on.length?{shown:true,secs:+((on[on.length-1]-on[0])/1000).toFixed(1)}:{shown:false}; }); };
+   const quick=await away(1000), long=await away(3500);
+   const secs=(first.to-first.from)/1000;
+   ok(secs>=3.4&&secs<=4.8&&/The power to get it done, and then some!/.test(first.motto)&&!quick.shown&&long.shown&&long.secs>=3.4&&long.secs<=4.8,'HS-01c','the horse and the motto show for about four seconds when opened from the icon, and again when you come back after a while (not after a moment away): '+JSON.stringify({openSecs:+secs.toFixed(1),back1s:quick,back3_5s:long}));
+   await pg.ctx.close(); });
+ await run('HS-16',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max',{init:()=>{ window.__persist=[]; try{ const st=navigator.storage; const o=st.persist&&st.persist.bind(st); st.persist=function(){ window.__persist.push(new Error().stack||'call'); return o?o():Promise.resolve(true); }; }catch(_){ } }});
+   const r=await pg.evaluate(()=>({calls:window.__persist.length,voice:S.ttsVoice||'',kok:!!(S.kokHave)}));
+   ok(r.calls>=1&&!/^kokoro:/.test(r.voice)&&!r.kok,'HS-16','Inkhorse asks your phone to keep its saved data when it opens (no natural voice chosen): '+JSON.stringify(r)); await pg.ctx.close(); });
  // ---------- Quick fixes
  await run('QF-01',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',LONG(1)]]);
    const t=await pg.evaluate(()=>{ const t=document.querySelector('#toolsBtn').getBoundingClientRect(), w=document.querySelector('#write').getBoundingClientRect(); return {right:Math.round(w.right-t.right),top:Math.round(t.top-w.top),wW:Math.round(w.width)}; });
-   ok(t.right<t.wW*0.3,'QF-03','the Tools button is at the top right of the Write tab: '+JSON.stringify(t));
+   /* rev 267: right side AND the top row of Write (its top within the first 80 px), and in view */
+   ok(t.right<t.wW*0.3&&t.top>=0&&t.top<80&&await vis(pg,'#toolsBtn'),'QF-03','the Tools button is at the top right of the Write tab: '+JSON.stringify(t));
    const st=await pg.evaluate(()=>document.querySelector('#saveNote,#status,#statusText')&&[...document.querySelectorAll('#saveNote,#status,#statusText')].map(e=>e.textContent+'|'+(e.title||'')+'|'+(e.getAttribute('aria-label')||'')).join(' ; '));
    ok(/device only/i.test(st),'QF-04','the save status says “device only” in this copy: '+st);
    await pg.evaluate(()=>{ setTab('read'); }); await pg.click('#maxBtn'); await pg.waitForTimeout(500);

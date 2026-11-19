@@ -1,7 +1,7 @@
 const {chromium,say,mk,book,para,toastText,vis,toolsOpen,fs,S,REPO}=require('./common.js');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 (async()=>{ const b=await chromium.launch();
- const run=async(id,fn)=>{ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,220)); } };
+ const run=async(id,fn)=>{ if(process.env.ONLY&&!new RegExp(process.env.ONLY).test(id)) return; /* rev 267: ONLY=<pattern> runs just those blocks (for proving a check fails on a broken copy) */ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,220)); } };
  // ---------- BP-00 built-in books: delete and put back
  await run('BP-00',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max');
    for(const [id,label,attr] of [['manual','Put the manual back','data-manual'],['standard','Put the Formatting Standard back','data-std'],['publishing','Put the Publishing Standard back','data-pub']]){

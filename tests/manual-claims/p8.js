@@ -1,6 +1,6 @@
 /* User manual claim checks: "Reading your book", part 2 (Fix it right on the page, Full screen, Type settings). rev 246 */
 const {chromium,devices,say,mk,book,para,toastText,vis,fs}=require('./common.js');
-const run=async(id,fn)=>{ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,240)); } };
+const run=async(id,fn)=>{ if(process.env.ONLY&&!new RegExp(process.env.ONLY).test(id)) return; /* rev 267: ONLY=<pattern> runs just those blocks (for proving a check fails on a broken copy) */ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,240)); } };
 const ok=(c,id,msg)=>say(c?'OK':'FAULT',id,msg);
 const read=async pg=>{ await pg.evaluate(()=>setTab('read')); await pg.waitForTimeout(500); };
 const LONG=k=>[1,2,3,4,5,6,7,8].map(j=>para(k*10+j,90)).join('\n');
@@ -19,16 +19,28 @@ const wordPt=(pg,n)=>pg.evaluate(n=>{ const sp=[...document.querySelectorAll('#s
    const r=await pg.evaluate(()=>{ const t=document.querySelector('#fixText'); return {open:!document.querySelector('#fixBox').hidden,sel:t.value.slice(t.selectionStart,t.selectionEnd),font:getComputedStyle(t).fontFamily,page:getComputedStyle(document.querySelector('#spread .ptext')||document.body).fontFamily}; });
    ok(r.open&&r.sel===w2.w,'RB-20b','press and hold a word for about half a second: the page opens for fixing with that word selected: '+JSON.stringify({open:r.open,sel:r.sel,word:w2.w}));
    ok(r.font===r.page,'RB-20c','the text you fix is in the book’s own type: '+r.font+' / '+r.page);
-   const keep=await pg.evaluate(async()=>{ const i0=curIndex(); const st=document.querySelector('#stage').getBoundingClientRect(); const ev=(t,x)=>new PointerEvent(t,{clientX:x,clientY:st.y+st.height*0.5,bubbles:true,pointerId:7,pointerType:'touch',isPrimary:true});
-     const el=document.querySelector('#stage'); el.dispatchEvent(ev('pointerdown',st.right-4)); el.dispatchEvent(ev('pointerup',st.right-4)); await new Promise(r=>setTimeout(r,600)); return {i0,i:curIndex(),open:!document.querySelector('#fixBox').hidden}; });
+   /* rev 267: the same finger as RB-20a, tapping where a page turns (right side, left side, the very edge), wherever the fixing box lies; afterwards (below) the same taps with the box closed must turn the page, so a tap that never turns anything cannot pass */
+   const edges=await pg.evaluate(()=>{ const st=document.querySelector('#stage').getBoundingClientRect(); return [[st.left+st.width*0.92,st.top+st.height*0.5],[st.left+st.width*0.08,st.top+st.height*0.5],[st.right-2,st.top+st.height*0.6]]; });
+   const i0=await pg.evaluate(()=>curIndex()); for(const [x,y] of edges){ await tap(pg,cdp,x,y); await pg.waitForTimeout(500); }
+   const keep=await pg.evaluate(i0=>({i0,i:curIndex(),open:!document.querySelector('#fixBox').hidden}),i0); keep.taps=edges.length;
    ok(keep.i===keep.i0&&keep.open,'RB-20d','while the page is open for fixing, taps around it don’t turn the page: '+JSON.stringify(keep));
-   const done=await pg.evaluate(async()=>{ const t=document.querySelector('#fixText'); t.setRangeText('Mended',t.selectionStart,t.selectionEnd,'end'); t.dispatchEvent(new Event('input',{bubbles:true})); await new Promise(r=>setTimeout(r,1500));
+   const done=await pg.evaluate(async()=>{ const t=document.querySelector('#fixText'); /* rev 267: RB-20d's taps above land in the fixing box and move its cursor; put the selection back on the pressed word first */ t.focus(); t.setSelectionRange(ED.sel[0],ED.sel[1]); t.setRangeText('Mended',t.selectionStart,t.selectionEnd,'end'); t.dispatchEvent(new Event('input',{bubbles:true})); await new Promise(r=>setTimeout(r,1500));
      const savedTyping=CH.get(S.rch).text.includes('Mended'); document.querySelector('#fixDone').click(); await new Promise(r=>setTimeout(r,600));
      setTab('write'); await new Promise(r=>setTimeout(r,300)); const inWrite=document.querySelector('#manuscript').value.includes('Mended'); setTab('read'); await new Promise(r=>setTimeout(r,400));
      return {savedTyping,i:curIndex(),shown:document.querySelector('#spread').innerText.includes('Mended'),inWrite,closed:document.querySelector('#fixBox').hidden}; });
-   ok(done.savedTyping,'RB-20e','your fix is saved as you type: '+done.savedTyping);
    ok(done.closed&&done.i===1&&done.shown,'RB-20f','Done: the page becomes a book page again, on the same page, with the fix in it: '+JSON.stringify(done));
    ok(done.inWrite,'RB-20g','the fix shows in Write too');
+   { await pg.evaluate(()=>{ S.turn='instant'; jumpTo({ch:BOOK.order[0],i:1}); }); await pg.waitForTimeout(500); const a=await pg.evaluate(()=>curIndex()); await tap(pg,cdp,edges[0][0],edges[0][1]); await pg.waitForTimeout(700); const c=await pg.evaluate(()=>curIndex());
+     ok(c===a+1,'RB-20d','(control) the same tap with the fixing box closed does turn the page: '+a+' → '+c); }
+   /* rev 267: "saved as you type": type in the fixing box, never tap Done, and reload the app; the words must still be there */
+   { await pg.evaluate(()=>{ jumpTo({ch:BOOK.order[0],i:1}); }); await pg.waitForTimeout(400); const w4=await wordPt(pg,25); await hold(pg,cdp,w4.x,w4.y,620);
+     const typed=await pg.evaluate(async()=>{ const t=document.querySelector('#fixText'); if(document.querySelector('#fixBox').hidden) return 'not open'; t.focus(); return t.selectionEnd>t.selectionStart; });
+     if(typed===true) await pg.keyboard.type('Patched',{delay:20}); await pg.waitForTimeout(3000);
+     /* as if the phone killed the app: the save-on-leaving handlers (pagehide, unload, hidden) are stopped, so only what was saved while typing survives */
+     await pg.evaluate(()=>{ const stop=e=>e.stopImmediatePropagation(); for(const t of ['pagehide','beforeunload','unload']) window.addEventListener(t,stop,true); document.addEventListener('visibilitychange',stop,true); });
+     await pg.reload(); await pg.waitForFunction(()=>{ try{ return typeof S==='object'&&typeof LIB!=='undefined'&&LIB.some(b=>b.id==='manual')&&CH.size>0; }catch(e){ return false; } },null,{timeout:30000}).catch(()=>{}); await pg.waitForTimeout(800);
+     const after=await pg.evaluate(()=>BOOK.order.map(id=>CH.get(id)&&CH.get(id).text).join('\n'));
+     ok(typed===true&&/\bPatched\b/.test(after),'RB-20e','your fix is saved as you type: typed in the fixing box, never tapped Done, the app was stopped without its leaving-saves and reloaded, and the fix is still in the chapter: '+JSON.stringify({typed,kept:/\bPatched\b/.test(after)})); }
    await pg.evaluate(()=>{ jumpTo({ch:BOOK.order[0],i:1}); setHl(true); }); await pg.waitForTimeout(400);
    const w3=await wordPt(pg,30); await hold(pg,cdp,w3.x,w3.y,700); const hl=await pg.evaluate(()=>({open:!document.querySelector('#fixBox').hidden})); await pg.evaluate(()=>setHl(false));
    ok(!hl.open,'RB-20h','press and hold doesn’t fix while the Highlighter is on: '+JSON.stringify(hl));
@@ -44,18 +56,26 @@ const wordPt=(pg,n)=>pg.evaluate(n=>{ const sp=[...document.querySelectorAll('#s
    ok(tt==='same','RB-21c','pressing a word in the chapter title or a heading selects nothing, so typing never replaces other words: '+tt);
    ok(/\n\n/.test(r.v),'RB-21b','paragraphs are separated by a blank line in the fixing box: '+JSON.stringify(r.v.slice(0,90)));
    await pg.ctx.close(); });
- await run('RB-22',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',LONG(1)]]); await read(pg);
-   const r=await pg.evaluate(async()=>{ let paused=0; const P=window.ttsPause; window.ttsPause=function(){ paused++; return P.apply(this,arguments); };
-     document.querySelector('#listenBtn').click(); await new Promise(r=>setTimeout(r,700)); TTS.on=true; TTS.playing=true;
-     const sp=document.querySelector('#spread .ptext [data-w]'); fixOpen({ch:sp.closest('.ptext').dataset.ch,w:+sp.dataset.w}); await new Promise(r=>setTimeout(r,300));
-     return {paused,playing:TTS.playing,speaking:speechSynthesis.speaking&&!speechSynthesis.paused}; });
-   ok(r.paused>0||r.playing===false,'RB-22','if the book is being read aloud, the voice pauses while you fix: '+JSON.stringify(r));
-   await pg.ctx.close(); });
- // ---------- Full screen (claims not already in tests/audit.js)
+ /* rev 267: real reading (Listen, with the device voice kept talking since the test browser has no sound), then a real press and hold on a word.
+    Before, the test switched TTS.playing on by hand and passed if a pause function was merely called. */
+ await run('RB-22',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',LONG(1)]]);
+   await pg.evaluate(()=>{ try{ speechSynthesis.speak=()=>{}; }catch(_){ } }); await read(pg); const cdp=await finger(pg);
+   await pg.evaluate(()=>{ jumpTo({ch:BOOK.order[0],i:1}); }); await pg.waitForTimeout(400);
+   await pg.click('#listenBtn'); await pg.waitForTimeout(900);
+   const before=await pg.evaluate(()=>({playing:!!TTS.playing,where:document.querySelector('#ttsWhere').textContent}));
+   const w=await wordPt(pg,30); await hold(pg,cdp,w.x,w.y,620); await pg.waitForTimeout(300);
+   const after=await pg.evaluate(()=>({fix:!document.querySelector('#fixBox').hidden,playing:!!TTS.playing,where:document.querySelector('#ttsWhere').textContent}));
+   ok(before.playing&&/^Reading/.test(before.where)&&after.fix&&after.playing===false&&/^Paused/.test(after.where),'RB-22','if the book is being read aloud, the voice pauses while you fix: before '+JSON.stringify(before)+', after press and hold '+JSON.stringify(after));
+   if(pg.errs.length) say('FAULT','RB-22x','page error: '+pg.errs[0]); await pg.ctx.close(); });
  await run('RB-23',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['First Light',LONG(1)]]); await read(pg);
+   /* rev 267: every control on screen in Read is listed first (nav tabs, the Read toolbar, the bar under the book); in full screen none of them may still show, only the corner button */
+   const seen=`[...document.querySelectorAll('button,[role=button],nav,select,input')].filter(e=>{ const r=e.getBoundingClientRect(), cs=getComputedStyle(e); return r.width>0&&r.height>0&&cs.visibility!=='hidden'&&cs.display!=='none'&&+cs.opacity>0.05&&r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth; }).map(e=>e.id||e.tagName+'.'+e.className)`;
+   const pre=await pg.evaluate(F=>eval(F),seen);
    await pg.click('#maxBtn'); await pg.waitForTimeout(600);
+   const left=await pg.evaluate(F=>eval(F),seen);
    const r=await pg.evaluate(()=>({im:document.body.classList.contains('immersive'),tabs:[...document.querySelectorAll('nav button,#pagebar,#rows,.rtools,#readTools')].filter(e=>{ const r=e.getBoundingClientRect(); return r.width&&r.height&&getComputedStyle(e).visibility!=='hidden'&&getComputedStyle(e).display!=='none'; }).map(e=>e.id||e.className).slice(0,5),exit:(()=>{ const e=document.querySelector('#exitMax'); const r=e.getBoundingClientRect(); return !e.hidden&&r.width>0; })()}));
-   ok(r.im&&r.exit,'RB-23a','Full screen hides the controls, leaving the page and a corner button: '+JSON.stringify(r));
+   const need=['NAV.tabs','libBtn','typeBtn','listenBtn','hlBtn','maxBtn','prev','whereBtn','next'];
+   ok(r.im&&r.exit&&need.every(x=>pre.includes(x))&&JSON.stringify(left)==='["exitMax"]','RB-23a','Full screen hides the controls, leaving the page and a corner button: on screen before '+pre.length+' controls ('+need.filter(x=>pre.includes(x)).length+' of the '+need.length+' expected), in full screen '+JSON.stringify(left));
    await pg.click('#exitMax'); await pg.waitForTimeout(500); const out=await pg.evaluate(()=>document.body.classList.contains('immersive'));
    ok(!out,'RB-23b','the corner button brings the controls back: immersive='+out);
    await pg.click('#maxBtn'); await pg.waitForTimeout(500);
