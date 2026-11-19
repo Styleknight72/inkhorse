@@ -1699,7 +1699,16 @@ const path = require('path');
     if(!PDFJS_DIR) return 'SKIP: set PDFJS_DIR (the PDF model book and the print check need it)';
     let JSPDF_FILE=null; try{ JSPDF_FILE=require.resolve('jspdf/dist/jspdf.umd.min.js'); }catch(_){ return 'SKIP: jspdf is not installed for the test (npm i jspdf@2.5.1)'; }
     if(!JSZIP_FILE) return 'SKIP: jszip is not installed for the test';
-    const fs=require('fs'), P=require('path'), crypto=require('crypto'), JSZip=require('jszip'), DIR=P.join(__dirname,'fixtures','model-books'), /* rev 250: WebKit has its own approved record and pictures: the two browsers draw small capitals at slightly different widths, so their pages are not the same pages */ LOCK=P.join(DIR,ENGINE==='chromium'?'model-lock.json':'model-lock.'+ENGINE+'.json'), PICS=P.join(DIR,ENGINE==='chromium'?'pages':'pages-'+ENGINE), H=b=>crypto.createHash('sha1').update(b).digest('hex').slice(0,16);
+    const fs=require('fs'), P=require('path'), crypto=require('crypto'), JSZip=require('jszip'), DIR=P.join(__dirname,'fixtures','model-books'), /* rev 250: WebKit has its own approved record and pictures: the two browsers draw small capitals at slightly different widths, so their pages are not the same pages */ LOCK=P.join(DIR,ENGINE==='chromium'?'model-lock.json':'model-lock.'+ENGINE+'.json'), PICS=P.join(DIR,ENGINE==='chromium'?'pages':'pages-'+ENGINE), H=b=>crypto.createHash('sha1').update(b).digest('hex').slice(0,16),
+      /* rev 268: a page picture is fingerprinted by its pixels, not by its PNG file. Two builds of the same browser can pack identical pixels into
+         different PNG bytes (Nov 19, 2026: all 132 pages looked identical to the approved pictures, yet every PNG fingerprint differed). */
+      HP=buf=>{ const zlib=require('zlib'); let o=8, w=0, h=0, bpp=0; const idat=[]; while(o<buf.length){ const len=buf.readUInt32BE(o), type=buf.toString('latin1',o+4,o+8), d=buf.subarray(o+8,o+8+len);
+          if(type==='IHDR'){ w=d.readUInt32BE(0); h=d.readUInt32BE(4); if(d[8]!==8||d[12]!==0) throw new Error('page picture: unexpected PNG kind'); bpp={2:3,6:4,0:1,4:2}[d[9]]; } else if(type==='IDAT') idat.push(d); else if(type==='IEND') break; o+=12+len; }
+        const raw=zlib.inflateSync(Buffer.concat(idat)), st=w*bpp, out=Buffer.alloc(h*st);
+        for(let y=0;y<h;y++){ const f=raw[y*(st+1)], src=raw.subarray(y*(st+1)+1,(y+1)*(st+1)), row=y*st, up=y?row-st:-1;
+          for(let x=0;x<st;x++){ const a=x>=bpp?out[row+x-bpp]:0, b=up>=0?out[up+x]:0, c=(up>=0&&x>=bpp)?out[up+x-bpp]:0; let v=src[x];
+            if(f===1) v+=a; else if(f===2) v+=b; else if(f===3) v+=(a+b)>>1; else if(f===4){ const p=a+b-c, pa=Math.abs(p-a), pb=Math.abs(p-b), pc=Math.abs(p-c); v+=(pa<=pb&&pa<=pc)?a:(pb<=pc?b:c); } out[row+x]=v&255; } }
+        return H(Buffer.concat([Buffer.from(w+'x'+h+'x'+bpp+':'),out])); };
     let pdfjs; { const w=console.warn, l=console.log; console.warn=console.log=()=>{}; try{ pdfjs=require(P.join(PDFJS_DIR,'..','legacy','build','pdf.js')); } finally { console.warn=w; console.log=l; } }
     const ctx=await browser.newContext({...devices['iPhone 14 Pro Max'],deviceScaleFactor:1,acceptDownloads:true});
     await ctx.route(/jspdf[^/]*\.js$/, r=>r.fulfill({body:fs.readFileSync(JSPDF_FILE),contentType:'application/javascript'}));
@@ -1742,7 +1751,7 @@ const path = require('path');
           /* rev 255: a picture on the page is given time to finish drawing before the page is photographed; twice a full run photographed it a moment early and called an unchanged page changed */
           await pg.evaluate(async()=>{ const ims=[...document.querySelectorAll('#spread .face:not(.gone) img')]; await Promise.all(ims.map(im=>im.decode?im.decode().catch(()=>{}):0)); if(ims.length) await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); });
           const el=await pg.$('#spread .face:not(.gone)'); if(!el) throw new Error(name+': no page drawn at '+(k+1)); const buf=await el.screenshot({animations:'disabled'});
-          list.push(H(buf)); pics[name+'/'+String(k+1).padStart(3,'0')+'.jpg']=await el.screenshot({animations:'disabled',type:'jpeg',quality:70}); }
+          list.push(HP(buf)); pics[name+'/'+String(k+1).padStart(3,'0')+'.jpg']=await el.screenshot({animations:'disabled',type:'jpeg',quality:70}); }
         got.screen[name]=list; };
       /* 1. a book written in Inkhorse */
       const mem=JSON.parse(fs.readFileSync(P.join(DIR,'memoir.json'),'utf8'));
@@ -1795,6 +1804,18 @@ const path = require('path');
     if(bad.length){ fs.mkdirSync(tmp,{recursive:true}); for(const [k,b] of Object.entries(pics)){ fs.mkdirSync(P.join(tmp,P.dirname(k)),{recursive:true}); fs.writeFileSync(P.join(tmp,k),b); }
       throw new Error(bad.length+' model-book pages changed: '+bad.slice(0,8).join('; ')+(bad.length>8?' …':'')+'. New pictures: '+tmp+'. If the change is meant, look at them, tell Steve, and re-record with MODEL_UPDATE=1'); }
     return 'OK: '+total+' screen pages, '+Object.keys(got.print).length+' print pages, the Word manuscript and the EPUB match';
+  });
+  await step('F3.10 Italic words are measured in their own italic type before lines are ended, in a fresh copy of the app, before any italic has been on screen (rev 268)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=268))) return 'SKIP: before rev 268';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{ await pg.goto(page.url()); await pg.waitForTimeout(3000);
+      const r=await pg.evaluate(async()=>{ const out=[]; for(const face of [S.face,'baskerville']){ if(face!==S.face){ const f=document.querySelector('#face'); f.value=face; f.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(r=>setTimeout(r,3000)); }
+          const L=lpFonts(), t='The Long Voyage Home'; L.cv.font=L.it; const planned=L.cv.measureText(t).width;
+          const s=document.createElement('i'); s.textContent=t; s.style.cssText='position:absolute;left:-9999px;white-space:nowrap;font-size:'+L.fz+'px;font-family:'+getComputedStyle(M2).fontFamily; document.body.appendChild(s);
+          await document.fonts.ready; await new Promise(r=>setTimeout(r,300)); const drawn=s.getBoundingClientRect().width; s.remove(); out.push({face,planned:+planned.toFixed(2),drawn:+drawn.toFixed(2)}); } return out; });
+      const bad=r.filter(x=>Math.abs(x.planned-x.drawn)>0.5); if(bad.length) throw new Error('italic words were measured in a stand-in type: '+JSON.stringify(bad));
+      if(errs.length) throw new Error('page error: '+errs[0]); return 'OK: '+JSON.stringify(r);
+    } finally { await ctx.close(); }
   });
   await step('Layout lock: a fixed test book breaks its pages exactly where the recorded layout says, so no change can move a reader\'s pages without it being seen and said (rev 236)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=236))) return 'SKIP: before rev 236';
