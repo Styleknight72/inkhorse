@@ -10,6 +10,7 @@ def inline(s):
     s = E(s)
     s = re.sub(r'^([FP]\d+\.\d+)\b', r'<b class="rid">\1</b>', s)          # rule numbers
     s = re.sub(r'“([^”]{1,80})”', r'“\1”', s)
+    if meta.get('italics') == 'yes': s = re.sub(r'\*([^*\s][^*]*?)\*', r'<i>\1</i>', s)   # F4.6: *marks* become italics, only in a document that asks for it
     return s
 # split into chapters at "# "
 parts = re.split(r'^# (.+)$', body, flags=re.M)[1:]
@@ -97,7 +98,7 @@ now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'
 man = ''.join(f'<item id="i{k}" href="{f}" media-type="application/xhtml+xml"/>' for k, f in enumerate(items))
 z.writestr('OEBPS/content.opf', f'''<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid" xml:lang="en"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-<dc:identifier id="uid">{bid}</dc:identifier><dc:title>{E(meta['title'])}</dc:title><dc:creator>StyleKnight &amp; Claude</dc:creator><dc:language>en</dc:language><dc:publisher>StyleKnight</dc:publisher><dc:rights>© 2026 Steve Claude Patient. All rights reserved.</dc:rights><meta property="dcterms:modified">{now}</meta><meta name="cover" content="cover-image"/></metadata>
+<dc:identifier id="uid">{bid}</dc:identifier><dc:title>{E(meta['title'])}</dc:title><dc:creator>{E(meta['author'])}</dc:creator><dc:language>en</dc:language><dc:publisher>StyleKnight</dc:publisher><dc:rights>© 2026 Steve Claude Patient. All rights reserved.</dc:rights><meta property="dcterms:modified">{now}</meta><meta name="cover" content="cover-image"/></metadata>
 <manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="css" href="style.css" media-type="text/css"/><item id="cover-image" href="cover.jpg" media-type="image/jpeg" properties="cover-image"/><item id="coverpage" href="cover.xhtml" media-type="application/xhtml+xml"/><item id="title" href="title.xhtml" media-type="application/xhtml+xml"/><item id="copy" href="copyright.xhtml" media-type="application/xhtml+xml"/>{man}</manifest>
 <spine><itemref idref="coverpage" linear="yes"/><itemref idref="title"/><itemref idref="copy"/><itemref idref="nav"/>{''.join(f'<itemref idref="i{k}"/>' for k in range(len(items)))}</spine></package>''', compress_type=zipfile.ZIP_DEFLATED)
 z.close(); print('chapters', len(chapters))

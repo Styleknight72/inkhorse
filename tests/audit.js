@@ -934,6 +934,43 @@ const path = require('path');
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
   });
+  await step('The Making of Inkhorse comes with Inkhorse: fourth on the shelf after the Publishing Standard, by Steve Claude Patient, with front and back covers, title page, copyright and contents, the note and all ten chapters numbered One to Ten with their italics kept; Delete offers to put it back (rev 270)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=270))) return 'SKIP: before rev 270 there was no fourth book';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
+    try{
+      await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const rows=async()=>pg.evaluate(()=>[...document.querySelectorAll('.bookrow')].map(r=>r.innerText.replace(/\s+/g,' ')));
+      const shelf=async()=>{ if(!(await pg.evaluate(()=>{ const r=document.querySelector('.bookrow'); return !!(r&&r.offsetParent); }))){ await pg.evaluate(()=>document.querySelector('#libBtn').click()); } await pg.waitForTimeout(700); };
+      await pg.evaluate(()=>{ S.tips=false; setTab('read'); }); await pg.waitForTimeout(400); await shelf();
+      let r=await rows(); const pi=r.findIndex(t=>/Publishing Standard/.test(t)), ki=r.findIndex(t=>/The Making of Inkhorse/.test(t));
+      if(ki<0) throw new Error('the shelf does not list The Making of Inkhorse: '+JSON.stringify(r));
+      if(ki!==pi+1) throw new Error('it is not right after the Publishing Standard on the shelf');
+      if(!/comes with Inkhorse/.test(r[ki])||!/Steve Claude Patient/.test(r[ki])) throw new Error('its shelf row should name Steve Claude Patient and say "comes with Inkhorse": '+r[ki]);
+      const bk=await pg.evaluate(async()=>{ await openLibBook('story',true); setTab('read'); await new Promise(r=>setTimeout(r,600)); const o=rOrder(), T=id=>RB.ch.get(id).title;
+        const pic=async id=>{ const im=new Image(); im.src=imgSrc(id||''); try{ await im.decode(); return im.naturalWidth>0&&Math.abs(im.naturalWidth/im.naturalHeight-2/3)<0.01; }catch(_){ return false; } };
+        const body=o.filter(id=>!isCover(id)&&!isFront(id)), tx=o.map(id=>RB.ch.get(id).text).join('\n');
+        const labels=[]; for(const id of body){ goTo({ch:id,i:0}); drawView(); await new Promise(r=>setTimeout(r,40)); const f=document.querySelector('#spread .face:not(.gone) .ptext[data-ch="'+id+'"]'), face=f&&f.closest('.face'), ck=face&&face.querySelector('.ck'), h=f&&f.querySelector('h2.cht'); labels.push((ck?ck.textContent.trim():'')+' | '+(h?h.textContent.replace(/[­⁠]/g,'').trim():'')); }
+        goTo({ch:body[2],i:0}); drawView(); await new Promise(r=>setTimeout(r,60)); const it=[...document.querySelectorAll('#spread .face:not(.gone) .ptext em, #spread .face:not(.gone) .ptext i, #spread .face:not(.gone) .ptext .it')].map(e=>e.textContent).join(' ').replace(/[\u00ad\u2060]/g,'').replace(/\s+/g,' ');
+        const shown=[...document.querySelectorAll('#spread .face:not(.gone) .ptext')].map(e=>e.textContent).join(' ');
+        return {title:RB.title,author:RB.author,fk:o.filter(isFront).map(T).join(' / '),labels,stars:/\*/.test(shown),it,nav:[navOrder()[0],navOrder().slice(-1)[0]],fc:await pic(RB.coverFront),bc:await pic(RB.coverBack)}; });
+      if(bk.title!=='The Making of Inkhorse'||bk.author!=='Steve Claude Patient') throw new Error('it is "'+bk.title+'" by "'+bk.author+'"');
+      if(bk.fk!=='The Making of Inkhorse / Copyright / Contents') throw new Error('its front matter should be title, copyright and contents pages: '+bk.fk);
+      const want=[' | A Note Before We Begin'].concat(['One | Point of Origin','Two | A Chat Becomes an App','Three | A Name, an Address, a Release','Four | The Voices','Five | The Pilot','Six | The Promise','Seven | Mistakes, Said Out Loud','Eight | What Inkhorse Is Made Of','Nine | What It Cost','Ten | What It’s For'].map(x=>'Chapter '+x));
+      if(JSON.stringify(bk.labels.map(x=>x.replace(/'/g,'’')))!==JSON.stringify(want)) throw new Error('chapter openings are not the note then Chapter One to Ten (F2.3, F2.8): '+JSON.stringify(bk.labels));
+      if(bk.stars) throw new Error('an italic mark (*) reached the page instead of italics (F4.6)');
+      if(!/What If It.s Already Here\?/.test(bk.it)) throw new Error('the memoir title in Chapter Two is not in italics (F4.6): '+JSON.stringify(bk.it));
+      if(bk.nav[0]!=='__front'||bk.nav[1]!=='__back'||!bk.fc||!bk.bc) throw new Error('front or back cover missing or not 2:3: '+JSON.stringify(bk));
+      await shelf();
+      const del=async()=>pg.evaluate(()=>{ const row=[...document.querySelectorAll('.bookrow')].find(x=>/The Making of Inkhorse/.test(x.innerText)); row.querySelector('[data-ldel]').click(); });
+      await del(); await pg.waitForTimeout(300); await del(); await pg.waitForTimeout(900); await shelf();
+      r=await rows(); if(r.some(t=>/The Making of Inkhorse/.test(t))) throw new Error('Delete (tapped twice) did not remove it');
+      if(!['User manual','Formatting Standard','Publishing Standard'].every(n=>r.some(t=>t.includes(n)))) throw new Error('deleting it took another book with it');
+      if(!(await pg.$('[data-story]'))) throw new Error('no "Put The Making of Inkhorse back" button after deleting it');
+      await pg.click('[data-story]'); await pg.waitForTimeout(1200);
+      r=await rows(); if(!r.some(t=>/The Making of Inkhorse/.test(t))) throw new Error('Put The Making of Inkhorse back did not bring it back');
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx.close(); }
+  });
   await step('Book Hub counter: every line stays inside its box, in one order, the same height on covers and pages, on a big phone and a small one (rev 230)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=230))) return 'SKIP: before rev 230 a long book name pushed the counter past its box';
     for(const dev of ['iPhone 14 Pro Max','iPhone SE']){
@@ -1511,7 +1548,7 @@ const path = require('path');
     const D=await dummiesLike(); if(typeof D==='string') return D; if(!D.cont) return 'SKIP: before rev 236';
     const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message)); const all={'the imported PDF':D.cont};
     try{ await pg.goto(page.url()); await pg.waitForTimeout(2500);
-      for(const [id,name] of [['manual','the User manual'],['standard','the Formatting Standard'],['publishing','the Publishing Standard']]){ await pg.evaluate(async id=>{ S.tips=false; await openLibBook(id,true); setTab('read'); await new Promise(r=>setTimeout(r,300)); },id); all[name]=await pg.evaluate(gatherContents); }
+      for(const [id,name] of [['manual','the User manual'],['standard','the Formatting Standard'],['publishing','the Publishing Standard'],['story','The Making of Inkhorse']]){ await pg.evaluate(async id=>{ S.tips=false; await openLibBook(id,true); setTab('read'); await new Promise(r=>setTimeout(r,300)); },id); all[name]=await pg.evaluate(gatherContents); }
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
     for(const name of Object.keys(all)) if(!all[name].titles.length) delete all[name];   /* a book with no contents page (both standards) has nothing to check */
@@ -1855,7 +1892,7 @@ const path = require('path');
       await pg.evaluate(()=>{ S.tips=false; setTab('read'); document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(400);
       await pg.setInputFiles('#libIn',require('path').join(__dirname,'fixtures','import','foreign.epub'));
       await pg.waitForFunction(()=>/Added|couldn|Could/.test(document.querySelector('#libNote').textContent),null,{timeout:60000});
-      const r=await pg.evaluate(async()=>{ const bk=LIB.filter(x=>!['manual','standard','publishing'].includes(x.id)).pop(); if(!bk) return null; await openLibBook(bk.id,true); S.fs=18; S.justMode='on'; S.just=true; applyType(); relayout(); setTab('read'); await new Promise(r=>setTimeout(r,400));
+      const r=await pg.evaluate(async()=>{ const bk=LIB.filter(x=>!['manual','standard','publishing','story'].includes(x.id)).pop(); if(!bk) return null; await openLibBook(bk.id,true); S.fs=18; S.justMode='on'; S.just=true; applyType(); relayout(); setTab('read'); await new Promise(r=>setTimeout(r,400));
         const ids=rOrder().filter(x=>!isCover(x)), T=id=>RB.ch.get(id).title, all=ids.map(id=>RB.ch.get(id).text).join('\n'), out={titles:ids.map(T),front:ids.filter(isFront).length,cover:!!RB.coverFront,author:RB.author,book:RB.title,text:all,cut:[],past:[],left:[],sb:0,figs:0,ck:[]};
         for(const id of ids){ const n=pag(id).pages.length; for(let i=0;i<n;i++){ goTo({ch:id,i}); drawView(); const pt=document.querySelector('#spread .face:not(.gone) .ptext'); if(!pt) continue; const B=pt.getBoundingClientRect(), w=T(id).slice(0,20)+' p'+(i+1);
             if(!pt.querySelector('img,figure')&&pt.scrollHeight>pt.clientHeight+1) out.cut.push(w); pt.querySelectorAll('span[data-w]').forEach(s=>{ for(const q of s.getClientRects()) if(q.right>B.right+1) out.past.push(w); });
@@ -1886,7 +1923,7 @@ const path = require('path');
       const full=require('path').join(__dirname,'fixtures','import',file);
       if(door==='read'){ await pg.evaluate(()=>{ S.tips=false; setTab('read'); document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(400); await pg.setInputFiles('#libIn',full);
         await pg.waitForFunction(()=>/Added|couldn|Could/.test(document.querySelector('#libNote').textContent),null,{timeout:60000});
-        if(!(await pg.evaluate(async()=>{ const bk=LIB.filter(x=>!['manual','standard','publishing'].includes(x.id)).pop(); if(!bk) return false; await openLibBook(bk.id,true); return true; }))) throw new Error(file+' was not added to read: '+await pg.textContent('#libNote')); }
+        if(!(await pg.evaluate(async()=>{ const bk=LIB.filter(x=>!['manual','standard','publishing','story'].includes(x.id)).pop(); if(!bk) return false; await openLibBook(bk.id,true); return true; }))) throw new Error(file+' was not added to read: '+await pg.textContent('#libNote')); }
       else { await pg.evaluate(()=>{ S.tips=false; setTab('write'); }); await pg.setInputFiles('#fileIn',full); await pg.waitForFunction(()=>/Imported|couldn|Could/.test((document.querySelector('#exportNote')||{}).textContent||''),null,{timeout:60000}); }
       const r=await pg.evaluate(async()=>{ S.fs=18; S.justMode='on'; S.just=true; applyType(); relayout(); setTab('read'); await new Promise(r=>setTimeout(r,400)); const B=rBook(), get=id=>(RB?RB.ch.get(id):CH.get(id)), all=rOrder().filter(x=>!isCover(x)), ix=all.findIndex(id=>/^%%front\s+Harbor Stories|^A Collection/.test(get(id).text)||get(id).title==='Harbor Stories'), ids=all.slice(Math.max(0,ix));   /* in a writing book the sample chapters come first; start at the imported book */
         const out={book:B.title,author:B.author||'',titles:ids.map(id=>get(id).title),front:ids.filter(isFront).map(id=>get(id).text.split('\n').filter(l=>l!=='%%front').slice(0,3).join(' / ')),text:ids.map(id=>get(id).text).join('\n'),open:[],cut:[],past:[],left:[],sb:0,toc:[],nums:ids.map(id=>fmtChapterNo(id,-1))};

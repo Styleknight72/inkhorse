@@ -1,4 +1,5 @@
-/* Writes the two standards into the app as built-in books: const STANDARD (The Inkhorse Formatting Standard) and const PUBLISHING (The Inkhorse Publishing Standard).
+/* Writes the built-in books made from e-books into the app: const STANDARD (The Inkhorse Formatting Standard), const PUBLISHING (The Inkhorse Publishing Standard)
+   and const STORY (The Making of Inkhorse).
    It opens the html, runs each e-book in docs/ through Inkhorse's own e-book importer (so the built-in copy is exactly what a reader would get
    by adding the e-book), and writes the result back into the html.
    Use:  NODE_PATH=... node tools/embed-standard.js preview/next.html
@@ -7,13 +8,14 @@ const fs=require('fs'), path=require('path'), crypto=require('crypto');
 const { chromium } = require('playwright');
 const BOOKS=[
   {name:'STANDARD',id:'standard',pre:'std-',epub:'Inkhorse Formatting Standard.epub',cover:'formatting-standard-cover.jpg'},
-  {name:'PUBLISHING',id:'publishing',pre:'pub-',epub:'Inkhorse Publishing Standard.epub',cover:'publishing-standard-cover.jpg'}
+  {name:'PUBLISHING',id:'publishing',pre:'pub-',epub:'Inkhorse Publishing Standard.epub',cover:'publishing-standard-cover.jpg'},
+  {name:'STORY',id:'story',pre:'mk-',epub:'The Making of Inkhorse.epub',cover:'making-of-inkhorse-cover.jpg'}   /* rev 270: the fourth book, Steve's story of how Inkhorse was made (docs/MAKING-OF-INKHORSE.md) */
 ];
 (async()=>{
   const file=path.resolve(process.argv[2]||'preview/next.html'), root=path.resolve(__dirname,'..');
   const b=await chromium.launch(), p=await b.newPage(); await p.goto('file://'+file); await p.waitForFunction(()=>typeof epubToBook==='function'&&window.JSZip,null,{timeout:60000});
   let h=fs.readFileSync(file,'utf8');
-  for(const B of BOOKS){
+  for(const B of BOOKS.filter(x=>!process.env.ONLY||new RegExp(process.env.ONLY).test(x.name))){   /* ONLY=STORY re-embeds just that book */
     const epub=fs.readFileSync(path.join(root,'docs',B.epub)).toString('base64'), cover=fs.readFileSync(path.join(root,'docs',B.cover)).toString('base64');
     const r=await p.evaluate(async({epub,cover})=>{
       const buf=Uint8Array.from(atob(epub),c=>c.charCodeAt(0)).buffer; const bk=await epubToBook(buf);

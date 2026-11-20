@@ -7,12 +7,14 @@ const COVERS={
   'standard-back':{out:'docs/formatting-standard-back-cover.jpg',quote:'Every book in Inkhorse should look like it was set by the same careful publisher.',
     body:['This is that publisher’s rulebook: how a chapter opens, how a paragraph sits, the small marks of punctuation, the contents page, e-books and print.','Every rule has a number, so a page that looks wrong can be traced to the rule that broke.']},
   'publishing-back':{out:'docs/publishing-standard-back-cover.jpg',quote:'When you carry your book out the door, it is ready.',
-    body:['Inkhorse does not publish your book. You do, under your own name. This standard says what “ready to publish” means: a whole book, heard start to finish, with sound files and a cover a store will take.','It also says plainly what Inkhorse checks for you, what is yours to check, and what Inkhorse cannot do yet.']}
+    body:['Inkhorse does not publish your book. You do, under your own name. This standard says what “ready to publish” means: a whole book, heard start to finish, with sound files and a cover a store will take.','It also says plainly what Inkhorse checks for you, what is yours to check, and what Inkhorse cannot do yet.']},
+  'story-back':{out:'docs/making-of-inkhorse-back-cover.jpg',quote:'Made for an easier way.',   /* rev 270: the fourth book */
+    body:['Inkhorse is a free app for writing and reading books. It was built in five and a half weeks by a man who does not write code, working with an AI and holding it to his own standards.','This is the true story of how it was made, told from the records: the dates, the numbers, and the mistakes, said out loud.']}
 };
 (async()=>{ const file=path.resolve(process.argv[2]||'preview/next.html'), root=path.resolve(__dirname,'..');
   const tpl=fs.readFileSync(path.join(__dirname,'back-cover.html'),'utf8'), tmp=path.join(__dirname,'_back_tmp.html');
   const b=await chromium.launch(), out={};
-  for(const [id,c] of Object.entries(COVERS)){
+  for(const [id,c] of Object.entries(COVERS).filter(([id])=>!process.env.ONLY||new RegExp(process.env.ONLY).test(id))){   /* ONLY=story re-draws just that back cover; the others are kept */
     fs.writeFileSync(tmp,tpl.replace('{{QUOTE}}',c.quote).replace('{{BODY}}',c.body.map(t=>`<div class="p">${t}</div>`).join('\n')));
     const p=await b.newPage({viewport:{width:1600,height:2400}}); await p.goto('file://'+tmp); await p.waitForTimeout(400);
     fs.writeFileSync(path.join(root,c.out),await p.screenshot({type:'jpeg',quality:92}));
@@ -20,5 +22,5 @@ const COVERS={
     out[id]='data:image/jpeg;base64,'+(await small.screenshot({type:'jpeg',quality:86})).toString('base64'); await p.close(); await small.close(); }
   await b.close(); fs.unlinkSync(tmp);
   let h=fs.readFileSync(file,'utf8'); const i=h.indexOf('const BACKCOV={'); if(i<0) throw new Error('no BACKCOV line'); const j=h.indexOf('\n',i);
-  h=h.slice(0,i)+'const BACKCOV='+JSON.stringify(out)+';'+h.slice(j); fs.writeFileSync(file,h); console.log(Object.keys(out).map(k=>k+' '+Math.round(out[k].length/1024)+'KB').join(', '));
+  const old=JSON.parse(h.slice(i+14,j).replace(/;\s*$/,'')); h=h.slice(0,i)+'const BACKCOV='+JSON.stringify({...old,...out})+';'+h.slice(j); fs.writeFileSync(file,h); console.log(Object.keys(out).map(k=>k+' '+Math.round(out[k].length/1024)+'KB').join(', '));
 })().catch(e=>{ console.error(e); process.exit(1); });

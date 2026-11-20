@@ -38,8 +38,8 @@ const URL_=process.env.MURL||'http://127.0.0.1:8765/preview/next.html';
  // ---------- 15: the Highlighter works in books you've added to read and in the manual, and never changes the book's text
  await run('M-15',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); const f=TMP+'/read-me.txt'; fs.writeFileSync(f,'Chapter One\n\n'+Array.from({length:8},(_,k)=>para(k,90)).join('\n\n'));
    await pg.evaluate(()=>{ setTab('read'); document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(500);
-   await pg.setInputFiles('#libIn',f); await pg.waitForFunction(()=>LIB.some(x=>!['manual','standard','publishing'].includes(x.id)),null,{timeout:20000}); await pg.waitForTimeout(600);
-   const id=await pg.evaluate(()=>LIB.find(x=>!['manual','standard','publishing'].includes(x.id)).id);
+   await pg.setInputFiles('#libIn',f); await pg.waitForFunction(()=>LIB.some(x=>!['manual','standard','publishing','story'].includes(x.id)),null,{timeout:20000}); await pg.waitForTimeout(600);
+   const id=await pg.evaluate(()=>LIB.find(x=>!['manual','standard','publishing','story'].includes(x.id)).id);
    await pg.evaluate(async id=>{ await openLibBook(id,true); setTab('read'); },id); await pg.waitForTimeout(900);
    const r=await pg.evaluate(async()=>{ const ch=rOrder().find(c=>!isCover(c)&&getCh(c).text.length>500); jumpTo({ch,i:0}); await new Promise(r=>setTimeout(r,400)); const t0=getCh(ch).text; addMark(ch,12,18); refreshReader(); await new Promise(r=>setTimeout(r,400));
      return {ch,same:getCh(ch).text===t0,len:t0.length,lit:document.querySelectorAll('#spread .face:not(.gone) .hlm').length,marks:marksOf(ch).length,stored:JSON.stringify(JSON.parse(localStorage.getItem(RMK)||'{}')[RB.id]||null)}; });

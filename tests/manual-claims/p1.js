@@ -4,7 +4,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
  const run=async(id,fn)=>{ if(process.env.ONLY&&!new RegExp(process.env.ONLY).test(id)) return; /* rev 267: ONLY=<pattern> runs just those blocks (for proving a check fails on a broken copy) */ try{ await fn(); }catch(e){ say('ERROR',id,e.message.split('\n')[0].slice(0,220)); } };
  // ---------- BP-00 built-in books: delete and put back
  await run('BP-00',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max');
-   for(const [id,label,attr] of [['manual','Put the manual back','data-manual'],['standard','Put the Formatting Standard back','data-std'],['publishing','Put the Publishing Standard back','data-pub']]){
+   for(const [id,label,attr] of [['manual','Put the manual back','data-manual'],['standard','Put the Formatting Standard back','data-std'],['publishing','Put the Publishing Standard back','data-pub'],['story','Put The Making of Inkhorse back','data-story']]){
      await pg.evaluate(()=>{ setTab('read'); document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(400);
      await pg.click(`[data-ldel="${id}"]`); await pg.waitForTimeout(150); await pg.click(`[data-ldel="${id}"]`); await pg.waitForTimeout(500);
      const gone=await pg.evaluate(id=>!LIB.some(x=>x.id===id),id); const btn=await pg.evaluate(a=>{ const e=document.querySelector('['+a+']'); return e?e.textContent.trim():''; },attr);
