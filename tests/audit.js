@@ -799,7 +799,10 @@ const path = require('path');
     const st=()=>page.evaluate(()=>{ const s=document.querySelector('#splash'); return {hidden:s.hidden, op:s.style.opacity, img:!!s.querySelector('img'), z:+getComputedStyle(s).zIndex}; });
     let r=await st(); if(!r.hidden) throw new Error('the opening screen shows in a normal browser tab');
     if(!r.img) throw new Error('the opening screen has no horse picture');
-    if(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=219) && !/The power to get it done, and then some!/.test(await page.textContent('#splash'))) throw new Error('the opening screen has no motto (rev 219)');
+    /* rev 269: the motto (and the name Inkhorse) are drawn into the opening picture itself; its words are the picture's description */
+    const words=await page.evaluate(()=>{ const s=document.querySelector('#splash'), im=s.querySelector('img'); return s.textContent+' '+(im?im.alt:''); });
+    if(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=219) && !/The power to get it done, and then some!/.test(words)) throw new Error('the opening screen has no motto (rev 219)');
+    if(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=269) && !/^Inkhorse\. The power to get it done, and then some!$/.test(await page.evaluate(()=>document.querySelector('#splash img').alt))) throw new Error('the opening picture does not say Inkhorse and the motto (rev 269)');
     await page.evaluate(()=>inkSplash(400)); r=await st(); if(r.hidden) throw new Error('the opening screen did not show');
     await page.waitForTimeout(900); r=await st(); if(!r.hidden) throw new Error('the opening screen did not go away by itself');
     await page.evaluate(()=>inkSplash(0)); await page.waitForTimeout(100);
@@ -1568,7 +1571,7 @@ const path = require('path');
       await pg.evaluate(()=>{ S.justMode='off'; S.just=false; applyType(); relayout(); S.justMode='on'; S.just=true; applyType(); relayout(); S.face='literata'; applyType(); relayout(); S.face='garamond'; applyType(); relayout(); }); await pg.waitForTimeout(2500); same('Justify off and on, typeface changed and changed back',base,await snap());
       await pg.setViewportSize({width:vp.height+190,height:vp.width}); await pg.waitForTimeout(1200); const side=await snap(); if(side.length===base.length&&side.join()===base.join()) throw new Error('turning the phone sideways changed nothing, so the test is not turning it');
       await pg.setViewportSize(vp); await pg.waitForTimeout(3000); same('phone turned sideways and back upright',base,await snap());
-      await pg.reload(); await pg.waitForTimeout(2500); await pg.evaluate(()=>document.fonts.ready); await pg.evaluate(()=>{ S.tips=false; }); await pg.waitForTimeout(2500); same('Inkhorse closed and opened again',base,await snap());
+      await pg.reload(); await pg.waitForTimeout(2500); await pg.evaluate(()=>document.fonts.ready); /* rev 269: and the italic letters too (fetched at start-up since rev 268), as a reader's page settles once they are in */ await pg.evaluate(()=>typeof loadFaces==='function'?loadFaces():null); await pg.evaluate(()=>{ S.tips=false; }); await pg.waitForTimeout(2500); same('Inkhorse closed and opened again',base,await snap());
       if(errs.length) throw new Error('page error: '+errs[0]);
     } finally { await ctx.close(); }
   });
