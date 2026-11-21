@@ -287,9 +287,9 @@ Proven: an automatic test checks it before every change goes out. For the print 
 - F9.4 The print PDF holds no cover, also for a book that has one: its own pictures are printed, its cover is not.
 - F1.4 in print: the copyright page is page 2, the back of the title page, set smaller than the body text, in all four sizes.
 - F10.1 and F4.7 A PDF that stores no spaces between its words comes in with every space put back, and no words run together.
-- F10.3 Running heads from the printed pages are left out of an imported PDF's text. The test uses the made-up "For Dummies"-style PDF; page footers and leftover page numbers are not yet checked on their own.
+- F10.3 Running heads from the printed pages are left out of an imported PDF's text. The test uses the made-up "For Dummies"-style PDF; page footers and leftover page numbers are not yet checked on their own. The spaced running heads of Inkhorse's own print PDF are checked too (rev 271).
 - F10.5 A run-on contents page is split into one entry per line: every chapter and part of the test PDF's contents is an entry of its own, and no entry holds two.
-- F10.6 A label above a chapter title stays with its title, in an e-book brought in. The test uses one made-up e-book; chapters found from a PDF's bookmarks are not yet tested on their own.
+- F10.6 A label above a chapter title stays with its title, in an e-book brought in. The test uses one made-up e-book; chapters found from a PDF's bookmarks are not yet tested on their own. Since rev 271 Inkhorse's own print PDF is also brought back in, and must come back as the same book: its title and author, its front pages, every chapter with its label and title, its section headings and every word.
 - F10.7 A PDF kept as pictures of its pages shows its first page as the cover and one picture for each page after it, with the type settings that cannot apply switched off.
 - F10.8 A drop capital printed apart from its word is joined back to it, and the chapter's opening reads correctly, with the words printed beside the capital kept in order (four chapter openings of the test PDF).
 - F10.9 A section is never mistaken for a chapter, and the Introduction's own sections stay inside it.

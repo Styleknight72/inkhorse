@@ -1123,7 +1123,7 @@ const path = require('path');
       await pg.evaluate(()=>{ S.tips=false; setTab('read'); document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(500);
       await pg.setInputFiles('#libIn',require('path').join(__dirname,'fixtures','dummies-like.pdf')); await pg.waitForTimeout(800); await pg.click('#libAsk [data-way="text"]');
       await pg.waitForFunction(()=>/Added|couldn|Could/.test(document.querySelector('#libNote').textContent),null,{timeout:120000});
-      const r=await pg.evaluate(async()=>{ const id=LIB.find(b=>/dummies-like/.test(b.title)).id; await openLibBook(id,true); setTab('read'); await new Promise(r=>setTimeout(r,500));
+      const r=await pg.evaluate(async()=>{ const id=LIB.find(b=>/dummies-like|Blendworks/.test(b.title)).id; await openLibBook(id,true); setTab('read'); await new Promise(r=>setTimeout(r,500));
         const o=rOrder(), T=x=>RB.ch.get(x).title, find=re=>o.find(x=>re.test(T(x)));
         const front=o.filter(isFront).map(T), intro=find(/^Introduction$/), c1=find(/^Chapter 1:/), c5=find(/^Chapter 5:/);
         const lab=x=>{ goTo({ch:x,i:0}); drawView(); refreshReader(); return {lab:document.querySelector('#chLab').textContent,ck:(document.querySelector('#spread .ck')||{}).textContent||''}; };
@@ -1883,6 +1883,49 @@ const path = require('path');
     const a=flat.indexOf('Harbor Notes'), b=flat.indexOf('The quick brown fox walked along the harbor wall'), c=flat.indexOf('On the second page the ferry was late'), d=flat.indexOf('The harbor master wrote the tide down in a green book');
     if(a<0||b<0) throw new Error('the words of the first page are missing: '+flat.slice(0,120)); if(c<0||d<0) throw new Error('the words of the second page are missing');
     if(!(a<b&&b<c&&c<d)) throw new Error('the pages came in out of order');
+  });
+  await step('F10.6 F10.3 F10.5 F1.1 Inkhorse reads its own print PDF back as the same book: its title and author, the title page, copyright page and Contents as front pages, every chapter with its label and title, its section headings, its small-capital first words in their own case, no running heads, and every word (rev 271)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=271))) return 'SKIP: before rev 271 a print PDF came back as one long chapter';
+    if(!PDFJS_DIR) return 'SKIP: set PDFJS_DIR to test PDF import';
+    let JSPDF_FILE=null; try{ JSPDF_FILE=require.resolve('jspdf/dist/jspdf.umd.min.js'); }catch(_){ return 'SKIP: jspdf is not installed for the test (npm i jspdf@2.5.1)'; }
+    const fs=require('fs'), path=require('path');
+    const mk=async()=>{ const c=await browser.newContext({...devices['iPhone 14 Pro Max'],acceptDownloads:true});
+      await c.route(/jspdf[^/]*\.js$/, r=>r.fulfill({body:fs.readFileSync(JSPDF_FILE),contentType:'application/javascript'}));
+      await c.route(/pdf\.js\/3\.11\.174\/pdf\.min\.js/, r=>r.fulfill({path:path.join(PDFJS_DIR,'pdf.min.js'),contentType:'application/javascript'}));
+      await c.route(/pdf\.js\/3\.11\.174\/pdf\.worker\.min\.js/, r=>r.fulfill({path:path.join(PDFJS_DIR,'pdf.worker.min.js'),contentType:'application/javascript'})); return c; };
+    const S1='The harbor wall was cold in the morning, and the gulls were already loud above the boats that came in with the tide.';
+    const S2='Nobody on the pier could say when the old ferry would run again, so the town waited and talked about the weather instead.';
+    const para=(a,b,n)=>Array.from({length:n},(_,k)=>(k%2?a:b)).join(' ');
+    const CH=[['Chapter One · The Harbor',[para(S1,S2,6),'# The Pier',para(S2,S1,5),para(S1,S2,4)]],['Chapter Two · Storm Season',[para(S2,S1,7),'# After the Wind',para(S1,S2,6)]],['Chapter Three · Home Again',[para(S1,S2,5),para(S2,S1,6)]]];
+    const ctx=await mk(); let pdfPath=null; const errs=[];
+    try{ const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(e.message)); await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      await pg.evaluate(async C=>{ S.tips=false; await newBook(); CH.forEach((c,id)=>deleted.add(id)); CH.clear(); BOOK.order=[]; PCACHE.clear();
+        BOOK.title='Harbor Notes Two'; BOOK.author='Ada Lane'; C.forEach(([t,ps])=>addChapter(t,ps.join('\n'))); touchIndex(); selectChapter(BOOK.order[0]); renderDrawer(); setTab('write'); document.querySelector('#pdfSize').value='6x9'; },CH);
+      const [d]=await Promise.all([pg.waitForEvent('download',{timeout:90000}), pg.evaluate(()=>document.querySelector('#expPdf').click())]); pdfPath=await d.path();
+      fs.copyFileSync(pdfPath, pdfPath=path.join(require('os').tmpdir(),'ink-roundtrip-'+Date.now()+'.pdf'));
+    } finally { await ctx.close(); }
+    const ctx2=await mk();
+    try{ const pg=await ctx2.newPage(); pg.on('pageerror',e=>errs.push(e.message)); await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      await pg.evaluate(()=>{ S.tips=false; setTab('read'); document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(500);
+      await pg.setInputFiles('#libIn',pdfPath); await pg.waitForTimeout(800); await pg.click('#libAsk [data-way="text"]');
+      await pg.waitForFunction(()=>/Added|couldn|Could/.test(document.querySelector('#libNote').textContent),null,{timeout:120000});
+      const r=await pg.evaluate(async()=>{ const bk=LIB.filter(x=>!['manual','standard','publishing','story'].includes(x.id)).pop(); if(!bk) return null; await openLibBook(bk.id,true);
+        const ids=RB.order||rOrder(); const chs=ids.map(id=>RB.ch.get(id)).filter(Boolean); return {title:RB.title,author:RB.author,chs:chs.map(c=>({title:c.title,text:c.text}))}; });
+      if(!r) throw new Error('the PDF did not come into the Library');
+      if(r.title!=='Harbor Notes Two') throw new Error('the book is called "'+r.title+'", not by the title on its own title page');
+      if(r.author!=='Ada Lane') throw new Error('the author came back as "'+r.author+'"');
+      const front=r.chs.filter(c=>/^\s*%%front/.test(c.text)), body=r.chs.filter(c=>!/^\s*%%front/.test(c.text));
+      if(front.length!==3 || !/Harbor Notes Two/.test(front[0].text) || !/Copyright|©/.test(front[1].text) || front[2].text.split('\n')[1]!=='Contents') throw new Error('the front pages are not title page, copyright page and Contents: '+JSON.stringify(front.map(c=>[c.title,c.text.slice(0,40)])));
+      if((front[2].text.match(/^Chapter /gm)||[]).length!==3) throw new Error('the Contents page does not list the three chapters one per line');
+      const want=['Chapter One: The Harbor','Chapter Two: Storm Season','Chapter Three: Home Again'];
+      if(JSON.stringify(body.map(c=>c.title))!==JSON.stringify(want)) throw new Error('the chapters came back as '+JSON.stringify(body.map(c=>c.title)));
+      const norm=t=>t.replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/^#\s+/gm,'').split(/\s+/).filter(Boolean).join(' ');
+      for(let k=0;k<3;k++){ const got=body[k].text, src=CH[k][1].join('\n');
+        if(norm(got)!==norm(src)){ const a=norm(src).split(' '), b=norm(got).split(' '); let i=0; while(i<a.length&&a[i]===b[i]) i++; throw new Error(want[k]+': the words differ from the book at word '+i+': "'+a.slice(i,i+6).join(' ')+'" came back as "'+b.slice(i,i+6).join(' ')+'"'); }
+        const hw=(src.match(/^# .*$/gm)||[]), hg=(got.match(/^# .*$/gm)||[]); if(JSON.stringify(hw)!==JSON.stringify(hg)) throw new Error(want[k]+': section headings '+JSON.stringify(hw)+' came back as '+JSON.stringify(hg)); }
+      const all=r.chs.map(c=>c.text).join('\n'); if(/H A R B O R|C H A P T E R|HARBOR NOTES TWO/.test(all)) throw new Error('a running head or a spaced chapter label was left in the text');
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx2.close(); try{ fs.unlinkSync(pdfPath); }catch(_){} }
   });
   await step('F5.2 F4.7 F10.6 An e-book made by another publisher comes in whole: every sentence, its chapter labels and titles, its title and copyright pages, its cover and pictures; a scene break drawn as a rule is kept; lines of verse stay separate lines; a footnote mark is set apart from the word; and its pages obey the standard (rev 237)', async () => {
     if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=237))) return 'SKIP: before rev 237';

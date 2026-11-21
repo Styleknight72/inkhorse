@@ -80,6 +80,22 @@ const URL_=process.env.MURL||'http://127.0.0.1:8765/preview/next.html';
    const small=await add(TMP+'/short-book.pdf',12); const big=await add(TMP+'/long-book.pdf',301);
    ok(small.title==='short-book'&&big.title==='long-book'&&small.pics===true&&big.pics===false,'M-25','asked for "Pages exactly as printed": a 12-page PDF comes in as pictures of its pages, a 301-page PDF comes in as text: '+JSON.stringify({short:small.pics,long:big.pics,note:big.note.slice(0,90),keys:(small.keys||'').slice(0,120)})); noErr(pg,'M-25'); await pg.context().close(); });
 
+ // ---------- 25b (rev 271): a PDF added as text takes its title and author from its title page, and Inkhorse's own print PDF comes back as the same book
+ await run('M-25b',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); const D=process.env.PDFJS_DIR;
+   await pg.context().route(/pdf\.min\.js(\?.*)?$/,r=>r.fulfill({body:fs.readFileSync(path.join(D,'pdf.min.js')),contentType:'application/javascript'}));
+   await pg.context().route(/pdf\.worker\.min\.js(\?.*)?$/,r=>r.fulfill({body:fs.readFileSync(path.join(D,'pdf.worker.min.js')),contentType:'application/javascript',headers:{'access-control-allow-origin':'*'}}));
+   await pg.context().route(/jspdf[^/]*\.js$/,r=>r.fulfill({body:fs.readFileSync(require.resolve('jspdf/dist/jspdf.umd.min.js')),contentType:'application/javascript'}));
+   const body=k=>para(k,70)+'\n# The Quiet Pier '+k+'\n'+para(k+1,70);
+   await book(pg,[['Chapter One · First Light',body(1)],['Chapter Two · Second Wind',body(5)]]); await pg.evaluate(()=>{ BOOK.title='Round Trip Book'; BOOK.author='Ada Tester'; touchIndex(); openDrawer(); document.querySelector('#pdfSize').value='6x9'; });
+   const f=TMP+'/my-print-file.pdf'; fs.writeFileSync(f,await dl(pg,'#expPdf'));
+   await pg.evaluate(()=>{ setTab('read'); document.querySelector('#library').hidden=true; document.querySelector('#libBtn').click(); }); await pg.waitForTimeout(500); const n0=await pg.evaluate(()=>LIB.length);
+   await pg.setInputFiles('#libIn',f); await pg.waitForSelector('[data-way="text"]',{timeout:15000}); await pg.evaluate(()=>document.querySelector('[data-way="text"]').click());
+   await pg.waitForFunction(n=>LIB.length>n,n0,{timeout:120000}); await pg.waitForTimeout(800);
+   const r=await pg.evaluate(async()=>{ const bk=LIB.find(x=>!['manual','standard','publishing','story'].includes(x.id)); await openLibBook(bk.id,true); const cs=(RB.order||[]).map(id=>RB.ch.get(id));
+     return {title:RB.title,author:RB.author,front:cs.filter(c=>/^\s*%%front/.test(c.text)).length,chs:cs.filter(c=>!/^\s*%%front/.test(c.text)).map(c=>c.title),heads:cs.map(c=>(c.text.match(/^# .*$/gm)||[]).length).reduce((a,b)=>a+b,0)}; });
+   ok(r.title==='Round Trip Book'&&r.author==='Ada Tester'&&r.front===3&&JSON.stringify(r.chs)==='["Chapter One: First Light","Chapter Two: Second Wind"]'&&r.heads===2,'M-25b','a print PDF made by Inkhorse, added as text, comes back with the title and author from its title page (not its file name), its title, copyright and Contents pages as front pages, its chapters with label and title, and its section headings: '+JSON.stringify(r));
+   await pg.context().close(); });
+
  // ---------- 29: words found in your book come with the book wherever it goes
  await run('M-29',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); const T='We met at the Rimmon Club on Kelley Street. The Rimmon Club was loud that night, and Kelley Street was dark.\n'+para(1,80);
    await book(pg,[['First Light',T]]); await pg.evaluate(()=>{ BOOK.title='Travel Book'; touchIndex(); });
