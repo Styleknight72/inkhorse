@@ -3,7 +3,7 @@
 Read CLAUDE.md first, then this top section. Everything under "Older notes" is history kept for reference.
 
 ## Rev 272 (preview, Nov 20, about 10:45 pm)
-Steve's iPhone check of rev 271: his memoir's print PDF came in right, but Contents cut the year off "Florida, 1981", "New Hampshire, 1985" and "Florida, 1991" and lost two page numbers. Fixed in tocSplitNum (a number with no dots stays when the whole entry is exactly a chapter title). New audit step F6.5 F6.6 (fails on 271). Both audits 188/188. Waiting for Steve's "approved" to go live.
+Steve's iPhone check of rev 271: his memoir's print PDF came in right, but Contents cut the year off "Florida, 1981", "New Hampshire, 1985" and "Florida, 1991" and lost two page numbers. Fixed in tocSplitNum (a number with no dots stays when the whole entry is exactly a chapter title). New audit step F6.5 F6.6 (fails on 271). Both audits 188/188. Live at about 11:45 pm on Steve's "Push it" (with rev 271); artifact republished.
 
 ## Where we left off (November 13, 2026, ~9 pm)
 
