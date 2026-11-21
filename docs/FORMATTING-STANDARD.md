@@ -270,7 +270,7 @@ Proven: an automatic test checks it before every change goes out. For the print 
 - F5.3 and F5.4 Pictures are never stretched, are centered unless the writer places them at a side, fit on the page with their caption, and carry the caption underneath in smaller type. The test reads every picture in the User manual at three text sizes.
 - F6.1 The Contents that Inkhorse makes for your book is titled "Contents," lists every chapter once in order, and in print gives the page each chapter really starts on.
 - F6.2 to F6.5, F6.7 and F6.8 One contents style for every book, whatever file it came from: one entry per line, a dotted line to Inkhorse's own page number at the right edge, chapter entries set apart from section entries, nothing else on the page, and no page numbers left over from the paper book. No contents line runs off the page.
-- F6.6 On a contents page, a tap on an entry's words opens it, and a tap at the edge, where the page number sits, turns the page.
+- F6.6 On a contents page, a tap on an entry's words opens it, and a tap at the edge, where the page number sits, turns the page. A year that is part of a chapter's title ("Florida, 1981") stays in its entry and the entry stays linked; only printed page numbers are left off (rev 272).
 - F7.4 and F7.5 Whole-book page numbers on screen, never guessed: "Counting pages…" and a blank foot until the number is exact, then every turn adds one.
 - F7.2 and F9.5 In the print PDF, every chapter opens on a right-hand page, and a blank page carries no number and no header.
 - F7.3 In the print PDF, the left-hand header is the book title and the right-hand header is the title of the chapter the page belongs to.

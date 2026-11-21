@@ -2,6 +2,9 @@
 
 Read CLAUDE.md first, then this top section. Everything under "Older notes" is history kept for reference.
 
+## Rev 272 (preview, Nov 20, about 10:45 pm)
+Steve's iPhone check of rev 271: his memoir's print PDF came in right, but Contents cut the year off "Florida, 1981", "New Hampshire, 1985" and "Florida, 1991" and lost two page numbers. Fixed in tocSplitNum (a number with no dots stays when the whole entry is exactly a chapter title). New audit step F6.5 F6.6 (fails on 271). Both audits 188/188. Waiting for Steve's "approved" to go live.
+
 ## Where we left off (November 13, 2026, ~9 pm)
 
 - **Rev 271 (Nov 20 evening), PREVIEW, not live:** Inkhorse now reads its own print PDF back (Steve's memoir PDF came in as one chapter). Waiting for Steve's word to go live. His memoir work this evening: chapters 9–14 added (Chapter Nine on SK-67 written from the repo), delivered to him as a backup file to restore; the four AI chapter drafts came from past chats.

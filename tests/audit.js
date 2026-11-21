@@ -2423,6 +2423,23 @@ const path = require('path');
     const ls=out.split('\n');
     return ls.length>=4 && ls.every(l=>/^%%toc[12] (?:-|@\S+) \S/.test(l)) && !/\d{2,}$/.test(out.replace(/^%%toc\d \S+ /gm,'')) ? true : (()=>{ throw new Error("contents not tidied: "+out.slice(0,160)); })();
   }));
+  await step('F6.5 F6.6 A year that is part of a chapter title stays in its Contents entry, and the entry is linked to its chapter; a printed page number after it is still left off (rev 272)', async () => {
+    if(!(await page.evaluate(()=>(window.INK_VERSION||{}).rev>=272))) return 'SKIP: before rev 272 "Florida, 1981" lost its year in Contents (Steve, Nov 20)';
+    const ctx=await browser.newContext({...devices['iPhone 14 Pro Max']}); const errs=[];
+    try{ const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(e.message)); await pg.goto(page.url()); await pg.waitForTimeout(2500);
+      const out=await pg.evaluate(async()=>{ S.tips=false; await newBook(); CH.forEach((c,id)=>deleted.add(id)); CH.clear(); BOOK.order=[]; PCACHE.clear();
+        const P='The tide came in slowly and the boats rocked against the wall while the town slept.';
+        addChapter('','%%front\nContents\nChapter One · The Harbor\nChapter Two · Florida, 1981\nChapter Three · New Hampshire, 1985 . . . . . 41\nChapter Four · Home Again 52');
+        addChapter('Chapter One · The Harbor',P); addChapter('Chapter Two · Florida, 1981',P); addChapter('Chapter Three · New Hampshire, 1985',P); addChapter('Chapter Four · Home Again',P);
+        touchIndex(); TOCT.k=''; const c=getCh(BOOK.order[0]); return tidyContents(c); });
+      const ls=out.split('\n').filter(l=>/^%%toc/.test(l));
+      const want=['Chapter One · The Harbor','Chapter Two · Florida, 1981','Chapter Three · New Hampshire, 1985','Chapter Four · Home Again'];
+      if(ls.length!==4) throw new Error('expected 4 entries, got: '+out);
+      ls.forEach((l,k)=>{ const m=/^%%toc1 (\S+) (.*)$/.exec(l); if(!m||m[2]!==want[k]) throw new Error('entry '+(k+1)+' shows "'+(m?m[2]:l)+'", not "'+want[k]+'"'); if(m[1]==='-') throw new Error('"'+want[k]+'" is not linked to its chapter'); });
+      if(errs.length) throw new Error('page error: '+errs[0]);
+    } finally { await ctx.close(); }
+    return 'OK: years in titles kept and linked; print page numbers 41 and 52 left off';
+  });
   await step('Manual: every Find a button line points at a real chapter and section (rev 157)', async () => {
     const bad=await page.evaluate(()=>{ const secs={}; MANUAL.chapters.forEach(c=>{ secs[c.title]=[...c.text.matchAll(/^## (.+)$/gm)].map(m=>m[1].trim()); });
       const out=[]; MANUAL.chapters.forEach(c=>{ for(const m of c.text.matchAll(/^@@find (.+?) => (.+)$/gm)){ const [ch,sec]=m[2].split(' > '); if(!(ch in secs) || (sec && !secs[ch].includes(sec.trim()))) out.push(m[2]); } }); return out; });
