@@ -278,4 +278,39 @@ await run('CV-02',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await boo
   ok(notTrimmed(M.normal)&&notTrimmed(B.normal)&&notTrimmed(B.full)&&artKept(M.full)&&fuller,'CV-02','in full screen a cover with plain side margins is shown larger, trimming only its plain margin (its art stays inside the page); a cover with art to its edges is not trimmed; in the normal view neither is trimmed: '+JSON.stringify(out));
   noErr(pg,'CV-02'); await pg.context().close(); });
 
+// ---------- CV-04 (rev 273): in full screen the trim keeps the art clear of the page's edges: at least the binding's width (7%) on the spine side
+//            and 3% at the fore-edge (Steve's Topology Standard cover, Nov 21: its title ran to both edges and under the binding); and an edge of the
+//            cover with art on it is never faded into the fill (his Nova cover's copyright line at the foot)
+await run('CV-04',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One',Array.from({length:4},(_,k)=>para(k,60)).join('\n')]]); await pg.evaluate(()=>{ S.tips=false; });
+  /* a dark cover whose white title band stops 8% from each side, and art down to its very foot (a bright row at the bottom edge) */
+  const f=TMP+'/cv04.png'; const d=await pg.evaluate(()=>{ const cv=document.createElement('canvas'); cv.width=600; cv.height=900; const g=cv.getContext('2d'); g.fillStyle='rgb(14,16,22)'; g.fillRect(0,0,600,900);
+      g.fillStyle='rgb(240,240,240)'; g.fillRect(48,120,504,70); g.fillStyle='rgb(200,160,60)'; g.fillRect(150,300,300,400); g.fillStyle='rgb(230,200,120)'; g.fillRect(48,884,504,16); return cv.toDataURL('image/png').split(',')[1]; });
+  fs.writeFileSync(f,Buffer.from(d,'base64'));
+  await pg.evaluate(()=>{ setImmersive(false); setTab('write'); }); await pg.click('#chBtn'); await pg.waitForTimeout(250); await pg.setInputFiles('#covFrontIn',f); await pg.waitForTimeout(1800);
+  await pg.evaluate(()=>{ document.querySelector('#drawer').hidden=true; setTab('read'); jumpTo({ch:'__front',i:0}); }); await pg.waitForTimeout(2000);
+  await pg.evaluate(()=>{ setImmersive(true); }); await pg.waitForTimeout(2200); await pg.evaluate(()=>jumpTo({ch:'__front',i:0})); await pg.waitForTimeout(1500);
+  const r=await pg.evaluate(()=>{ const fc=document.querySelector('#spread .face:not(.gone)'), im=fc&&fc.querySelector('img.cvimg'); if(!im) return null; const fr=fc.getBoundingClientRect(), ir=im.getBoundingClientRect();
+    const mk=getComputedStyle(im).webkitMaskImage||getComputedStyle(im).maskImage||'none';
+    return {fw:fr.width,artL:(ir.left+0.08*ir.width-fr.left)/fr.width,artR:(fr.right-(ir.left+0.92*ir.width))/fr.width,mask:mk}; });
+  /* the foot carries art, so the mask may only soften the top: it must end fully shown (no 'transparent' after the last opaque stop) */
+  const footSharp=r&&(r.mask==='none'||!/rgba\(0, 0, 0, 0\)\s*100%|transparent\s*100%/.test(r.mask));
+  ok(r&&r.artL>=0.07&&r.artR>=0.03&&footSharp,'CV-04','in full screen the title stays at least the binding width (7%) from the spine edge and 3% from the fore-edge, and the cover\'s foot, which has art on it, is not faded: '+JSON.stringify(r&&{artL:+r.artL.toFixed(3),artR:+r.artR.toFixed(3),mask:r.mask.slice(0,140)}));
+  noErr(pg,'CV-04'); await pg.context().close(); });
+// ---------- CV-05 (rev 273): words under the binding stay readable: on a light cover, the page at the binding's groove (4.1% from the spine edge
+//            of the cover page) keeps at least 60% of the brightness of the page's middle (Steve's Nova cover, Nov 21: the first letters near the
+//            spine were dimmed and looked cut)
+await run('CV-05',async()=>{ const pg=await mk(b,'iPhone 14 Pro Max'); await book(pg,[['One',para(0,60)]]); await pg.evaluate(()=>{ S.tips=false; });
+  const f=TMP+'/cv05.png'; const d=await pg.evaluate(()=>{ const cv=document.createElement('canvas'); cv.width=1000; cv.height=1500; const g=cv.getContext('2d'); g.fillStyle='rgb(235,235,235)'; g.fillRect(0,0,1000,1500); return cv.toDataURL('image/png').split(',')[1]; });
+  fs.writeFileSync(f,Buffer.from(d,'base64'));
+  await pg.evaluate(()=>{ setTab('write'); }); await pg.click('#chBtn'); await pg.waitForTimeout(250); await pg.setInputFiles('#covFrontIn',f); await pg.waitForTimeout(1800);
+  await pg.evaluate(()=>{ document.querySelector('#drawer').hidden=true; setTab('read'); jumpTo({ch:'__front',i:0}); }); await pg.waitForTimeout(2500);
+  const box=await pg.evaluate(()=>{ const fc=document.querySelector('#spread .face:not(.gone)'); if(!fc||!fc.querySelector('img')) return null; const r=fc.getBoundingClientRect(); return {x:r.left,y:r.top,w:r.width,h:r.height}; });
+  let r=null;
+  if(box){ const shot=await pg.screenshot({clip:{x:box.x,y:box.y+box.h*0.3,width:box.w,height:box.h*0.4}});
+    r=await pg.evaluate(async b64=>{ const im=new Image(); im.src='data:image/png;base64,'+b64; await im.decode(); const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const g=c.getContext('2d'); g.drawImage(im,0,0);
+      const lum=fx=>{ const x=Math.round(fx*im.width), d=g.getImageData(x,0,1,im.height).data; let s=0,n=0; for(let k=0;k<d.length;k+=4){ s+=(d[k]+d[k+1]+d[k+2])/3; n++; } return s/n; };
+      let worst=999; for(let fx=0.012;fx<=0.074;fx+=0.002) worst=Math.min(worst,lum(fx)); return {groove:worst,middle:lum(0.5)}; },shot.toString('base64')); }
+  const ratio=r?r.groove/r.middle:0;
+  ok(r&&ratio>=0.6,'CV-05','on a light cover the darkest point of the binding past its first 1% keeps at least 60% of the brightness of the middle: '+JSON.stringify(r&&{groove:Math.round(r.groove),middle:Math.round(r.middle),ratio:+ratio.toFixed(2)}));
+  noErr(pg,'CV-05'); await pg.context().close(); });
 await b.close(); })();
