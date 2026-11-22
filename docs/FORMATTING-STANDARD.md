@@ -66,7 +66,7 @@ F2.4 The first paragraph of a chapter is not indented. Its first line runs flush
 
 F2.5 The first paragraph may open with a drop cap, a large first letter, or with its first few words in small capitals. Whichever a book uses, it uses for every chapter.
 
-F2.6 No page header on a chapter's first page. The page number may appear at the bottom.
+F2.6 No page header on a chapter's first page, or on a page that holds only a picture. The page number may appear at the bottom.
 
 F2.7 Chapter titles are all set the same way in a book: the same font, size, spacing and capitalization.
 
@@ -122,9 +122,9 @@ F5.1 Section headings inside a chapter are smaller than the chapter title and se
 
 F5.2 A scene break, a change of time or place within a chapter, is marked with a centered ornament, such as three spaced asterisks or a small symbol. A bare blank line is not enough, because it disappears when it falls at the bottom of a page.
 
-F5.3 Pictures are centered, sized to the page width or a set fraction of it, and never stretched or squashed. A picture and its caption always fit on one page: a picture too tall for the page is made smaller, never cut off.
+F5.3 Pictures are centered, sized to the page width or a set fraction of it, and never stretched or squashed. A picture and its caption always fit on one page: a picture too tall for the page is made smaller, never cut off. On screen, a section heading never stands alone on a page above its picture: the picture is made smaller so that both share a page, whether it sits in the text or has a page of its own.
 
-F5.4 A caption sits directly under its picture, smaller than the body text.
+F5.4 A caption sits directly under its picture, smaller than the body text, also on a page the picture has to itself.
 
 F5.5 Lists, letters and quoted passages are set off from the body text by indenting both sides, and are the same in every chapter.
 
@@ -249,7 +249,7 @@ Proven: an automatic test checks it before every change goes out. For the print 
 - F2.3 The book's own label (PART 1, CHAPTER THREE) shows above the title in place of "Chapter N," on the page, in the EPUB and in the print PDF. The label is the same in all three, just above the title, in two print sizes.
 - F2.4 The first paragraph of every chapter is not indented.
 - F2.5 Every chapter opens the same way. A book chooses one of four opening styles: Classic, Ornament, Big number or Drop cap.
-- F2.6 No page header on a chapter's first page.
+- F2.6 No page header on a chapter's first page, or on a page that holds only a picture (test F5-PAGES, in both engines).
 - F2.7 A chapter with no heading takes its name from the book's own contents list.
 - F2.7 Chapter titles are all set the same way: the same font, size, weight, spacing, capitals and place on the page, on screen, in the print PDF in all four sizes, and in the EPUB.
 - F2.8 A book's own chapter numbers win: the Introduction and other unnumbered pages get no number of Inkhorse's own.
@@ -267,7 +267,7 @@ Proven: an automatic test checks it before every change goes out. For the print 
 - F5.1 A section heading is smaller than the chapter title and every section heading is set the same way, on screen, in print and in the EPUB.
 - F5.2 and F3.4 A scene break is a centered ornament, and the paragraph after it is not indented, on the page, in the EPUB and in the print PDF.
 - F5.5 Lists, letters and quoted passages: a line that starts with a dash, a number or a greater-than sign is a list item or a quoted line. It is indented on both sides, the same in every chapter, with a little space above and below, on the page, in the e-book (real lists and block quotes, passing EPUBCheck), in the print PDF and in the Word manuscript (real Word lists and a Quote style). A list keeps its own numbers, and its bullets or numbers hang in the margin. E-books and Word files brought in keep their lists and quotations, and a backslash keeps a plain paragraph that starts with one of these marks plain.
-- F5.3 and F5.4 Pictures are never stretched, are centered unless the writer places them at a side, fit on the page with their caption, and carry the caption underneath in smaller type. The test reads every picture in the User manual at three text sizes.
+- F5.3 and F5.4 Pictures are never stretched, are centered unless the writer places them at a side, fit on the page with their caption, and carry the caption underneath in smaller type. The test reads every picture in the User manual at three text sizes. On a page a picture has to itself, the caption sits no more than a line below the picture as drawn, and a section heading followed by a picture shares its page with it, also an Own page picture at the smallest, a middle and the largest text size (tests F5-PAGES and F5-OWNHEAD, in both engines).
 - F6.1 The Contents that Inkhorse makes for your book is titled "Contents," lists every chapter once in order, and in print gives the page each chapter really starts on.
 - F6.2 to F6.5, F6.7 and F6.8 One contents style for every book, whatever file it came from: one entry per line, a dotted line to Inkhorse's own page number at the right edge, chapter entries set apart from section entries, nothing else on the page, and no page numbers left over from the paper book. No contents line runs off the page.
 - F6.6 On a contents page, a tap on an entry's words opens it, and a tap at the edge, where the page number sits, turns the page. A year that is part of a chapter's title ("Florida, 1981") stays in its entry and the entry stays linked; only printed page numbers are left off (rev 272).
@@ -308,6 +308,7 @@ Not done yet. Inkhorse does not meet these rules today:
 - F3.10 Lines Inkhorse does not end itself yet. Three kinds of text are still broken into lines by the browser, the old way: text that runs beside a picture placed at a side, a chapter opening that starts with a drop capital, and the lines of a Contents page. There the two browser engines can still end a line one word apart, and justified text beside a side picture is not weighed as a whole paragraph.
 - F2.5 True small capitals. The opening words of a chapter are set in small capitals that Inkhorse makes itself: small letters drawn as capitals at 78% of the text size, the same on every phone, tablet and computer and in the print PDF. Professional books use small capitals drawn for the typeface, which sit a little heavier on the page; the typeface files Inkhorse loads carry none.
 - F4.6 Italics in a book brought in from a PDF. A PDF's italic words come in upright for now.
+- F5.3 in print and in the e-book: a section heading straight before a picture is kept with it on screen only. In the print PDF and in an e-book reader the heading can still end a page with its picture on the next.
 - F5.5 Lists and quoted passages in a book brought in from a PDF. A PDF's bulleted or numbered lines are not yet tested on their own.
 
 Waiting on a decision: none.
